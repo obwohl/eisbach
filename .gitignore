@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pkl
+AutogluonModels/
+*.csv
+*.html
+ts_proba_cuda/
+.DS_Store
+*.egg-info/
+.ipynb_checkpoints/
