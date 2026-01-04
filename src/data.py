@@ -2,10 +2,12 @@ import pandas as pd
 from datetime import datetime, timedelta, timezone
 import requests
 from bs4 import BeautifulSoup
-import re
+
+TARGET_TIMEZONE = 'Europe/Berlin'
+TAGE_VERGANGENHEIT = 40
+TAGE_ZUKUNFT = 8
 
 def fetch_brightsky_data(start_date: datetime, end_date: datetime, station_id: str) -> pd.DataFrame | None:
-    TARGET_TIMEZONE = 'Europe/Berlin'
     start_utc = start_date.astimezone(timezone.utc) if start_date.tzinfo else start_date.replace(tzinfo=timezone.utc)
     end_utc = end_date.astimezone(timezone.utc) if end_date.tzinfo else end_date.replace(tzinfo=timezone.utc)
     start_str = start_utc.isoformat(timespec='seconds')
@@ -28,9 +30,6 @@ def fetch_brightsky_data(start_date: datetime, end_date: datetime, station_id: s
         return None
 
 def get_prepared_weather_data() -> pd.DataFrame:
-    TARGET_TIMEZONE = 'Europe/Berlin'
-    TAGE_VERGANGENHEIT = 40
-    TAGE_ZUKUNFT = 8
     now_local = datetime.now().astimezone()
     start_date = now_local - timedelta(days=TAGE_VERGANGENHEIT)
     end_date = now_local + timedelta(days=TAGE_ZUKUNFT)
@@ -141,7 +140,7 @@ def get_eisbach_data() -> pd.DataFrame:
     Returns a dataframe ready for TimeSeriesPredictor.
     """
     end_date = datetime.now()
-    start_date = end_date - timedelta(days=40)
+    start_date = end_date - timedelta(days=TAGE_VERGANGENHEIT)
     end_date_str = end_date.strftime("%d.%m.%Y")
     start_date_str = start_date.strftime("%d.%m.%Y")
 

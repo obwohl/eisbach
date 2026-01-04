@@ -1,7 +1,6 @@
 from autogluon.timeseries import TimeSeriesDataFrame, TimeSeriesPredictor
 import pandas as pd
-import os
-import warnings
+import logging
 
 def run_chronos_inference(data: pd.DataFrame, prediction_length=64, num_test_windows=3):
     """
@@ -30,9 +29,6 @@ def run_chronos_inference(data: pd.DataFrame, prediction_length=64, num_test_win
         id_column="item_id",
         timestamp_column="timestamp"
     )
-
-    # Clean data (fill missing)
-    ts_data = ts_data.fill_missing_values()
 
     # Define Predictor
     known_covariates_names = []
@@ -168,8 +164,6 @@ def run_chronos_inference(data: pd.DataFrame, prediction_length=64, num_test_win
             pred['type'] = 'backtest'
             backtest_predictions.append(pred)
         except Exception as e:
-            print(f"Error in backtest {i}: {e}")
-            import traceback
-            traceback.print_exc()
+            logging.exception(f"Error in backtest {i}: {e}")
 
     return predictions, backtest_predictions, predictor

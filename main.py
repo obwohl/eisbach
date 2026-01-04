@@ -3,11 +3,6 @@ from src.inference import run_chronos_inference
 from src.plotting import plot_forecasts
 from src.upload import run_upload
 import pandas as pd
-import warnings
-
-# Suppress warnings
-warnings.filterwarnings("ignore")
-
 def main():
     print("--- 1. Fetching Data ---")
     data = get_eisbach_data()
@@ -17,7 +12,7 @@ def main():
         return
 
     print("--- 2. Running Inference ---")
-    future_pred, backtest_preds, predictor = run_chronos_inference(data, prediction_length=64, num_test_windows=3)
+    future_pred, backtest_preds, _ = run_chronos_inference(data, prediction_length=64, num_test_windows=3)
 
     if future_pred is None:
         print("Inference failed.")

@@ -16,10 +16,6 @@ def plot_forecasts(data: pd.DataFrame, future_pred: pd.DataFrame, backtest_preds
     """
 
     # Prepare data for plotting
-    # Convert TSDataFrame to pandas if needed
-    if hasattr(future_pred, "to_data_frame"): # Just in case
-        future_pred = future_pred # It is already a DF usually
-
     # Combine backtests for easier handling?
     # Or plot them one by one.
 
@@ -50,7 +46,7 @@ def plot_forecasts(data: pd.DataFrame, future_pred: pd.DataFrame, backtest_preds
 
     # Plot Forecasts
     # Colors for backtests
-    colors = ['#cce0ff', '#99c2ff', '#66a3ff', '#3385ff']
+    colors = ['#3385ff', '#6f42c1', '#d9534f', '#5cb85c'] # Future, Backtest-1, -2, -3
 
     # Helper to plot one forecast
     def plot_single_forecast(pred_df, color, label_suffix=""):
@@ -61,7 +57,7 @@ def plot_forecasts(data: pd.DataFrame, future_pred: pd.DataFrame, backtest_preds
         src = ColumnDataSource(pred_df)
 
         # Mean
-        p_main.line(x='timestamp', y='mean', source=src, line_width=2.5, color="blue", legend_label=f"Prognose {label_suffix}")
+        p_main.line(x='timestamp', y='mean', source=src, line_width=2.5, color=color, legend_label=f"Prognose {label_suffix}")
 
         # Intervals (AutoGluon produces 0.1, 0.2, ... 0.9 columns)
         # We can plot 0.1-0.9 area
