@@ -1,185 +1,173 @@
-from bokeh.plotting import figure
-from bokeh.models import HoverTool, ColumnDataSource, LinearAxis, Range1d
-from bokeh.layouts import column
-from bokeh.io import save
 import pandas as pd
-from datetime import timedelta
 import matplotlib.pyplot as plt
 from cycler import cycler
+from datetime import timedelta
 
-def plot_forecasts(data: pd.DataFrame, future_pred: pd.DataFrame, backtest_preds: list, output_filename="eisbach_plot.html"):
+def save_static_plot(data: pd.DataFrame,
+                     future_pred_cov: pd.DataFrame, backtest_preds_cov: list,
+                     future_pred_naive: pd.DataFrame = None, backtest_preds_naive: list = None,
+                     output_filename="eisbach_new.png"):
     """
-    Generates an interactive Bokeh plot.
-    data: Historical data (dataframe with 'timestamp', 'wassertemp', 'lufttemperatur_c', 'niederschlag_mm')
-    future_pred: Main forecast dataframe
-    backtest_preds: List of backtest forecast dataframes
-    """
+    Generates a static Matplotlib plot (PNG) using the Primer style and surgical Y-axis scaling.
+    Plots both Covariate (Main) and Naive models if provided.
 
-    # Prepare data for plotting
-    # Convert TSDataFrame to pandas if needed
-    if hasattr(future_pred, "to_data_frame"): # Just in case
-        future_pred = future_pred # It is already a DF usually
-
-    # Combine backtests for easier handling?
-    # Or plot them one by one.
-
-    source = ColumnDataSource(data)
-
-    p_main = figure(width=1600, height=600, x_axis_type="datetime", title="Eisbach: Wasser-/Lufttemperatur & Niederschlag")
-    p_main.yaxis.axis_label = 'Temperatur [°C]'
-
-    # Second axis for precipitation
-    has_precip_data = 'niederschlag_mm' in data.columns and not data['niederschlag_mm'].isnull().all()
-    if has_precip_data:
-        precip_range_name = 'precip_range'
-        max_precip = data['niederschlag_mm'].max(skipna=True)
-        p_main.extra_y_ranges = {precip_range_name: Range1d(start=0, end=max(max_precip * 1.5, 1.0))}
-        p_main.add_layout(LinearAxis(y_range_name=precip_range_name, axis_label="Niederschlag [mm]"), "right")
-
-    # Plot Historical
-    p_main.line(x='timestamp', y='wassertemp', source=source, line_width=2, color="black", legend_label="Wassertemperatur (Messwert)")
-    if 'lufttemperatur_c' in data.columns:
-        p_main.line(x='timestamp', y='lufttemperatur_c', source=source, line_width=1.5, color="orange", line_dash='dashed', legend_label="Lufttemperatur")
-
-    # Plot Precipitation
-    if has_precip_data:
-        p_main.vbar(x='timestamp', top='niederschlag_mm', source=source,
-                    width=timedelta(hours=0.8),
-                    color="navy", alpha=0.6, legend_label="Niederschlag (1h)",
-                    y_range_name=precip_range_name)
-
-    # Plot Forecasts
-    # Colors for backtests
-    colors = ['#cce0ff', '#99c2ff', '#66a3ff', '#3385ff']
-
-    # Helper to plot one forecast
-    def plot_single_forecast(pred_df, color, label_suffix=""):
-        # Reset index if multi-index (item_id, timestamp)
-        if 'timestamp' not in pred_df.columns:
-            pred_df = pred_df.reset_index()
-
-        src = ColumnDataSource(pred_df)
-
-        # Mean
-        p_main.line(x='timestamp', y='mean', source=src, line_width=2.5, color="blue", legend_label=f"Prognose {label_suffix}")
-
-        # Intervals (AutoGluon produces 0.1, 0.2, ... 0.9 columns)
-        # We can plot 0.1-0.9 area
-        if '0.1' in pred_df.columns and '0.9' in pred_df.columns:
-             p_main.varea(x='timestamp', y1='0.1', y2='0.9', source=src, fill_color=color, alpha=0.4, legend_label=f"80% KI {label_suffix}")
-
-    # Plot Future Forecast
-    plot_single_forecast(future_pred, colors[-1], "(Zukunft)")
-
-    # Plot Backtests
-    for i, bp in enumerate(backtest_preds):
-        # We fade the color for older backtests? or just use same
-        col = colors[i % len(colors)]
-        plot_single_forecast(bp, col, f"(Backtest -{i+1})")
-
-    # Tools
-    hover_main = HoverTool(
-        tooltips=[
-            ("Zeitpunkt", "@timestamp{%F %T}"),
-            ("Messwert Wasser", "@{wassertemp}{0.0} °C"),
-            ("Prognose", "@mean{0.0} °C"),
-        ],
-        formatters={'@timestamp': 'datetime'},
-        mode='vline'
-    )
-    p_main.add_tools(hover_main)
-
-    p_main.legend.location = "top_left"
-    p_main.legend.click_policy = "hide"
-
-    save(p_main, filename=output_filename, title="Eisbach Wassertemperatur Prognose")
-    print(f"Plot saved to {output_filename}")
-
-def save_static_plot(data: pd.DataFrame, future_pred: pd.DataFrame, backtest_preds: list, output_filename="eisbach_new.png"):
-    """
-    Generates a static Matplotlib plot (PNG).
+    Covariate Model: Solid Line, Filled Intervals.
+    Naive Model: Dashed Line, Dotted Interval Lines (No Fill).
     """
 
-    # Style
+    # 1. Define Style
     primer = {
-      "theme_color": "#231F20",
-      "style": {
-        "lines.linewidth": 1.0, "lines.linestyle": "-", "font.family": "sans-serif",
-        "font.size": 10, "text.color": "#231F20", "axes.facecolor": "#FFFFFF",
-        "axes.edgecolor": "#231F20", "axes.linewidth": 0.8, "axes.grid": True,
-        "axes.labelsize": 10, "axes.labelweight": "normal", "axes.labelcolor": "#231F20",
-        "axes.prop_cycle": cycler(color=["#1771F1", "#F85C50", "#35D073", "#FFC11E", "#8E44AD"]),
-        "xtick.major.size": 2, "xtick.minor.size": 1, "xtick.major.width": 0.8,
-        "xtick.minor.width": 0.6, "xtick.major.top": True, "xtick.major.bottom": True,
-        "xtick.minor.top": True, "xtick.minor.bottom": True, "xtick.color": "#231F20", "xtick.labelsize": 8,
-        "ytick.major.size": 2, "ytick.minor.size": 1, "ytick.major.width": 0.8,
-        "ytick.minor.width": 0.6, "ytick.color": "#231F20", "ytick.major.left": True,
-        "ytick.major.right": True, "ytick.minor.left": True, "ytick.minor.right": True,
-        "grid.color": "#231F20", "grid.linestyle": ":", "grid.linewidth": 0.4,
-        "grid.alpha": 1.0, "legend.frameon": False, "legend.edgecolor": "#231F20",
-        "figure.figsize": [15, 9], "figure.dpi": 96, "figure.facecolor": "#FFFFFF",
-        "figure.edgecolor": "#FFFFFF"
-      }
+        "theme_color": "#231F20",
+        "style": {
+            "lines.linewidth": 1.5, "lines.linestyle": "-", "font.family": "sans-serif",
+            "font.size": 10, "text.color": "#231F20", "axes.facecolor": "#FFFFFF",
+            "axes.edgecolor": "#231F20", "axes.linewidth": 0.8, "axes.grid": True,
+            "axes.labelsize": 10, "axes.labelweight": "normal", "axes.labelcolor": "#231F20",
+            "axes.prop_cycle": cycler(color=["#1771F1", "#F85C50", "#35D073", "#FFC11E", "#8E44AD"]),
+            "xtick.major.size": 2, "xtick.minor.size": 1, "xtick.major.width": 0.8,
+            "xtick.minor.width": 0.6, "xtick.major.top": True, "xtick.major.bottom": True,
+            "xtick.minor.top": True, "xtick.minor.bottom": True, "xtick.color": "#231F20", "xtick.labelsize": 8,
+            "ytick.major.size": 2, "ytick.minor.size": 1, "ytick.major.width": 0.8,
+            "ytick.minor.width": 0.6, "ytick.color": "#231F20", "ytick.major.left": True,
+            "ytick.major.right": True, "ytick.minor.left": True, "ytick.minor.right": True,
+            "grid.color": "#231F20", "grid.linestyle": ":", "grid.linewidth": 0.4,
+            "grid.alpha": 1.0, "legend.frameon": False, "legend.edgecolor": "#231F20",
+            "figure.figsize": [15, 9], "figure.dpi": 96, "figure.facecolor": "#FFFFFF",
+            "figure.edgecolor": "#FFFFFF"
+        }
     }
     plt.rcParams.update(primer['style'])
 
     fig, ax = plt.subplots()
     colors = primer['style']['axes.prop_cycle'].by_key()['color']
 
-    # Plot Historical
-    ax.plot(data['timestamp'], data['wassertemp'], label='Historical Wassertemp', color='black', linestyle='--')
+    # 2. Prepare Data
+    if not pd.api.types.is_datetime64_any_dtype(data['timestamp']):
+        data['timestamp'] = pd.to_datetime(data['timestamp'])
+    data = data.sort_values('timestamp')
 
+    # 3. Plot Historical Wassertemp
+    ax.plot(data['timestamp'], data['wassertemp'], label='Historical Wassertemp', color='black', linestyle='-', linewidth=1)
+
+    # 4. Helper to plot forecast
+    def plot_forecast_df(df, label, color, is_naive=False):
+        if df is None or df.empty:
+            return
+
+        # Normalize columns
+        if 'timestamp' in df.columns:
+            x = df['timestamp']
+        else:
+            x = df.index.get_level_values('timestamp')
+
+        y = df['mean']
+
+        if is_naive:
+            # Naive: Dashed Line, Dotted Interval Lines (No Fill)
+            ax.plot(x, y, label=label, color=color, linestyle='--')
+            if '0.1' in df.columns and '0.9' in df.columns:
+                ax.plot(x, df['0.1'], color=color, linestyle=':', linewidth=1, alpha=0.8)
+                ax.plot(x, df['0.9'], color=color, linestyle=':', linewidth=1, alpha=0.8)
+        else:
+            # Covariate: Solid Line, Filled Interval
+            ax.plot(x, y, label=label, color=color, linestyle='-')
+            if '0.1' in df.columns and '0.9' in df.columns:
+                ax.fill_between(x, df['0.1'], df['0.9'], color=color, alpha=0.2, lw=0, label=f"{label} 80% CI")
+
+    # 5. Plot Forecasts
+    backtest_labels = ['Backtest -96h', 'Backtest -192h', 'Backtest -288h']
+
+    # Future
+    plot_forecast_df(future_pred_cov, 'Forecast (Covariates)', colors[0], is_naive=False)
+    if future_pred_naive is not None:
+        plot_forecast_df(future_pred_naive, 'Forecast (Naive)', colors[0], is_naive=True)
+
+    # Backtests
+    for i, pred_df in enumerate(backtest_preds_cov):
+        col_idx = (i + 1) % len(colors)
+        col = colors[col_idx]
+        lbl = backtest_labels[i] if i < len(backtest_labels) else f"Backtest {i+1}"
+
+        plot_forecast_df(pred_df, f"{lbl} (Cov)", col, is_naive=False)
+
+        if backtest_preds_naive and i < len(backtest_preds_naive):
+             pred_naive = backtest_preds_naive[i]
+             plot_forecast_df(pred_naive, f"{lbl} (Naive)", col, is_naive=True)
+
+    # 6. Plot Air Temp (Covariate)
     if 'lufttemperatur_c' in data.columns:
         ax.plot(data['timestamp'], data['lufttemperatur_c'], label='Air Temp (DWD)', color='purple', linestyle=':', linewidth=1.5, alpha=0.6)
 
-    def plot_one(df, label, color):
-        if isinstance(df, pd.DataFrame):
-            # Ensure timestamp is available as column or index
-            if 'timestamp' in df.columns:
-                x = df['timestamp']
-            else:
-                x = df.index.get_level_values('timestamp')
+    # 7. Secondary Axis for Precipitation
+    if 'niederschlag_mm' in data.columns:
+        ax2 = ax.twinx()
+        ax2.set_ylabel('Niederschlag [mm]', color='navy')
+        ax2.bar(data['timestamp'], data['niederschlag_mm'], color='navy', alpha=0.3, width=0.04, label='Niederschlag')
+        ax2.tick_params(axis='y', labelcolor='navy')
+        max_precip = data['niederschlag_mm'].max()
+        if pd.notna(max_precip) and max_precip > 0:
+            ax2.set_ylim(0, max_precip * 3)
+        ax.plot([], [], color='navy', alpha=0.3, linewidth=5, label='Niederschlag')
 
-            y = df['mean']
-            ax.plot(x, y, label=label, color=color)
+    # 8. Set Limits
+    plot_start_date = None
+    if backtest_preds_cov:
+        last_bt = backtest_preds_cov[-1]
+        if 'start_timestamp' in last_bt.columns:
+             plot_start_date = last_bt['start_timestamp'].iloc[0]
 
-            # Fill between
-            # We assume 0.1 and 0.9 exist
-            if '0.1' in df.columns and '0.9' in df.columns:
-                ax.fill_between(x, df['0.1'], df['0.9'], alpha=0.2, color=color, lw=0)
+    if plot_start_date is None:
+         plot_start_date = data['timestamp'].max() - timedelta(hours=288)
 
-    # Plot Future
-    plot_one(future_pred, 'Forecast Wassertemp', colors[0])
+    if not isinstance(plot_start_date, pd.Timestamp):
+        plot_start_date = pd.to_datetime(plot_start_date)
 
-    # Plot Backtests
-    for i, bp in enumerate(backtest_preds):
-        col = colors[(i + 1) % len(colors)]
-        plot_one(bp, f'Backtest -{i+1}', col)
+    plot_end_date = future_pred_cov['timestamp'].max() if (future_pred_cov is not None) else data['timestamp'].max()
+    ax.set_xlim(left=plot_start_date, right=plot_end_date)
 
-    ax.set_title('Eisbach Wassertemperatur Forecast')
+    # Surgical Y Zoom
+    mask_data = (data['timestamp'] >= plot_start_date) & (data['timestamp'] <= plot_end_date)
+    visible_weather = data.loc[mask_data, 'lufttemperatur_c'] if 'lufttemperatur_c' in data.columns else pd.Series(dtype=float)
+    visible_water = data.loc[mask_data, 'wassertemp']
+
+    min_candidates = []
+    max_candidates = []
+
+    if not visible_weather.empty:
+        min_candidates.append(visible_weather.min())
+        max_candidates.append(visible_weather.max())
+    if not visible_water.empty:
+         min_candidates.append(visible_water.min())
+         max_candidates.append(visible_water.max())
+
+    all_preds = [future_pred_cov] + backtest_preds_cov
+    if future_pred_naive is not None: all_preds.append(future_pred_naive)
+    if backtest_preds_naive: all_preds.extend(backtest_preds_naive)
+
+    for df in all_preds:
+        if df is None or df.empty: continue
+        # Only consider mean for zoom to avoid outliers in wide CIs blowing up the scale?
+        # Or consider 0.1/0.9 bounds. User wants "nothing cut off".
+        if '0.1' in df.columns: min_candidates.append(df['0.1'].min())
+        if '0.9' in df.columns: max_candidates.append(df['0.9'].max())
+        if 'mean' in df.columns:
+            min_candidates.append(df['mean'].min())
+            max_candidates.append(df['mean'].max())
+
+    if min_candidates and max_candidates:
+        y_view_min = min([x for x in min_candidates if pd.notna(x)])
+        y_view_max = max([x for x in max_candidates if pd.notna(x)])
+        ax.set_ylim(y_view_min - 1.0, y_view_max + 1.0)
+
+    # 9. Legend
+    ax.set_title(f'Eisbach Forecast: Covariates vs Naive')
     ax.set_xlabel('Date')
-    ax.set_ylabel('Temperature (°C)')
-    ax.legend(loc='upper left')
+    ax.set_ylabel('Temperatur (°C)')
 
-    # Adjust limits to show relevant area
-    if not backtest_preds:
-        start_plot = data['timestamp'].max() - timedelta(days=7)
-    else:
-        # Find earliest backtest start
-        earliest_list = [bp['start_timestamp'].min() for bp in backtest_preds if 'start_timestamp' in bp and not bp.empty]
-        if earliest_list:
-            earliest = min(earliest_list)
-            if isinstance(earliest, pd.Series): earliest = earliest.min()
-            start_plot = earliest - timedelta(days=2) # a bit of context
-        else:
-            start_plot = data['timestamp'].max() - timedelta(days=7)
+    lines, labels = ax.get_legend_handles_labels()
+    unique = [(h, l) for i, (h, l) in enumerate(zip(lines, labels)) if l not in labels[:i]]
+    ax.legend(*zip(*unique), loc='upper left')
 
-    # Ensure start_plot is timestamp
-    if isinstance(start_plot, pd.Series): start_plot = start_plot.min()
-
-    # Set xlim if start_plot is valid
-    if start_plot is not None:
-        ax.set_xlim(left=start_plot)
-
+    # 10. Save
     plt.savefig(output_filename, dpi=300, bbox_inches='tight', facecolor=fig.get_facecolor(), edgecolor='none')
     print(f"Static plot saved to {output_filename}")
