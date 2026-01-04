@@ -2,6 +2,7 @@ import pandas as pd
 from datetime import datetime, timedelta, timezone
 import requests
 from bs4 import BeautifulSoup
+import time
 
 TARGET_TIMEZONE = 'Europe/Berlin'
 TAGE_VERGANGENHEIT = 40
@@ -76,15 +77,21 @@ def fetch_data_from_url(url, column_name) -> pd.DataFrame:
         if not table:
             print(f"   [WARN] No table with class 'tblsort' or 'datentabelle' found on URL: {url}")
             return pd.DataFrame()
+
+    # Header Parsing
     try:
         headers = [header.get_text(strip=True) for header in table.find('thead').find_all("th")]
     except AttributeError:
         print(f"   [WARN] Could not find a 'thead' section in the table for URL: {url}")
         return pd.DataFrame()
-    if any('Uhrzeit' in s for s in headers):
-        df_headers = headers
-    else:
-        df_headers = ['Datum/Uhrzeit'] + headers[1:]
+
+    # Sometimes headers in 'Aktuelle Werte' are 'Datum', 'Uhrzeit', 'Wert'
+    # Sometimes merged.
+    # The snippet showed 'Datum', 'Wassertemperatur...' but values had time.
+
+    # We will use what headers we found.
+    df_headers = headers
+
     rows = table.find('tbody').find_all("tr")
     if not rows:
         print(f"   [WARN] No data rows (tr) found in table body for URL: {url}")
@@ -92,43 +99,78 @@ def fetch_data_from_url(url, column_name) -> pd.DataFrame:
     data = []
     for row in rows:
         cells = row.find_all(["td", "th"])
+        # Handle colspan or mismatch? Usually just text.
         row_data = {df_headers[i]: cell.get_text(strip=True) for i, cell in enumerate(cells) if i < len(df_headers)}
         data.append(row_data)
     if not data:
         return pd.DataFrame()
     df = pd.DataFrame(data)
+
+    # Flexible Date Parsing
+    # Case 1: 'Datum/Uhrzeit' column
     if 'Datum/Uhrzeit' in df.columns:
         df['timestamp'] = pd.to_datetime(df['Datum/Uhrzeit'], format='%d.%m.%Y %H:%M', errors='coerce')
+
+    # Case 2: Separate 'Datum' and 'Uhrzeit'
+    elif 'Datum' in df.columns and 'Uhrzeit' in df.columns:
+        df['timestamp_str'] = df['Datum'] + ' ' + df['Uhrzeit']
+        df["timestamp"] = pd.to_datetime(df['timestamp_str'], format="%d.%m.%Y %H:%M", errors='coerce')
+
+    # Case 3: Only 'Datum' but it might contain time? Or we check if 'Uhrzeit' is implicit?
+    # Sometimes GKD puts 'Datum' header but cells have 'dd.mm.yyyy HH:MM' or just date.
     elif 'Datum' in df.columns:
-        if 'Uhrzeit' in df.columns:
-            df['timestamp_str'] = df['Datum'] + ' ' + df['Uhrzeit']
-            df["timestamp"] = pd.to_datetime(df['timestamp_str'], format="%d.%m.%Y %H:%M", errors='coerce')
+        # Check first non-empty value length or format
+        sample = df['Datum'].iloc[0] if not df.empty else ""
+        if len(sample) > 10: # "dd.mm.yyyy" is 10 chars. "dd.mm.yyyy HH:MM" is 16.
+             df["timestamp"] = pd.to_datetime(df['Datum'], format="%d.%m.%Y %H:%M", errors='coerce')
+             # Fallback if that fails
+             if df['timestamp'].isna().all():
+                 df["timestamp"] = pd.to_datetime(df['Datum'], format="%d.%m.%Y", errors='coerce')
         else:
-            df["timestamp"] = pd.to_datetime(df['Datum'], format="%d.%m.%Y", errors='coerce')
+             df["timestamp"] = pd.to_datetime(df['Datum'], format="%d.%m.%Y", errors='coerce')
+
     else:
-        print(f"   [WARN] 'Datum' column not found. Cannot process timestamps.")
+        # Try to find any column that looks like a date
+        print(f"   [WARN] 'Datum' column not found. Headers: {df.columns.tolist()}")
         return pd.DataFrame()
+
     df.dropna(subset=['timestamp'], inplace=True)
     if df.empty:
         print(f"   [WARN] No valid timestamps could be parsed.")
         return pd.DataFrame()
 
-    # Corrected column name extraction
-    target_header = [col for col in df.columns if column_name.split('_')[0].lower() in col.lower()]
-    if not target_header:
-        print(f"   [ERROR] Expected header containing '{column_name.split('_')[0]}' not found in table. Available headers: {df.columns.tolist()}")
+    # Column name extraction
+    # Look for 'Wassertemperatur' or the specific name passed
+    target_col_candidates = [col for col in df.columns if column_name.split('_')[0].lower() in col.lower()]
+    if not target_col_candidates:
+        target_col_candidates = [col for col in df.columns if "wassertemperatur" in col.lower()]
+
+    if not target_col_candidates:
+        print(f"   [ERROR] Expected header containing '{column_name}' not found. Available headers: {df.columns.tolist()}")
         return pd.DataFrame()
-    target_header = target_header[0]
+    target_header = target_col_candidates[0]
 
     df_final = df[["timestamp", target_header]].copy()
     df_final.rename(columns={target_header: column_name}, inplace=True)
-    df_final[column_name] = pd.to_numeric(
-        df_final[column_name].astype(str).str.replace("--", "", regex=False).str.replace(",", ".", regex=False),
-        errors='coerce'
-    )
-    # Resample to hourly frequency using the 'first' method
+
+    # Numeric conversion
+    val_series = df_final[column_name].astype(str).str.replace("--", "", regex=False).str.replace(",", ".", regex=False)
+    df_final[column_name] = pd.to_numeric(val_series, errors='coerce')
+
+    # Resample to hourly frequency
     df_final.set_index('timestamp', inplace=True)
-    df_final = df_final.resample('1h').first()
+
+    if len(df_final) > 1:
+        # Check freq
+        time_diff = df_final.index[1] - df_final.index[0]
+        # If daily (>= 20h), interpolate. If hourly, resample/mean/first.
+        if time_diff >= timedelta(hours=20):
+            df_final = df_final.resample('1h').interpolate(method='time')
+        else:
+            df_final = df_final.resample('1h').first()
+    else:
+        df_final = df_final.resample('1h').first()
+
     df_final.reset_index(inplace=True)
 
     print(f"   [SUCCESS] Found and processed {len(df_final)} rows.")
