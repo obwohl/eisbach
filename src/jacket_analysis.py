@@ -117,7 +117,6 @@ def calculate_wearability(row):
     """
     # 1. BASIS-WERT (Transition / Shell Only Mode)
     # V4: Dynamic Base. We use 18.5°C (Shell Only) as the defining upper limit for "Wearability".
-    # If we used 14.0°C (Bib Mode), we would falsely classify mild days as unwearable.
     limit = 18.5
 
     # Extract values
@@ -131,12 +130,8 @@ def calculate_wearability(row):
 
     # 2. FEUCHTIGKEITS-MALUS (The Membrane Choke)
     # V4: Exponential decay.
-    # Breathability is acceptable up to 70%, degrades between 70-90%, and collapses >90%.
     hum_malus = 0.0
     if rh > 60:
-        # Formula: ((RH - 60) / 40)^3 * 8.0
-        # Example 80%: (20/40)^3 * 8 = 0.125 * 8 = 1.0
-        # Example 100%: (40/40)^3 * 8 = 8.0
         hum_malus = ((rh - 60) / 40.0) ** 3 * 8.0
         limit -= hum_malus
 
@@ -146,25 +141,16 @@ def calculate_wearability(row):
 
     if regen > 0:
         # --- WET SCENARIO (V4) ---
-        # The jacket generates heat (Sorption) which cancels out cooling unless wind is present.
-
-        # A. Sorption Malus (The "Wool Furnace")
-        # Fixed penalty whenever raining.
         sorption_malus = -1.5
         limit += sorption_malus # Subtracts 1.5
 
         # B. Evaporative Bonus (Unlocked by Wind)
-        # Formula: 0.2 * Wind_Speed
-        # Note: In V4, this replaces the separate "Wind Bonus" for dry days.
         wind_bonus = 0.2 * wind
         limit += wind_bonus
 
     else:
         # --- DRY SCENARIO (V3 Logic retained for Dry) ---
-        # V4 confirms V3 wind logic is sound for dry conditions.
-
         # Wind Bonus (Ventilation)
-        # If wind > 5 km/h, gain bonus up to 3.0°C
         wind_factor = 0.0
         if wind > 5:
             wind_factor = (wind - 5) * 0.15
@@ -177,10 +163,6 @@ def calculate_wearability(row):
     # 4. Decision
     is_wearable = temp <= t_max
 
-    # Return structure
-    # hum_malus is positive (penalty).
-    # wind_bonus is positive (bonus).
-    # sorption_malus is negative (penalty).
     return is_wearable, t_max, hum_malus, wind_bonus, sorption_malus
 
 def get_day_night_status(timestamp, city_info):
@@ -201,15 +183,95 @@ def get_day_night_status(timestamp, city_info):
         # Fallback if astral fails (e.g. out of range latitude?? Unlikely for Munich)
         return "Unknown"
 
-def generate_plots(df):
+def calculate_monthly_period_stats(df):
+    """
+    Calculates the percentage of wearable periods (Whole Day, Light Day, Night) per month.
+    Returns a DataFrame indexed by month (1-12) with columns:
+    ['whole_day_pct', 'light_day_pct', 'night_pct', 'whole_day_count', 'whole_day_total', etc.]
+    """
+    logger.info("Calculating Monthly Period Stats...")
+
+    def is_period_wearable(sub_df):
+        if sub_df.empty:
+            return None
+        total_h = len(sub_df)
+        not_wearable_h = len(sub_df[sub_df['is_wearable'] == False])
+        pct_not_wearable = (not_wearable_h / total_h) * 100
+        return pct_not_wearable <= 10.0
+
+    df['date_str'] = df['timestamp'].dt.date
+    grouped = df.groupby('date_str')
+
+    # Structure to hold aggregated data
+    # Month -> { type -> {total, wearable} }
+    stats_data = {m: {'whole_day': {'total': 0, 'wearable': 0},
+                      'light_day': {'total': 0, 'wearable': 0},
+                      'night': {'total': 0, 'wearable': 0}} for m in range(1, 13)}
+
+    for date, group in grouped:
+        month = pd.to_datetime(date).month
+
+        # Whole Day
+        res_whole = is_period_wearable(group)
+        if res_whole is not None:
+            stats_data[month]['whole_day']['total'] += 1
+            if res_whole:
+                stats_data[month]['whole_day']['wearable'] += 1
+
+        # Light Day
+        day_group = group[group['day_night'] == 'Day']
+        res_day = is_period_wearable(day_group)
+        if res_day is not None:
+            stats_data[month]['light_day']['total'] += 1
+            if res_day:
+                stats_data[month]['light_day']['wearable'] += 1
+
+        # Night
+        night_group = group[group['day_night'] == 'Night']
+        res_night = is_period_wearable(night_group)
+        if res_night is not None:
+            stats_data[month]['night']['total'] += 1
+            if res_night:
+                stats_data[month]['night']['wearable'] += 1
+
+    # Convert to DataFrame
+    rows = []
+    for m in range(1, 13):
+        d = stats_data[m]
+
+        wd_total = d['whole_day']['total']
+        wd_wear = d['whole_day']['wearable']
+        wd_pct = (wd_wear / wd_total * 100) if wd_total > 0 else 0
+
+        ld_total = d['light_day']['total']
+        ld_wear = d['light_day']['wearable']
+        ld_pct = (ld_wear / ld_total * 100) if ld_total > 0 else 0
+
+        n_total = d['night']['total']
+        n_wear = d['night']['wearable']
+        n_pct = (n_wear / n_total * 100) if n_total > 0 else 0
+
+        rows.append({
+            'month': m,
+            'whole_day_pct': wd_pct, 'whole_day_wearable': wd_wear, 'whole_day_total': wd_total,
+            'light_day_pct': ld_pct, 'light_day_wearable': ld_wear, 'light_day_total': ld_total,
+            'night_pct': n_pct, 'night_wearable': n_wear, 'night_total': n_total
+        })
+
+    return pd.DataFrame(rows).set_index('month')
+
+def generate_plots(df, period_stats_df):
     """
     Generates multiple plots:
     1. Heatmap (Original)
-    2. Monthly Overview
-    3. Day/Night Overview
-    4. Period Analysis
+    2. Monthly Overview (Hourly)
+    3. Day/Night Overview (Hourly)
+    4. Monthly Period Overview (New V4 Plot)
     """
     logger.info("Generating plots...")
+
+    color_no = '#FF6B6B'
+    color_yes = '#4ECDC4'
 
     # --- 1. Heatmap ---
     df['date_str'] = df['timestamp'].dt.date
@@ -218,8 +280,6 @@ def generate_plots(df):
     pivot_table = df.pivot_table(index='hour', columns='date_str', values='is_wearable', aggfunc='max')
     pivot_table = pivot_table.fillna(False).astype(int)
 
-    color_no = '#FF6B6B'
-    color_yes = '#4ECDC4'
     cmap = ListedColormap([color_no, color_yes])
 
     plt.figure(figsize=(24, 12))
@@ -242,7 +302,7 @@ def generate_plots(df):
     plt.tight_layout()
     plt.savefig('jacket_plot_heatmap.png', dpi=200, bbox_inches='tight')
 
-    # --- 2. Monthly Overview ---
+    # --- 2. Monthly Overview (Hourly) ---
     monthly = df.groupby(df['timestamp'].dt.month)['is_wearable'].agg(['count', 'sum'])
     monthly['pct'] = (monthly['sum'] / monthly['count']) * 100
     monthly['not_wearable_pct'] = 100 - monthly['pct']
@@ -254,7 +314,7 @@ def generate_plots(df):
 
     plt.xlabel("Monat")
     plt.ylabel("Anteil (%)")
-    plt.title("Tragbarkeit nach Monaten (Modell V4)")
+    plt.title("Tragbarkeit nach Monaten (Stundenbasiert) - V4")
     plt.xticks(month_indices, ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'])
     plt.legend(loc='lower center', bbox_to_anchor=(0.5, -0.2), ncol=2, frameon=False)
     plt.tight_layout()
@@ -272,14 +332,65 @@ def generate_plots(df):
     bars = plt.bar(['Tag (Hell)', 'Nacht (Dunkel)'], [day_pct, night_pct], color=[color_yes, '#45B7AF'])
     plt.ylim(0, 100)
     plt.ylabel("Tragbarkeit (%)")
-    plt.title("Tragbarkeit Tag vs. Nacht (Modell V4)")
+    plt.title("Tragbarkeit Tag vs. Nacht - V4")
     for bar in bars:
         height = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2., height, f'{height:.1f}%', ha='center', va='bottom')
     plt.tight_layout()
     plt.savefig('jacket_plot_day_night.png', dpi=150)
 
-    logger.info("Plots saved: jacket_plot_heatmap.png, jacket_plot_monthly.png, jacket_plot_day_night.png")
+    # --- 4. Period-Based Overview (NEW) ---
+    # Grouped Bar Chart: Month on X, Percentage on Y.
+    # Grouped by: Light Day, Night, Whole Day
+
+    plt.figure(figsize=(14, 7))
+
+    bar_width = 0.25
+    x = np.arange(len(month_indices)) # 0 to 11
+
+    # Data
+    y_light = period_stats_df['light_day_pct']
+    y_night = period_stats_df['night_pct']
+    y_whole = period_stats_df['whole_day_pct']
+
+    # Colors
+    c_light = '#F4D03F' # Sunny Yellow/Gold
+    c_night = '#2E4053' # Dark Blue/Grey
+    c_whole = '#27AE60' # Green
+
+    # Bars
+    r1 = plt.bar(x - bar_width, y_light, width=bar_width, color=c_light, label='Lichttag')
+    r2 = plt.bar(x, y_night, width=bar_width, color=c_night, label='Nacht')
+    r3 = plt.bar(x + bar_width, y_whole, width=bar_width, color=c_whole, label='Ganzer Tag')
+
+    # Formatting
+    plt.xlabel('Monat', fontsize=12)
+    plt.ylabel('Wahrscheinlichkeit (%)', fontsize=12)
+    plt.title('Tragbarkeits-Wahrscheinlichkeit nach Perioden (Tage) - V4', fontsize=16)
+    plt.xticks(x, ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'])
+    plt.ylim(0, 115) # Space for labels
+
+    # Add percentage labels on top
+    def add_labels(rects):
+        for rect in rects:
+            height = rect.get_height()
+            plt.annotate(f'{height:.0f}%',
+                        xy=(rect.get_x() + rect.get_width() / 2, height),
+                        xytext=(0, 3),  # 3 points vertical offset
+                        textcoords="offset points",
+                        ha='center', va='bottom', fontsize=8, rotation=90)
+
+    add_labels(r1)
+    add_labels(r2)
+    add_labels(r3)
+
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3, frameon=False, fontsize=12)
+    plt.grid(axis='y', linestyle='--', alpha=0.5)
+    plt.tight_layout()
+
+    plt.savefig('jacket_plot_periods.png', dpi=150)
+
+    logger.info("Plots saved: jacket_plot_heatmap.png, jacket_plot_monthly.png, jacket_plot_day_night.png, jacket_plot_periods.png")
 
 def main():
     # 1. Fetch Data (5 Years = ~1826 days)
@@ -297,7 +408,7 @@ def main():
     df['t_max'] = results[1]
     df['hum_malus'] = results[2]
     df['wind_bonus'] = results[3]
-    df['sorption_malus'] = results[4] # Renamed from rain_bonus, and it's negative now
+    df['sorption_malus'] = results[4]
 
     # 3. Stratify Day/Night
     logger.info("Calculating Day/Night...")
@@ -324,73 +435,68 @@ def main():
 
     df['day_night'] = df['timestamp'].apply(quick_day_night)
 
-    # 4. Statistics
+    # 4. Statistics Calculation
+
+    # A. Hourly Stats
     total_hours = len(df)
     wearable_hours = df['is_wearable'].sum()
     not_wearable_hours = total_hours - wearable_hours
-
     wearable_pct = (wearable_hours / total_hours) * 100 if total_hours > 0 else 0
 
-    # Stratified
     day_df = df[df['day_night'] == 'Day']
     night_df = df[df['day_night'] == 'Night']
-
     wearable_day = day_df['is_wearable'].sum()
     total_day = len(day_df)
     wearable_day_pct = (wearable_day / total_day * 100) if total_day > 0 else 0
-
     wearable_night = night_df['is_wearable'].sum()
     total_night = len(night_df)
     wearable_night_pct = (wearable_night / total_night * 100) if total_night > 0 else 0
 
-    # Top 10 Coldest Not Wearable
-    not_wearable_df = df[df['is_wearable'] == False].copy()
-    coldest_not_wearable = not_wearable_df.sort_values('temperature', ascending=True).head(10)
+    # B. Period Stats
+    period_stats_df = calculate_monthly_period_stats(df)
 
-    coldest_reasons = []
-    for _, row in coldest_not_wearable.iterrows():
-        reason = (f"- **{row['timestamp']}**: Temp {row['temperature']:.1f}°C > T_max {row['t_max']:.1f}°C "
-                  f"(Base 18.5 - Malus_Feuchte {row['hum_malus']:.2f} + Malus_Sorption {row['sorption_malus']:.2f} + Bonus_Wind {row['wind_bonus']:.2f}) "
-                  f"| RH: {row['relative_humidity']:.0f}%, Rain: {row['precipitation']:.1f}mm, Wind: {row['wind_speed']:.1f}km/h")
-        coldest_reasons.append(reason)
-
-    # Top 10 Warmest Wearable
-    wearable_df = df[df['is_wearable'] == True].copy()
-    warmest_wearable = wearable_df.sort_values('temperature', ascending=False).head(10)
-
-    warmest_reasons = []
-    for _, row in warmest_wearable.iterrows():
-        reason = (f"- **{row['timestamp']}**: Temp {row['temperature']:.1f}°C <= T_max {row['t_max']:.1f}°C "
-                  f"(Base 18.5 - Malus_Feuchte {row['hum_malus']:.2f} + Malus_Sorption {row['sorption_malus']:.2f} + Bonus_Wind {row['wind_bonus']:.2f}) "
-                  f"| Rain: {row['precipitation']:.1f}mm, Wind: {row['wind_speed']:.1f}km/h")
-        warmest_reasons.append(reason)
-
-    # Monthly Stratification
-    df['month'] = df['timestamp'].dt.month
-    monthly_stats = []
-
-    # German month names
+    # Format Monthly Period Stats for Markdown
     month_names = {
         1: "Januar", 2: "Februar", 3: "März", 4: "April", 5: "Mai", 6: "Juni",
         7: "Juli", 8: "August", 9: "September", 10: "Oktober", 11: "November", 12: "Dezember"
     }
 
+    monthly_period_section_lines = []
+    for m in range(1, 13):
+        row = period_stats_df.loc[m]
+        monthly_period_section_lines.append(
+            f"### {month_names[m]}\n"
+            f"- **Ganzer Tag:** {row['whole_day_pct']:.1f}% ({int(row['whole_day_wearable'])}/{int(row['whole_day_total'])} Tage)\n"
+            f"- **Lichttag:** {row['light_day_pct']:.1f}% ({int(row['light_day_wearable'])}/{int(row['light_day_total'])} Tage)\n"
+            f"- **Nacht:** {row['night_pct']:.1f}% ({int(row['night_wearable'])}/{int(row['night_total'])} Nächte)\n"
+        )
+    monthly_period_section = "\n".join(monthly_period_section_lines)
+
+    # Global Period Stats (Summing up)
+    total_whole_days = period_stats_df['whole_day_total'].sum()
+    wearable_whole_days = period_stats_df['whole_day_wearable'].sum()
+
+    total_light_days = period_stats_df['light_day_total'].sum()
+    wearable_light_days = period_stats_df['light_day_wearable'].sum()
+
+    total_nights = period_stats_df['night_total'].sum()
+    wearable_nights = period_stats_df['night_wearable'].sum()
+
+    # Hourly Monthly Section
+    df['month'] = df['timestamp'].dt.month
+    monthly_stats = []
     for m in range(1, 13):
         m_df = df[df['month'] == m]
-        if m_df.empty:
-            continue
-
+        if m_df.empty: continue
         m_total = len(m_df)
         m_wearable = m_df['is_wearable'].sum()
         m_wearable_pct = (m_wearable / m_total * 100)
 
-        # Day
         m_day = m_df[m_df['day_night'] == 'Day']
         m_day_total = len(m_day)
         m_day_wearable = m_day['is_wearable'].sum()
         m_day_wearable_pct = (m_day_wearable / m_day_total * 100) if m_day_total > 0 else 0
 
-        # Night
         m_night = m_df[m_df['day_night'] == 'Night']
         m_night_total = len(m_night)
         m_night_wearable = m_night['is_wearable'].sum()
@@ -402,80 +508,28 @@ def main():
             f"- **Tag:** {m_day_wearable_pct:.1f}% tragbar ({m_day_wearable}/{m_day_total})\n"
             f"- **Nacht:** {m_night_wearable_pct:.1f}% tragbar ({m_night_wearable}/{m_night_total})\n"
         )
-
     monthly_section = "\n".join(monthly_stats)
 
-    # --- Period-Based Analysis (Max 10% Exception) ---
-    logger.info("Calculating Period-Based Analysis...")
 
-    def is_period_wearable(sub_df):
-        if sub_df.empty:
-            return None
-        total_h = len(sub_df)
-        not_wearable_h = len(sub_df[sub_df['is_wearable'] == False])
-        pct_not_wearable = (not_wearable_h / total_h) * 100
-        return pct_not_wearable <= 10.0
+    # Top 10 Coldest/Warmest (Same as before)
+    not_wearable_df = df[df['is_wearable'] == False].copy()
+    coldest_not_wearable = not_wearable_df.sort_values('temperature', ascending=True).head(10)
+    coldest_reasons = []
+    for _, row in coldest_not_wearable.iterrows():
+        reason = (f"- **{row['timestamp']}**: Temp {row['temperature']:.1f}°C > T_max {row['t_max']:.1f}°C "
+                  f"(Base 18.5 - Malus_Feuchte {row['hum_malus']:.2f} + Malus_Sorption {row['sorption_malus']:.2f} + Bonus_Wind {row['wind_bonus']:.2f}) "
+                  f"| RH: {row['relative_humidity']:.0f}%, Rain: {row['precipitation']:.1f}mm, Wind: {row['wind_speed']:.1f}km/h")
+        coldest_reasons.append(reason)
 
-    df['date_str'] = df['timestamp'].dt.date
-    grouped = df.groupby('date_str')
+    wearable_df = df[df['is_wearable'] == True].copy()
+    warmest_wearable = wearable_df.sort_values('temperature', ascending=False).head(10)
+    warmest_reasons = []
+    for _, row in warmest_wearable.iterrows():
+        reason = (f"- **{row['timestamp']}**: Temp {row['temperature']:.1f}°C <= T_max {row['t_max']:.1f}°C "
+                  f"(Base 18.5 - Malus_Feuchte {row['hum_malus']:.2f} + Malus_Sorption {row['sorption_malus']:.2f} + Bonus_Wind {row['wind_bonus']:.2f}) "
+                  f"| Rain: {row['precipitation']:.1f}mm, Wind: {row['wind_speed']:.1f}km/h")
+        warmest_reasons.append(reason)
 
-    period_stats = {
-        'whole_day': {'total': 0, 'wearable': 0},
-        'light_day': {'total': 0, 'wearable': 0},
-        'night': {'total': 0, 'wearable': 0}
-    }
-
-    monthly_period_stats = {m: {'whole_day': {'total': 0, 'wearable': 0},
-                                'light_day': {'total': 0, 'wearable': 0},
-                                'night': {'total': 0, 'wearable': 0}} for m in range(1, 13)}
-
-    for date, group in grouped:
-        month = pd.to_datetime(date).month
-
-        # Whole Day
-        res_whole = is_period_wearable(group)
-        if res_whole is not None:
-            period_stats['whole_day']['total'] += 1
-            monthly_period_stats[month]['whole_day']['total'] += 1
-            if res_whole:
-                period_stats['whole_day']['wearable'] += 1
-                monthly_period_stats[month]['whole_day']['wearable'] += 1
-
-        # Light Day
-        day_group = group[group['day_night'] == 'Day']
-        res_day = is_period_wearable(day_group)
-        if res_day is not None:
-            period_stats['light_day']['total'] += 1
-            monthly_period_stats[month]['light_day']['total'] += 1
-            if res_day:
-                period_stats['light_day']['wearable'] += 1
-                monthly_period_stats[month]['light_day']['wearable'] += 1
-
-        # Night
-        night_group = group[group['day_night'] == 'Night']
-        res_night = is_period_wearable(night_group)
-        if res_night is not None:
-            period_stats['night']['total'] += 1
-            monthly_period_stats[month]['night']['total'] += 1
-            if res_night:
-                period_stats['night']['wearable'] += 1
-                monthly_period_stats[month]['night']['wearable'] += 1
-
-    # Format Monthly Period Stats
-    monthly_period_section_lines = []
-    for m in range(1, 13):
-        stats = monthly_period_stats[m]
-        wd_pct = (stats['whole_day']['wearable'] / stats['whole_day']['total'] * 100) if stats['whole_day']['total'] > 0 else 0
-        ld_pct = (stats['light_day']['wearable'] / stats['light_day']['total'] * 100) if stats['light_day']['total'] > 0 else 0
-        n_pct = (stats['night']['wearable'] / stats['night']['total'] * 100) if stats['night']['total'] > 0 else 0
-
-        monthly_period_section_lines.append(
-            f"### {month_names[m]}\n"
-            f"- **Ganzer Tag:** {wd_pct:.1f}% ({stats['whole_day']['wearable']}/{stats['whole_day']['total']} Tage)\n"
-            f"- **Lichttag:** {ld_pct:.1f}% ({stats['light_day']['wearable']}/{stats['light_day']['total']} Tage)\n"
-            f"- **Nacht:** {n_pct:.1f}% ({stats['night']['wearable']}/{stats['night']['total']} Nächte)\n"
-        )
-    monthly_period_section = "\n".join(monthly_period_section_lines)
 
     stats_md = f"""# Statistik zur Tragbarkeit der Jacke (MooRER ISAC-LL) - 5 Jahre
 ## Modell V4 ("Biometeorological Validation")
@@ -499,39 +553,28 @@ def main():
 - **Tragbar:** {wearable_night} Stunden ({wearable_night_pct:.2f}%)
 - **Nicht Tragbar:** {total_night - wearable_night} Stunden ({100 - wearable_night_pct:.2f}%)
 
-## Analyse nach Monaten (Jahresverlauf) - Stundenbasiert
-{monthly_section}
-
 ## Analyse nach Perioden (Ganzer Tag / Lichttag / Nacht)
 Definition: Eine Periode gilt als "Tragbar", wenn maximal 10% der Stunden darin "Nicht Tragbar" sind.
 
 ### Gesamtübersicht
-- **Ganzer Tag:** {period_stats['whole_day']['wearable']} / {period_stats['whole_day']['total']} Tage ({(period_stats['whole_day']['wearable']/period_stats['whole_day']['total']*100):.1f}%)
-- **Lichttag:** {period_stats['light_day']['wearable']} / {period_stats['light_day']['total']} Tage ({(period_stats['light_day']['wearable']/period_stats['light_day']['total']*100):.1f}%)
-- **Nacht:** {period_stats['night']['wearable']} / {period_stats['night']['total']} Nächte ({(period_stats['night']['wearable']/period_stats['night']['total']*100):.1f}%)
+- **Ganzer Tag:** {int(wearable_whole_days)} / {int(total_whole_days)} Tage ({(wearable_whole_days/total_whole_days*100):.1f}%)
+- **Lichttag:** {int(wearable_light_days)} / {int(total_light_days)} Tage ({(wearable_light_days/total_light_days*100):.1f}%)
+- **Nacht:** {int(wearable_nights)} / {int(total_nights)} Nächte ({(wearable_nights/total_nights*100):.1f}%)
 
-### Nach Monaten Stratifiziert
+### Nach Monaten Stratifiziert (Perioden)
 {monthly_period_section}
 
-## Modell-Updates in V4
+## Analyse nach Monaten (Jahresverlauf) - Stundenbasiert
+{monthly_section}
 
-### Warum V4 strikter ist als V3
-Das V4 Modell korrigiert den "Optimismus" von V3 bezüglich Feuchtigkeit und Regen.
-1.  **Basis-Temperatur:** Gesenkt auf **18.5°C** (Shell-Only). Das berücksichtigt, dass die Jacke isoliert und bei 20°C oft schon zu warm ist, wenn man sich bewegt.
-2.  **Membran-Choke (Feuchte-Malus):** Statt linearer Abzüge gibt es nun eine **exponentielle Strafe** ab 60% rF. Bei >90% Feuchte "atmet" die hydrophile Membran nicht mehr -> Hitzestau.
-3.  **Sorption-Heat (Der "Woll-Ofen"):** Wolle erzeugt Wärme, wenn sie nass wird (exotherme Reaktion). Daher kühlt Regen nicht sofort.
-    - **V4 Regel:** Regen gibt pauschal **-1.5°C Malus** (Sorption Heat).
-    - **Wind:** Nur Wind kann die Kühlung "freischalten" (Evaporation). Bonus: 0.2 * Windgeschwindigkeit.
-    - Konsequenz: Warmer Sommerregen ohne Wind ist jetzt "Nicht Tragbar".
+## Modell-Updates in V4
+(Siehe vorherige Versionen oder Dokumentation für Details zu V4 Logik)
 
 ### Plausibilitäts-Check (Extremwerte)
-
 #### Warum geht die Jacke bei diesen "kalten" Temperaturen NICHT?
-Hier schlägt meist der **Membran-Choke** oder die **Sorptions-Wärme** zu.
 {chr(10).join(coldest_reasons)}
 
 #### Warum geht die Jacke hier DOCH noch?
-Hier hilft meist starker **Wind**, der die Feuchtigkeitsprobleme kompensiert.
 {chr(10).join(warmest_reasons)}
 """
 
@@ -540,7 +583,7 @@ Hier hilft meist starker **Wind**, der die Feuchtigkeitsprobleme kompensiert.
     logger.info("Statistics saved to jacket_stats.md")
 
     # 5. Plot
-    generate_plots(df)
+    generate_plots(df, period_stats_df)
 
 if __name__ == "__main__":
     main()
