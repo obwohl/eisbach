@@ -106,18 +106,19 @@ def fetch_weather_data_chunked(days_back=1826):
 
 def calculate_wearability(row):
     """
-    Calculates T_max and checks if jacket is wearable using the 'Wet Shell Algorithm' (V3).
+    Calculates T_max and checks if jacket is wearable using the 'Wet Shell Algorithm' (V4).
 
     Returns:
         is_wearable (bool)
         t_max (float)
-        hum_malus (float) - renamed from malus_feuchte
-        wind_bonus (float) - renamed from bonus_wind
-        rain_bonus (float) - new concept (Wet Shell Bonus) replacing malus_regen
+        hum_malus (float) - V4 Exponential Membrane Choke
+        wind_bonus (float) - V4 Evap Bonus (if wet) or V3 Wind Bonus (if dry)
+        sorption_malus (float) - V4 Sorption Heat Malus (negative value)
     """
-    # 1. BASIS-WERT (Casual Walking)
-    # Etwas niedriger als "ganz offen", da wir Puffer brauchen
-    limit = 20.0
+    # 1. BASIS-WERT (Transition / Shell Only Mode)
+    # V4: Dynamic Base. We use 18.5°C (Shell Only) as the defining upper limit for "Wearability".
+    # If we used 14.0°C (Bib Mode), we would falsely classify mild days as unwearable.
+    limit = 18.5
 
     # Extract values
     temp = row['temperature']
@@ -128,60 +129,59 @@ def calculate_wearability(row):
     if pd.isna(temp) or pd.isna(rh):
         return False, 0.0, 0.0, 0.0, 0.0
 
-    # 2. FEUCHTIGKEITS-MALUS (Der Membran-Killer)
-    # Hohe Feuchte blockiert die Atmungsaktivität von innen nach außen.
-    # Ab 60% rF ziehen wir progressiv ab.
+    # 2. FEUCHTIGKEITS-MALUS (The Membrane Choke)
+    # V4: Exponential decay.
+    # Breathability is acceptable up to 70%, degrades between 70-90%, and collapses >90%.
     hum_malus = 0.0
     if rh > 60:
-        hum_malus = (rh - 60) * 0.10
+        # Formula: ((RH - 60) / 40)^3 * 8.0
+        # Example 80%: (20/40)^3 * 8 = 0.125 * 8 = 1.0
+        # Example 100%: (40/40)^3 * 8 = 8.0
+        hum_malus = ((rh - 60) / 40.0) ** 3 * 8.0
         limit -= hum_malus
 
-    # 3. REGEN-EFFEKT (Der "Wet Shell" Bonus)
-    # Die nasse Wolle verdunstet Wasser nach außen.
-    # Das kühlt die Jacke ab. Wir addieren Temperatur-Toleranz.
-    rain_bonus = 0.0
-    if regen > 0:
-        # Basis-Kühlung durch kaltes Regenwasser und Verdunstung auf dem Stoff
-        wet_shell_bonus = 2.5
-
-        # ABER: Wenn die Luft 100% gesättigt ist, verdunstet außen nichts!
-        # Der Bonus muss schrumpfen, je höher die Luftfeuchte ist.
-        # Physik: Verdunstungseffizienz = (100 - RH) / 40.0 (Skalierungsfaktor)
-        evaporation_efficiency = (100 - rh) / 40.0
-
-        # Wir garantieren aber mind. 1.0°C Bonus, da Regenwasser meist
-        # kälter ist als die Luft (konduktive Kühlung).
-        # NOTE: evaporation_efficiency can be negative if RH > 100 (unlikely but possible in data artifacts)
-        # or just very small. max(1.0, ...) handles this.
-        real_rain_bonus = max(1.0, wet_shell_bonus * evaporation_efficiency)
-
-        rain_bonus = real_rain_bonus
-        limit += rain_bonus
-
-    # 4. WIND-EFFEKT (Die Ventilation)
-    # Logik: Wenn es regnet, machen Sie die Jacke halb zu.
-    # Der Wind kühlt dann schlechter als bei offener Jacke.
-    wind_factor = 0.0
-    if wind > 5:
-        wind_factor = (wind - 5) * 0.15
-
+    # 3. REGEN & WIND EFFEKT (Wet Shell vs Dry Shell)
+    sorption_malus = 0.0
     wind_bonus = 0.0
+
     if regen > 0:
-        # Bei Regen ist die Jacke halb zu -> Wind wirkt nur zu 50%
-        wind_bonus = wind_factor * 0.5
+        # --- WET SCENARIO (V4) ---
+        # The jacket generates heat (Sorption) which cancels out cooling unless wind is present.
+
+        # A. Sorption Malus (The "Wool Furnace")
+        # Fixed penalty whenever raining.
+        sorption_malus = -1.5
+        limit += sorption_malus # Subtracts 1.5
+
+        # B. Evaporative Bonus (Unlocked by Wind)
+        # Formula: 0.2 * Wind_Speed
+        # Note: In V4, this replaces the separate "Wind Bonus" for dry days.
+        wind_bonus = 0.2 * wind
         limit += wind_bonus
+
     else:
-        # Trocken -> Jacke ganz offen -> voller Wind-Bonus (max 3.0°C)
+        # --- DRY SCENARIO (V3 Logic retained for Dry) ---
+        # V4 confirms V3 wind logic is sound for dry conditions.
+
+        # Wind Bonus (Ventilation)
+        # If wind > 5 km/h, gain bonus up to 3.0°C
+        wind_factor = 0.0
+        if wind > 5:
+            wind_factor = (wind - 5) * 0.15
+
         wind_bonus = min(3.0, wind_factor)
         limit += wind_bonus
 
     t_max = limit
 
-    # 5. Decision
+    # 4. Decision
     is_wearable = temp <= t_max
 
-    # Return structure adapted: rain_bonus is positive, hum_malus is positive (subtracted later in logic description but calculated as positive value here)
-    return is_wearable, t_max, hum_malus, wind_bonus, rain_bonus
+    # Return structure
+    # hum_malus is positive (penalty).
+    # wind_bonus is positive (bonus).
+    # sorption_malus is negative (penalty).
+    return is_wearable, t_max, hum_malus, wind_bonus, sorption_malus
 
 def get_day_night_status(timestamp, city_info):
     """
@@ -227,7 +227,7 @@ def generate_plots(df):
 
     plt.ylabel("Uhrzeit", fontsize=14, labelpad=10)
     plt.xlabel("Datum", fontsize=14, labelpad=10)
-    plt.title("Tragbarkeit der Jacke in München (5 Jahre) - Heatmap", fontsize=18, pad=20)
+    plt.title("Tragbarkeit der Jacke in München (5 Jahre) - Heatmap (Modell V4)", fontsize=18, pad=20)
 
     plt.yticks(range(0, 24), labels=[f"{h:02d}:00" for h in range(0, 24)], fontsize=10)
     dates = pivot_table.columns
@@ -254,7 +254,7 @@ def generate_plots(df):
 
     plt.xlabel("Monat")
     plt.ylabel("Anteil (%)")
-    plt.title("Tragbarkeit nach Monaten")
+    plt.title("Tragbarkeit nach Monaten (Modell V4)")
     plt.xticks(month_indices, ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'])
     plt.legend(loc='lower center', bbox_to_anchor=(0.5, -0.2), ncol=2, frameon=False)
     plt.tight_layout()
@@ -272,7 +272,7 @@ def generate_plots(df):
     bars = plt.bar(['Tag (Hell)', 'Nacht (Dunkel)'], [day_pct, night_pct], color=[color_yes, '#45B7AF'])
     plt.ylim(0, 100)
     plt.ylabel("Tragbarkeit (%)")
-    plt.title("Tragbarkeit Tag vs. Nacht")
+    plt.title("Tragbarkeit Tag vs. Nacht (Modell V4)")
     for bar in bars:
         height = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2., height, f'{height:.1f}%', ha='center', va='bottom')
@@ -291,21 +291,18 @@ def main():
         return
 
     # 2. Apply Algorithm
-    logger.info("Calculating wearability...")
+    logger.info("Calculating wearability (V4)...")
     results = df.apply(calculate_wearability, axis=1, result_type='expand')
     df['is_wearable'] = results[0]
     df['t_max'] = results[1]
-    df['hum_malus'] = results[2] # Renamed
-    df['wind_bonus'] = results[3] # Renamed
-    df['rain_bonus'] = results[4] # Renamed
+    df['hum_malus'] = results[2]
+    df['wind_bonus'] = results[3]
+    df['sorption_malus'] = results[4] # Renamed from rain_bonus, and it's negative now
 
     # 3. Stratify Day/Night
     logger.info("Calculating Day/Night...")
     city = LocationInfo("Munich", "Germany", "Europe/Berlin", 48.1351, 11.5820)
 
-    # Optimize applying getting day/night - calculate once per unique date?
-    # Actually, sunrise/sunset changes daily. We need it per timestamp.
-    # To speed up, we can calculate sunrise/sunset for each unique date, then map.
     unique_dates = df['timestamp'].dt.date.unique()
     sun_cache = {}
 
@@ -353,7 +350,7 @@ def main():
     coldest_reasons = []
     for _, row in coldest_not_wearable.iterrows():
         reason = (f"- **{row['timestamp']}**: Temp {row['temperature']:.1f}°C > T_max {row['t_max']:.1f}°C "
-                  f"(Feuchte-Malus: {row['hum_malus']:.2f}, Wet-Shell-Bonus: {row['rain_bonus']:.2f}, Wind-Bonus: {row['wind_bonus']:.2f}) "
+                  f"(Base 18.5 - Malus_Feuchte {row['hum_malus']:.2f} + Malus_Sorption {row['sorption_malus']:.2f} + Bonus_Wind {row['wind_bonus']:.2f}) "
                   f"| RH: {row['relative_humidity']:.0f}%, Rain: {row['precipitation']:.1f}mm, Wind: {row['wind_speed']:.1f}km/h")
         coldest_reasons.append(reason)
 
@@ -364,7 +361,8 @@ def main():
     warmest_reasons = []
     for _, row in warmest_wearable.iterrows():
         reason = (f"- **{row['timestamp']}**: Temp {row['temperature']:.1f}°C <= T_max {row['t_max']:.1f}°C "
-                  f"(Wet-Shell-Bonus: {row['rain_bonus']:.2f}, Wind-Bonus: {row['wind_bonus']:.2f}) | Rain: {row['precipitation']:.1f}mm, Wind: {row['wind_speed']:.1f}km/h")
+                  f"(Base 18.5 - Malus_Feuchte {row['hum_malus']:.2f} + Malus_Sorption {row['sorption_malus']:.2f} + Bonus_Wind {row['wind_bonus']:.2f}) "
+                  f"| Rain: {row['precipitation']:.1f}mm, Wind: {row['wind_speed']:.1f}km/h")
         warmest_reasons.append(reason)
 
     # Monthly Stratification
@@ -407,19 +405,17 @@ def main():
 
     monthly_section = "\n".join(monthly_stats)
 
-    # --- New Section: Period-Based Analysis (Max 10% Exception) ---
+    # --- Period-Based Analysis (Max 10% Exception) ---
     logger.info("Calculating Period-Based Analysis...")
 
-    # Helper to check if a period is "wearable" (<= 10% not wearable)
     def is_period_wearable(sub_df):
         if sub_df.empty:
-            return None # No data for this period
+            return None
         total_h = len(sub_df)
         not_wearable_h = len(sub_df[sub_df['is_wearable'] == False])
         pct_not_wearable = (not_wearable_h / total_h) * 100
         return pct_not_wearable <= 10.0
 
-    # Group by date
     df['date_str'] = df['timestamp'].dt.date
     grouped = df.groupby('date_str')
 
@@ -469,8 +465,6 @@ def main():
     monthly_period_section_lines = []
     for m in range(1, 13):
         stats = monthly_period_stats[m]
-
-        # Calculate percentages
         wd_pct = (stats['whole_day']['wearable'] / stats['whole_day']['total'] * 100) if stats['whole_day']['total'] > 0 else 0
         ld_pct = (stats['light_day']['wearable'] / stats['light_day']['total'] * 100) if stats['light_day']['total'] > 0 else 0
         n_pct = (stats['night']['wearable'] / stats['night']['total'] * 100) if stats['night']['total'] > 0 else 0
@@ -484,6 +478,7 @@ def main():
     monthly_period_section = "\n".join(monthly_period_section_lines)
 
     stats_md = f"""# Statistik zur Tragbarkeit der Jacke (MooRER ISAC-LL) - 5 Jahre
+## Modell V4 ("Biometeorological Validation")
 
 ## Zeitraum
 {df['timestamp'].min()} bis {df['timestamp'].max()}
@@ -518,20 +513,25 @@ Definition: Eine Periode gilt als "Tragbar", wenn maximal 10% der Stunden darin 
 ### Nach Monaten Stratifiziert
 {monthly_period_section}
 
-## Plausibilitäts-Check der Formel ("Wet Shell" Update)
+## Modell-Updates in V4
 
-### Warum geht die Jacke manchmal bei gemäßigten Temperaturen NICHT?
-Hier schlägt meist der **Feuchtigkeits-Malus** zu.
-1.  **Hoher Luftfeuchtigkeit (>60%):** Die Membran "atmet" schlechter. Das Limit sinkt drastisch (0.1°C pro % über 60). Bei 90% Feuchte fehlen 3.0°C am Limit.
-2.  **Schwüle ohne Regen:** Wenn es feucht ist, aber NICHT regnet, fehlt der kühlende "Wet Shell" Bonus.
+### Warum V4 strikter ist als V3
+Das V4 Modell korrigiert den "Optimismus" von V3 bezüglich Feuchtigkeit und Regen.
+1.  **Basis-Temperatur:** Gesenkt auf **18.5°C** (Shell-Only). Das berücksichtigt, dass die Jacke isoliert und bei 20°C oft schon zu warm ist, wenn man sich bewegt.
+2.  **Membran-Choke (Feuchte-Malus):** Statt linearer Abzüge gibt es nun eine **exponentielle Strafe** ab 60% rF. Bei >90% Feuchte "atmet" die hydrophile Membran nicht mehr -> Hitzestau.
+3.  **Sorption-Heat (Der "Woll-Ofen"):** Wolle erzeugt Wärme, wenn sie nass wird (exotherme Reaktion). Daher kühlt Regen nicht sofort.
+    - **V4 Regel:** Regen gibt pauschal **-1.5°C Malus** (Sorption Heat).
+    - **Wind:** Nur Wind kann die Kühlung "freischalten" (Evaporation). Bonus: 0.2 * Windgeschwindigkeit.
+    - Konsequenz: Warmer Sommerregen ohne Wind ist jetzt "Nicht Tragbar".
 
+### Plausibilitäts-Check (Extremwerte)
+
+#### Warum geht die Jacke bei diesen "kalten" Temperaturen NICHT?
+Hier schlägt meist der **Membran-Choke** oder die **Sorptions-Wärme** zu.
 {chr(10).join(coldest_reasons)}
 
-### Warum geht die Jacke bei Regen oft doch noch gut? (Der Wet Shell Effekt)
-Hier greift die neue Logik: **Regen kühlt die Oberfläche**.
-1.  **Wet Shell Bonus:** Regen bringt bis zu +2.5°C Toleranz, solange die Luft nicht 100% gesättigt ist (Verdunstung).
-2.  **Wind:** Wirkt bei geschlossener Jacke (Regenfall) nur zu 50%, aber hilft immer noch.
-
+#### Warum geht die Jacke hier DOCH noch?
+Hier hilft meist starker **Wind**, der die Feuchtigkeitsprobleme kompensiert.
 {chr(10).join(warmest_reasons)}
 """
 
