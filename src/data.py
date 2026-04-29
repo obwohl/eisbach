@@ -133,7 +133,14 @@ def prepare_data():
     )
 
     df_merged.set_index('timestamp', inplace=True)
-    df_merged = df_merged[df_merged.index.notna()].sort_index().interpolate(method='time').ffill().bfill()
+    df_merged = df_merged[df_merged.index.notna()].sort_index()
+
+    # We must only interpolate/fill the water temperature up to its actual last available timestamp.
+    # Otherwise, we leak data into the future where only weather covariates exist.
+    last_wt_time = df_wt['timestamp'].max()
+    df_merged.loc[:last_wt_time, 'wassertemp'] = df_merged.loc[:last_wt_time, 'wassertemp'].interpolate(method='time').ffill().bfill()
+    df_merged['airtemp'] = df_merged['airtemp'].interpolate(method='time').ffill().bfill()
+    df_merged['pressure'] = df_merged['pressure'].interpolate(method='time').ffill().bfill()
 
     # 6. Feature Shifting (Vorschau-Werte)
     df_merged['airtemp_96'] = df_merged['airtemp'].shift(-96)
