@@ -7,6 +7,4 @@ env/
 venv/
 .env
 .venv/
-data/
 ts_proba_cuda/
-eisbach_new.png
