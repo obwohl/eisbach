@@ -1,0 +1,12 @@
+pandas
+requests
+beautifulsoup4
+matplotlib
+cycler
+pytest
+pytest-mock
+scikit-learn
+torch
+optuna
+tensorboard
+einops
