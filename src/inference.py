@@ -5,9 +5,12 @@ import os
 def run_inference(df_long):
     # Ensure the 'date' column is in datetime format before we begin
     df_long['date'] = pd.to_datetime(df_long['date'])
-    last_timestamp = df_long['date'].max()
 
-    print("--- Starting Forecast and Backtests ---")
+    # Calculate the last timestamp based on the actual target data, not the future covariates
+    df_wassertemp = df_long[df_long['cols'] == 'wassertemp'].dropna(subset=['data'])
+    last_timestamp = df_wassertemp['date'].max()
+
+    print(f"--- Starting Forecast and Backtests (anchored at {last_timestamp}) ---")
 
     # Create data directory if it doesn't exist
     os.makedirs('data', exist_ok=True)
