@@ -2,6 +2,7 @@ import pandas as pd
 from datetime import datetime, timedelta, timezone
 import requests
 from bs4 import BeautifulSoup
+import logging
 
 def fetch_brightsky_data(start_date: datetime, end_date: datetime, station_id: str) -> pd.DataFrame | None:
     TARGET_TIMEZONE = 'Europe/Berlin'
@@ -11,19 +12,19 @@ def fetch_brightsky_data(start_date: datetime, end_date: datetime, station_id: s
     end_str = end_utc.isoformat(timespec='seconds')
     params = {'dwd_station_id': station_id, 'date': start_str, 'last_date': end_str}
 
-    print(f"Lade Wetterdaten von Bright Sky für den Zeitraum (in UTC): {start_str} bis {end_str}...")
+    logging.info(f"Lade Wetterdaten von Bright Sky für den Zeitraum (in UTC): {start_str} bis {end_str}...")
     try:
         response = requests.get("https://api.brightsky.dev/weather", params=params, timeout=30)
         response.raise_for_status()
         data = response.json().get('weather', [])
         if not data:
-            print("Keine Wetterdaten für den angefragten Zeitraum gefunden.")
+            logging.warning("Keine Wetterdaten für den angefragten Zeitraum gefunden.")
             return pd.DataFrame()
         df = pd.DataFrame(data)
-        print(f"Erfolgreich {len(df)} stündliche Wetter-Datenpunkte geladen.")
+        logging.info(f"Erfolgreich {len(df)} stündliche Wetter-Datenpunkte geladen.")
         return df
     except requests.exceptions.RequestException as e:
-        print(f"Netzwerk- oder API-Fehler beim Abrufen der Wetterdaten: {e}")
+        logging.exception(f"Netzwerk- oder API-Fehler beim Abrufen der Wetterdaten: {e}")
         return None
 
 def get_prepared_weather_data():
@@ -36,10 +37,10 @@ def get_prepared_weather_data():
 
     df_raw = fetch_brightsky_data(start_date, end_date, "03379")
     if df_raw is None or df_raw.empty:
-        print("Download der Wetterdaten fehlgeschlagen. Überspringe Wetter-Integration.")
+        logging.error("Download der Wetterdaten fehlgeschlagen. Überspringe Wetter-Integration.")
         return pd.DataFrame()
 
-    print(f"\nVerarbeite Wetterdaten und konvertiere zu Zeitzone '{TARGET_TIMEZONE}'...")
+    logging.info(f"Verarbeite Wetterdaten und konvertiere zu Zeitzone '{TARGET_TIMEZONE}'...")
     wetter_df = df_raw[['timestamp', 'temperature', 'precipitation', 'pressure_msl']].copy()
     wetter_df['timestamp'] = pd.to_datetime(wetter_df['timestamp'])
     wetter_df.set_index('timestamp', inplace=True)
@@ -54,7 +55,7 @@ def get_prepared_weather_data():
     wetter_df['lufttemperatur_c'] = wetter_df['lufttemperatur_c'].interpolate(method='time')
     wetter_df['pressure'] = wetter_df['pressure'].interpolate(method='time')
 
-    print("Resample Wetterdaten auf 1-Stunden-Intervall...")
+    logging.info("Resample Wetterdaten auf 1-Stunden-Intervall...")
     wetter_1h = wetter_df.resample('1h').agg({
         'lufttemperatur_c': 'mean',
         'niederschlag_mm': 'sum',
@@ -63,14 +64,14 @@ def get_prepared_weather_data():
     return wetter_1h
 
 def fetch_data_from_url(url, column_name):
-    print(f"-> Processing URL for: {column_name}")
+    logging.info(f"Processing URL for: {column_name}")
     try:
         headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(url, timeout=20, headers=headers)
         response.raise_for_status()
         html_content = response.content.decode('utf-8')
     except Exception as e:
-        print(f"Fehler beim Laden der URL: {e}")
+        logging.exception(f"Fehler beim Laden der URL: {e}")
         return pd.DataFrame()
 
     soup = BeautifulSoup(html_content, 'html.parser')
@@ -96,7 +97,7 @@ def fetch_data_from_url(url, column_name):
     # Spalte für Messwert finden
     matching_cols = [c for c in df.columns if column_name.split('_')[0].lower() in c.lower()]
     if not matching_cols:
-        print(f"Warning: No matching column found for {column_name}")
+        logging.warning(f"No matching column found for {column_name}")
         return pd.DataFrame()
     target_col = matching_cols[0]
 
@@ -116,7 +117,7 @@ def prepare_data():
     df_wt = fetch_data_from_url(wassertemperatur_url, "wassertemp")
 
     if df_wt.empty:
-        print("Error: Water temperature data is empty. Aborting preparation.")
+        logging.error("Water temperature data is empty. Aborting preparation.")
         return pd.DataFrame(), pd.DataFrame()
 
     # 2. KEY FIX: Zeitumstellung robust handhaben (Frühling & Herbst)
