@@ -165,4 +165,4 @@ def prepare_data():
     df_long['cols'] = pd.Categorical(df_long['cols'], categories=['wassertemp', 'airtemp_96', 'pressure_96'], ordered=True)
     df_long = df_long.sort_values(by=['cols', 'date'])
 
-    return df_long, df_wetter
+    return df_long, df_wetter.tz_convert('UTC')
