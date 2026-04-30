@@ -94,7 +94,12 @@ def fetch_data_from_url(url, column_name):
     df.dropna(subset=['timestamp'], inplace=True)
 
     # Spalte für Messwert finden
-    target_col = [c for c in df.columns if column_name.split('_')[0].lower() in c.lower()][0]
+    matching_cols = [c for c in df.columns if column_name.split('_')[0].lower() in c.lower()]
+    if not matching_cols:
+        print(f"Warning: No matching column found for {column_name}")
+        return pd.DataFrame()
+    target_col = matching_cols[0]
+
     df_final = df[["timestamp", target_col]].copy()
     df_final.rename(columns={target_col: column_name}, inplace=True)
     df_final[column_name] = pd.to_numeric(df_final[column_name].astype(str).str.replace(",", "."), errors='coerce')
@@ -109,6 +114,10 @@ def prepare_data():
 
     # 1. Daten laden
     df_wt = fetch_data_from_url(wassertemperatur_url, "wassertemp")
+
+    if df_wt.empty:
+        print("Error: Water temperature data is empty. Aborting preparation.")
+        return pd.DataFrame(), pd.DataFrame()
 
     # 2. KEY FIX: Zeitumstellung robust handhaben (Frühling & Herbst)
     # 'nonexistent' fängt den 29.03.2026 02:00 Uhr ab, 'ambiguous' den Herbst.

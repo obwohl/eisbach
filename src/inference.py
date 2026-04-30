@@ -1,6 +1,7 @@
 import pandas as pd
 import subprocess
 import os
+import sys
 
 def run_inference(df_long):
     # Ensure the 'date' column is in datetime format before we begin
@@ -21,47 +22,29 @@ def run_inference(df_long):
     df_long_main = df_long[df_long['date'] <= last_timestamp]
     df_long_main.to_csv('data/df_long.csv', index=False)
     subprocess.run([
-        'python', 'ts_proba_cuda/run_single_forecast.py',
+        sys.executable, 'ts_proba_cuda/run_single_forecast.py',
         '--checkpoint', 'ts_proba_cuda/checkpoints/best_model.pt',
         '--data-file', 'data/df_long.csv',
         '--output-csv', 'data/inference.csv'
     ], check=True)
 
-    # --- Prepare and run -96h backtest ---
-    print("\n[1/3] Preparing and running -96h backtest...")
-    backtest_96_end_date = last_timestamp - pd.Timedelta(hours=96)
-    df_long_backtest_96_corrected = df_long[df_long['date'] <= backtest_96_end_date]
-    df_long_backtest_96_corrected.to_csv('data/df_long_backtest_96_corrected.csv', index=False)
-    subprocess.run([
-        'python', 'ts_proba_cuda/run_single_forecast.py',
-        '--checkpoint', 'ts_proba_cuda/checkpoints/best_model.pt',
-        '--data-file', 'data/df_long_backtest_96_corrected.csv',
-        '--output-csv', 'data/inference_backtest_96_corrected.csv'
-    ], check=True)
+    # --- Prepare and run backtests ---
+    backtest_offsets = [96, 192, 288]
+    for i, offset in enumerate(backtest_offsets, 1):
+        print(f"\n[{i}/{len(backtest_offsets)}] Preparing and running -{offset}h backtest...")
+        backtest_end_date = last_timestamp - pd.Timedelta(hours=offset)
+        df_long_backtest_corrected = df_long[df_long['date'] <= backtest_end_date]
 
-    # --- Prepare and run -192h backtest ---
-    print("\n[2/3] Preparing and running -192h backtest...")
-    backtest_192_end_date = last_timestamp - pd.Timedelta(hours=192)
-    df_long_backtest_192_corrected = df_long[df_long['date'] <= backtest_192_end_date]
-    df_long_backtest_192_corrected.to_csv('data/df_long_backtest_192_corrected.csv', index=False)
-    subprocess.run([
-        'python', 'ts_proba_cuda/run_single_forecast.py',
-        '--checkpoint', 'ts_proba_cuda/checkpoints/best_model.pt',
-        '--data-file', 'data/df_long_backtest_192_corrected.csv',
-        '--output-csv', 'data/inference_backtest_192_corrected.csv'
-    ], check=True)
+        data_file = f'data/df_long_backtest_{offset}_corrected.csv'
+        output_csv = f'data/inference_backtest_{offset}_corrected.csv'
 
-    # --- Prepare and run -288h backtest ---
-    print("\n[3/3] Preparing and running -288h backtest...")
-    backtest_288_end_date = last_timestamp - pd.Timedelta(hours=288)
-    df_long_backtest_288_corrected = df_long[df_long['date'] <= backtest_288_end_date]
-    df_long_backtest_288_corrected.to_csv('data/df_long_backtest_288_corrected.csv', index=False)
-    subprocess.run([
-        'python', 'ts_proba_cuda/run_single_forecast.py',
-        '--checkpoint', 'ts_proba_cuda/checkpoints/best_model.pt',
-        '--data-file', 'data/df_long_backtest_288_corrected.csv',
-        '--output-csv', 'data/inference_backtest_288_corrected.csv'
-    ], check=True)
+        df_long_backtest_corrected.to_csv(data_file, index=False)
+        subprocess.run([
+            sys.executable, 'ts_proba_cuda/run_single_forecast.py',
+            '--checkpoint', 'ts_proba_cuda/checkpoints/best_model.pt',
+            '--data-file', data_file,
+            '--output-csv', output_csv
+        ], check=True)
 
     print("\n--- Backtests Complete. Loading data for plotting. ---")
 

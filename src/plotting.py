@@ -76,8 +76,15 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
 
     # Wir berechnen das Min/Max aus sichtbarem Wetter UND der Vorhersage (damit nichts abgeschnitten wird)
     # Hinweis: Wir nehmen q0.01 und q0.99 der Vorhersage für die Sicherheit
-    y_view_min = min(visible_wetter.min(), df_inference[f"{channel}_q0.01"].min())
-    y_view_max = max(visible_wetter.max(), df_inference[f"{channel}_q0.99"].max())
+    inference_min = df_inference[f"{channel}_q0.01"].min()
+    inference_max = df_inference[f"{channel}_q0.99"].max()
+
+    if not visible_wetter.empty:
+        y_view_min = min(visible_wetter.min(), inference_min)
+        y_view_max = max(visible_wetter.max(), inference_max)
+    else:
+        y_view_min = inference_min
+        y_view_max = inference_max
 
     # Wir setzen die Y-Achse neu mit einem kleinen Puffer (z.B. 1 Grad oben/unten)
     ax.set_ylim(y_view_min - 0.5, y_view_max + 0.5)
