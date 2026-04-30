@@ -16,7 +16,10 @@ def run_inference(df_long):
     os.makedirs('data', exist_ok=True)
 
     # --- Main Forecast ---
-    df_long.to_csv('data/df_long.csv', index=False)
+    # We must truncate df_long at the actual last valid timestamp,
+    # otherwise the forecast model will anchor to the future +8 days of weather data.
+    df_long_main = df_long[df_long['date'] <= last_timestamp]
+    df_long_main.to_csv('data/df_long.csv', index=False)
     subprocess.run([
         'python', 'ts_proba_cuda/run_single_forecast.py',
         '--checkpoint', 'ts_proba_cuda/checkpoints/best_model.pt',
