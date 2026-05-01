@@ -1,0 +1,37 @@
+name: Täglicher Cron Trigger
+
+on:
+  repository_dispatch:
+    types: [trigger_forecast]
+
+jobs:
+  run-forecasts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Wichtig für Auto-Commit
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Führe Eisbach Vorhersage aus (Hauptskript)
+        run: PYTHONPATH=. python main.py
+
+      - name: Führe 5-Tage-Archivierung aus
+        run: PYTHONPATH=. python src/archive_forecast.py
+
+      - name: Commit und Push der Daten (z.B. CSV Archiv)
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update forecast and data archive"
+          file_pattern: "data/forecast_archive/*.csv eisbach_*.png *.csv" # Passt sich an alle generierten Daten an
