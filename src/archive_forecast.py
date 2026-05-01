@@ -57,7 +57,7 @@ def archive_current_forecast():
     df['archive_timestamp'] = archive_timestamp
 
     # Anhängen an die Datei (erstellt sie, wenn sie nicht existiert)
-    write_header = not os.path.exists(filepath)
+    write_header = not os.path.exists(filepath) or os.path.getsize(filepath) == 0
     df.to_csv(filepath, mode='a', header=write_header, index=False)
     logging.info(f"Erfolgreich {len(df)} Zeilen an Vorhersagedaten an {filepath} angehängt.")
 
