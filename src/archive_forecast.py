@@ -29,9 +29,12 @@ def archive_current_forecast():
                 last_timestamp_str = existing_data['archive_timestamp'].iloc[-1]
                 last_timestamp = datetime.strptime(last_timestamp_str, "%Y-%m-%dT%H:%M:%S%z")
 
+                # Verwende einen Schwellenwert von 4 Tagen und 23 Stunden anstelle von genau 5 Tagen.
+                # GitHub Actions Runner starten nicht immer auf die Sekunde genau.
+                # Wenn der Job am Tag 6 minimal früher startet als am Tag 1, würde er sonst versehentlich abgelehnt werden.
                 delta = now - last_timestamp
-                if delta < timedelta(days=5):
-                    logging.info(f"Ignoriere Trigger. Die letzte Speicherung ist erst {delta.days} Tage und {delta.seconds//3600} Stunden her. (Erfordert 5 Tage).")
+                if delta < timedelta(days=4, hours=23):
+                    logging.info(f"Ignoriere Trigger. Die letzte Speicherung ist erst {delta.days} Tage und {delta.seconds//3600} Stunden her. (Erfordert ~5 Tage).")
                     return
         except Exception as e:
             logging.error(f"Fehler beim Lesen der bestehenden Archiv-Datei: {e}")
