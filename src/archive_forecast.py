@@ -1,5 +1,6 @@
 import os
 import logging
+import pandas as pd
 from datetime import datetime, timedelta, timezone
 from src.data import fetch_brightsky_data
 
@@ -7,15 +8,41 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 def archive_current_forecast():
     """
-    Opportunistisch historische Wettervorhersagen (für die nächsten 10 Tage)
-    von Bright Sky abrufen und lokal als CSV archivieren.
+    Opportunistisch historische 5-Tage-Wettervorhersagen von Bright Sky abrufen
+    und in einer zentralen CSV Datei (append) archivieren.
+    Schreibt nur, wenn die letzte Vorhersage >= 5 Tage her ist.
     """
     station_id = "03379"
     now = datetime.now(timezone.utc)
-    # Bright Sky liefert für Vorhersagen oft Daten von "jetzt" bis in 10 Tage in die Zukunft.
-    end_date = now + timedelta(days=10)
 
-    logging.info(f"Hole Forecast-Daten für Station {station_id} ab {now.isoformat()} bis {end_date.isoformat()}")
+    # Zielordner und Dateiname
+    target_dir = os.path.join(os.path.dirname(__file__), "..", "data", "forecast_archive")
+    os.makedirs(target_dir, exist_ok=True)
+    filepath = os.path.join(target_dir, "forecast_5d_archive.csv")
+
+    # Überprüfen, wann der letzte Eintrag gemacht wurde
+    if os.path.exists(filepath):
+        try:
+            # Lade nur die archive_timestamp Spalte, um Speicher zu sparen
+            existing_data = pd.read_csv(filepath, usecols=['archive_timestamp'])
+            if not existing_data.empty:
+                last_timestamp_str = existing_data['archive_timestamp'].iloc[-1]
+                last_timestamp = datetime.strptime(last_timestamp_str, "%Y-%m-%dT%H:%M:%S%z")
+
+                delta = now - last_timestamp
+                if delta < timedelta(days=5):
+                    logging.info(f"Ignoriere Trigger. Die letzte Speicherung ist erst {delta.days} Tage und {delta.seconds//3600} Stunden her. (Erfordert 5 Tage).")
+                    return
+        except Exception as e:
+            logging.error(f"Fehler beim Lesen der bestehenden Archiv-Datei: {e}")
+            # Bei Fehlern brechen wir ab, um die Datei nicht zu korrumpieren
+            return
+
+    # Wenn wir hier sind, sind entweder 5 Tage vergangen oder die Datei existiert noch nicht.
+    # Lade exakt die 5-Tage Vorhersage
+    end_date = now + timedelta(days=5)
+    logging.info(f"Hole 5-Tage-Forecast-Daten für Station {station_id} ab {now.isoformat()} bis {end_date.isoformat()}")
+
     df = fetch_brightsky_data(now, end_date, station_id)
 
     if df is None or df.empty:
@@ -26,16 +53,10 @@ def archive_current_forecast():
     archive_timestamp = now.strftime("%Y-%m-%dT%H:%M:%S%z")
     df['archive_timestamp'] = archive_timestamp
 
-    # Zielordner anlegen
-    target_dir = os.path.join(os.path.dirname(__file__), "..", "data", "forecast_archive")
-    os.makedirs(target_dir, exist_ok=True)
-
-    # Dateiname basierend auf dem Abfragezeitpunkt
-    filename = f"forecast_{now.strftime('%Y%m%d_%H%M%S')}.csv"
-    filepath = os.path.join(target_dir, filename)
-
-    df.to_csv(filepath, index=False)
-    logging.info(f"Erfolgreich {len(df)} Zeilen an Vorhersagedaten nach {filepath} archiviert.")
+    # Anhängen an die Datei (erstellt sie, wenn sie nicht existiert)
+    write_header = not os.path.exists(filepath)
+    df.to_csv(filepath, mode='a', header=write_header, index=False)
+    logging.info(f"Erfolgreich {len(df)} Zeilen an Vorhersagedaten an {filepath} angehängt.")
 
 if __name__ == "__main__":
     archive_current_forecast()
