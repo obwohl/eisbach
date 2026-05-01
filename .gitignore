@@ -8,3 +8,4 @@ venv/
 .env
 .venv/
 ts_proba_cuda/
+data/forecast_archive/*.csv
