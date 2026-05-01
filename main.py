@@ -1,4 +1,5 @@
 import logging
+import sys
 import warnings
 from src.data import prepare_data
 from src.inference import run_inference
@@ -21,6 +22,7 @@ def main():
         logging.info("Pipeline completed successfully.")
     except Exception as e:
         logging.exception(f"An error occurred during execution: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
