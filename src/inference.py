@@ -17,10 +17,12 @@ def run_inference(df_long):
     os.makedirs('data', exist_ok=True)
 
     # --- Main Forecast ---
-    # We do NOT truncate df_long at last_timestamp. We need the future weather covariates
-    # (which go up to last_timestamp + 8 days) for the forecast horizon.
-    # df_long already has NaNs for the target 'wassertemp' in the future, so the model knows to forecast it.
-    df_long.to_csv('data/df_long.csv', index=False)
+    # We truncate df_long EXACTLY at last_timestamp.
+    # The covariates (airtemp_96, pressure_96) are ALREADY shifted by -96 hours.
+    # This means the covariate values AT `last_timestamp` are actually the future weather at `last_timestamp + 96h`.
+    # Therefore, the model has all information required to forecast the next 96 hours just from the data up to `last_timestamp`.
+    df_long_main = df_long[df_long['date'] <= last_timestamp].copy()
+    df_long_main.to_csv('data/df_long.csv', index=False)
     subprocess.run([
         sys.executable, 'ts_proba_cuda/run_single_forecast.py',
         '--checkpoint', 'ts_proba_cuda/checkpoints/best_model.pt',
@@ -34,30 +36,13 @@ def run_inference(df_long):
         print(f"\n[{i}/{len(backtest_offsets)}] Preparing and running -{offset}h backtest...")
         backtest_end_date = last_timestamp - pd.Timedelta(hours=offset)
 
-        # For backtests, we also need to supply future covariates relative to the backtest end date.
-        # Since the covariates are shifted by -96 hours, to have covariates for the 96h horizon,
-        # we need the DataFrame to include dates up to backtest_end_date.
-        # Wait, if `airtemp_96` is `airtemp.shift(-96)`, then the value of `airtemp_96` at `date = t`
-        # is the actual airtemp at `t + 96h`.
-        # So for a backtest ending at `t_end`, we need the row at `t_end` to contain the covariate for `t_end + 96`.
-        # Truncating the dataframe at `backtest_end_date` is correct because the covariates are ALREADY shifted.
-        # However, we must ensure we mask out the actual target values after `backtest_end_date` to prevent data leakage!
-        # Actually, if we truncate at `backtest_end_date`, we only pass data up to `backtest_end_date`.
-        # The chronos model predicts the future 96 hours starting AFTER the last timestamp in the data.
-        # If the model requires the future covariates to be *present* in the future rows, then we need to include rows up to `backtest_end_date + 96h`.
-        # Let's include rows up to backtest_end_date + 96h, but set the target `wassertemp` to NaN in that horizon.
-
-        horizon_end_date = backtest_end_date + pd.Timedelta(hours=96)
-        df_long_backtest_corrected = df_long[df_long['date'] <= horizon_end_date].copy()
-
-        # Mask the target variable in the forecast horizon to simulate a true backtest
-        mask_future_target = (df_long_backtest_corrected['cols'] == 'wassertemp') & (df_long_backtest_corrected['date'] > backtest_end_date)
-        df_long_backtest_corrected.loc[mask_future_target, 'data'] = pd.NA
+        # For backtests, we also truncate exactly at backtest_end_date.
+        df_long_backtest = df_long[df_long['date'] <= backtest_end_date].copy()
 
         data_file = f'data/df_long_backtest_{offset}_corrected.csv'
         output_csv = f'data/inference_backtest_{offset}_corrected.csv'
 
-        df_long_backtest_corrected.to_csv(data_file, index=False)
+        df_long_backtest.to_csv(data_file, index=False)
         subprocess.run([
             sys.executable, 'ts_proba_cuda/run_single_forecast.py',
             '--checkpoint', 'ts_proba_cuda/checkpoints/best_model.pt',
