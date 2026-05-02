@@ -2,6 +2,94 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from cycler import cycler
+from scipy.signal import find_peaks
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestamp_str, peaks, median_col, channel):
+    """
+    Generates an interactive HTML plot using Plotly, optimized for mobile viewing.
+    """
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    # Historical Data
+    historical_data = df_long_plot[df_long_plot['cols'] == channel]
+    fig.add_trace(go.Scatter(
+        x=historical_data['date'], y=historical_data['data'],
+        mode='lines', name=f'Historical {channel.capitalize()}',
+        line=dict(color='black', dash='dash')
+    ), secondary_y=False)
+
+    # 99% Quantile Band
+    if f'{channel}_q0.01' in df_inference_plot.columns and f'{channel}_q0.99' in df_inference_plot.columns:
+        fig.add_trace(go.Scatter(
+            x=df_inference_plot.index.tolist() + df_inference_plot.index.tolist()[::-1],
+            y=df_inference_plot[f'{channel}_q0.99'].tolist() + df_inference_plot[f'{channel}_q0.01'].tolist()[::-1],
+            fill='toself', fillcolor='rgba(23, 113, 241, 0.1)', line=dict(color='rgba(255,255,255,0)'),
+            name='1%-99% Quantile'
+        ), secondary_y=False)
+
+    # 75% Quantile Band
+    if f'{channel}_q0.25' in df_inference_plot.columns and f'{channel}_q0.75' in df_inference_plot.columns:
+        fig.add_trace(go.Scatter(
+            x=df_inference_plot.index.tolist() + df_inference_plot.index.tolist()[::-1],
+            y=df_inference_plot[f'{channel}_q0.75'].tolist() + df_inference_plot[f'{channel}_q0.25'].tolist()[::-1],
+            fill='toself', fillcolor='rgba(23, 113, 241, 0.2)', line=dict(color='rgba(255,255,255,0)'),
+            name='25%-75% Quantile'
+        ), secondary_y=False)
+
+    # Main Forecast Median
+    fig.add_trace(go.Scatter(
+        x=df_inference_plot.index, y=df_inference_plot[median_col],
+        mode='lines', name='Forecast Median',
+        line=dict(color='#1771F1', width=2)
+    ), secondary_y=False)
+
+    # Air Temperature
+    fig.add_trace(go.Scatter(
+        x=df_wetter_plot.index, y=df_wetter_plot['lufttemperatur_c'],
+        mode='lines', name='Air Temp (DWD)',
+        line=dict(color='purple', dash='dot', width=1.5)
+    ), secondary_y=False)
+
+    # Annotate Peaks
+    for peak_idx in peaks:
+        max_row = df_inference_plot.iloc[peak_idx]
+        max_val = max_row[median_col]
+        max_time_local = max_row.name
+        local_time_str = max_time_local.strftime('%H:%M')
+
+        fig.add_annotation(
+            x=max_time_local, y=max_val,
+            text=f"Max: {max_val:.1f}°C<br>{local_time_str}",
+            showarrow=True, arrowhead=2, arrowsize=1, arrowwidth=1,
+            ax=0, ay=-40, bgcolor="white", bordercolor="gray", opacity=0.8
+        )
+
+    # Calculate limits
+    pred_only_start_date = df_inference_plot.index.min() - pd.Timedelta(days=1)
+    pred_only_end_date = df_inference_plot.index.max()
+
+    fig.update_xaxes(range=[pred_only_start_date, pred_only_end_date], title_text="Datum (Ortszeit / Europe/Berlin)")
+    fig.update_yaxes(title_text="Temperatur (°C)", secondary_y=False)
+
+    fig.update_layout(
+        title=f"Eisbach Forecast ({timestamp_str})<br><sup>All times in Ortszeit / Europe/Berlin</sup>",
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        hovermode="x unified",
+        margin=dict(l=20, r=20, t=80, b=20)
+    )
+
+    # Add grid lines
+    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='LightGray')
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='LightGray', secondary_y=False)
+
+    # Save to HTML
+    html_file = f'Prediction_{timestamp_str}.html' if timestamp_str else 'Prediction.html'
+    fig.write_html(html_file, include_plotlyjs='cdn')
+    print(f"Interactive HTML plot saved to: {html_file}")
 
 def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_corr, df_inference_backtest_192_corr, df_inference_backtest_288_corr, timestamp_str=""):
     # --- Final Plotting ---
@@ -39,8 +127,51 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     alphas = [0.1, 0.15, 0.2]
     quantile_labels = ['q0.01-q0.99', 'q0.05-q0.95', 'q0.25-q0.75']
 
+    # --- Timezone Conversion for Plotting ---
+    # Convert all inputs to local time (Europe/Berlin) and then to naive datetime
+    # to avoid matplotlib timezone issues while ensuring correct local hours on the x-axis.
+    def to_local_naive(series_or_index):
+        if hasattr(series_or_index, 'dt'):
+            dt_obj = series_or_index.dt
+            is_series = True
+        else:
+            dt_obj = series_or_index
+            is_series = False
+
+        if dt_obj.tz is None:
+            if is_series:
+                aware = series_or_index.dt.tz_localize('UTC')
+            else:
+                aware = series_or_index.tz_localize('UTC')
+        else:
+            aware = series_or_index
+
+        if is_series:
+            return aware.dt.tz_convert('Europe/Berlin').dt.tz_localize(None)
+        else:
+            return aware.tz_convert('Europe/Berlin').tz_localize(None)
+
+    df_long_plot = df_long.copy()
+    df_long_plot['date'] = to_local_naive(df_long_plot['date'])
+
+    df_wetter_plot = df_wetter.copy()
+    df_wetter_plot.index = to_local_naive(df_wetter_plot.index)
+
+    df_inference_plot = df_inference.copy()
+    df_inference_plot.index = to_local_naive(df_inference_plot.index)
+
+    df_inference_backtest_96_corr_plot = df_inference_backtest_96_corr.copy()
+    df_inference_backtest_96_corr_plot.index = to_local_naive(df_inference_backtest_96_corr_plot.index)
+
+    df_inference_backtest_192_corr_plot = df_inference_backtest_192_corr.copy()
+    df_inference_backtest_192_corr_plot.index = to_local_naive(df_inference_backtest_192_corr_plot.index)
+
+    df_inference_backtest_288_corr_plot = df_inference_backtest_288_corr.copy()
+    df_inference_backtest_288_corr_plot.index = to_local_naive(df_inference_backtest_288_corr_plot.index)
+
+
     # Plot Historical Data for wassertemp on the main axis
-    historical_data = df_long[df_long['cols'] == channel]
+    historical_data = df_long_plot[df_long_plot['cols'] == channel]
     ax.plot(historical_data['date'], historical_data['data'], label='Historical Wassertemp', color='black', linestyle='--')
 
     # Helper function to plot a forecast
@@ -61,17 +192,17 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     # ----------------------------------------------------
     # Plot 1: Prediction ONLY
     # ----------------------------------------------------
-    plot_forecast(df_inference, f'Forecast Wassertemp ({timestamp_str})', colors[0])
+    plot_forecast(df_inference_plot, f'Forecast Wassertemp ({timestamp_str})', colors[0])
 
     # Plot the unshifted air temperature forecast on the same axis
-    air_temp_line = ax.plot(df_wetter.index, df_wetter['lufttemperatur_c'], label='Air Temp (DWD)', color='purple', linestyle=':', linewidth=1.5, alpha=0.6)
+    air_temp_line = ax.plot(df_wetter_plot.index, df_wetter_plot['lufttemperatur_c'], label='Air Temp (DWD)', color='purple', linestyle=':', linewidth=1.5, alpha=0.6)
 
     # Calculate view window for Prediction ONLY plot
-    pred_only_start_date = df_inference.index.min() - pd.Timedelta(days=1) # show 1 day of history
-    pred_only_end_date = df_inference.index.max()
+    pred_only_start_date = df_inference_plot.index.min() - pd.Timedelta(days=1) # show 1 day of history
+    pred_only_end_date = df_inference_plot.index.max()
     ax.set_xlim(left=pred_only_start_date, right=pred_only_end_date)
 
-    visible_wetter = df_wetter.loc[(df_wetter.index >= pred_only_start_date) & (df_wetter.index <= pred_only_end_date), 'lufttemperatur_c']
+    visible_wetter = df_wetter_plot.loc[(df_wetter_plot.index >= pred_only_start_date) & (df_wetter_plot.index <= pred_only_end_date), 'lufttemperatur_c']
     visible_history = historical_data.loc[(historical_data['date'] >= pred_only_start_date) & (historical_data['date'] <= pred_only_end_date), 'data']
 
     inference_min = df_inference[f"{channel}_q0.01"].min()
@@ -89,7 +220,7 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     ax.set_ylim(y_view_min - 0.5, y_view_max + 0.5)
 
     # Formatting and titles
-    ax.set_title(f'Eisbach - forecast ({timestamp_str})')
+    ax.set_title(f'Eisbach - forecast ({timestamp_str})\n(All times in Ortszeit / Europe/Berlin)')
     ax.set_xlabel('Date')
     ax.set_ylabel('Temperatur (°C)')
 
@@ -97,37 +228,28 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     lines, labels = ax.get_legend_handles_labels()
     ax.legend(lines, labels, loc='upper left')
 
-    # Annotate daily maximum values (Max Median)
-    # Convert index to timezone aware (Europe/Berlin) for grouping and text labels
-    df_local = df_inference.copy()
-    if df_local.index.tzinfo is None:
-        df_local.index = df_local.index.tz_localize('UTC')
-    df_local.index = df_local.index.tz_convert('Europe/Berlin')
-
+    # Annotate maximum values (Max Median) using SciPy find_peaks
     median_col = f"{channel}_q0.5"
-    # Keep track of the annotation artists so we can remove them for the backtest plot
     annotation_artists = []
+    peaks = []
 
-    for date, group in df_local.groupby(df_local.index.date):
-        # Skip days that are heavily truncated (e.g., last day ending at noon)
-        # Ensure we have the crucial evening decay hours (20:00 or 21:00) to confirm a true peak,
-        # or the day is almost fully complete (>= 20 hours).
-        hours_present = set(group.index.hour)
-        has_peak_decay = 20 in hours_present or 21 in hours_present
-        if median_col in group.columns and (len(group) >= 20 or has_peak_decay):
-            # Find row with maximum median temperature
-            max_row = group.loc[group[median_col].idxmax()]
+    if median_col in df_inference_plot.columns:
+        # Distance of at least 18 hours between peaks to avoid double-counting the same day
+        # Prominence ensures we only get significant peaks, not tiny ripples
+        peaks, _ = find_peaks(df_inference_plot[median_col], distance=18, prominence=0.2)
+
+        for peak_idx in peaks:
+            max_row = df_inference_plot.iloc[peak_idx]
             max_val = max_row[median_col]
-            # Convert timestamp back to UTC for x-coordinate in plot (since main plot is UTC)
-            # Matplotlib requires naive timestamps if the plot was created with naive timestamps
-            max_time_utc = max_row.name.tz_convert('UTC').tz_localize(None)
+            # Time is already localized naive from df_inference_plot
+            max_time_local = max_row.name
 
             # Extract local time string
-            local_time_str = max_row.name.strftime('%H:%M')
+            local_time_str = max_time_local.strftime('%H:%M')
 
             # Annotate with an arrow
             annotation = ax.annotate(f"Max: {max_val:.1f}°C\n{local_time_str}",
-                                     xy=(max_time_utc, max_val),
+                                     xy=(max_time_local, max_val),
                                      xytext=(0, 20), textcoords="offset points",
                                      ha='center', va='bottom', fontsize=9,
                                      bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8),
@@ -138,6 +260,13 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     file_path_pred = f'Prediction_{timestamp_str}.png' if timestamp_str else 'Prediction.png'
     plt.savefig(file_path_pred, dpi=300, bbox_inches='tight', facecolor=fig.get_facecolor(), edgecolor='none')
     print(f"Plot saved to: {file_path_pred}")
+
+    # Generate HTML plot for better user interaction (mobile-friendly)
+    if median_col in df_inference_plot.columns:
+        try:
+            generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestamp_str, peaks, median_col, channel)
+        except Exception as e:
+            print(f"Warning: Failed to generate HTML plot: {e}")
 
     # Remove annotations from the plot before saving the backtest version
     for annotation in annotation_artists:
@@ -174,7 +303,7 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     ax.set_ylim(y_view_min_bt - 0.5, y_view_max_bt + 0.5)
 
     # Main Y-axis
-    ax.set_title(f'Eisbach - backtesting and forecast ({timestamp_str})')
+    ax.set_title(f'Eisbach - backtesting and forecast ({timestamp_str})\n(All times in Ortszeit / Europe/Berlin)')
 
     # Refresh legends to include backtests
     lines, labels = ax.get_legend_handles_labels()
