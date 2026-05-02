@@ -1,0 +1,3 @@
+[submodule "ts_proba_cuda"]
+	path = ts_proba_cuda
+	url = https://github.com/obwohl/ts_proba_cuda
