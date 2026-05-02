@@ -6,34 +6,34 @@ from scipy.signal import find_peaks
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestamp_str, peaks, median_col):
+def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestamp_str, peaks, median_col, channel):
     """
     Generates an interactive HTML plot using Plotly, optimized for mobile viewing.
     """
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
     # Historical Data
-    historical_data = df_long_plot[df_long_plot['cols'] == 'wassertemp']
+    historical_data = df_long_plot[df_long_plot['cols'] == channel]
     fig.add_trace(go.Scatter(
         x=historical_data['date'], y=historical_data['data'],
-        mode='lines', name='Historical Wassertemp',
+        mode='lines', name=f'Historical {channel.capitalize()}',
         line=dict(color='black', dash='dash')
     ), secondary_y=False)
 
     # 99% Quantile Band
-    if 'wassertemp_q0.01' in df_inference_plot.columns and 'wassertemp_q0.99' in df_inference_plot.columns:
+    if f'{channel}_q0.01' in df_inference_plot.columns and f'{channel}_q0.99' in df_inference_plot.columns:
         fig.add_trace(go.Scatter(
             x=df_inference_plot.index.tolist() + df_inference_plot.index.tolist()[::-1],
-            y=df_inference_plot['wassertemp_q0.99'].tolist() + df_inference_plot['wassertemp_q0.01'].tolist()[::-1],
+            y=df_inference_plot[f'{channel}_q0.99'].tolist() + df_inference_plot[f'{channel}_q0.01'].tolist()[::-1],
             fill='toself', fillcolor='rgba(23, 113, 241, 0.1)', line=dict(color='rgba(255,255,255,0)'),
             name='1%-99% Quantile'
         ), secondary_y=False)
 
     # 75% Quantile Band
-    if 'wassertemp_q0.25' in df_inference_plot.columns and 'wassertemp_q0.75' in df_inference_plot.columns:
+    if f'{channel}_q0.25' in df_inference_plot.columns and f'{channel}_q0.75' in df_inference_plot.columns:
         fig.add_trace(go.Scatter(
             x=df_inference_plot.index.tolist() + df_inference_plot.index.tolist()[::-1],
-            y=df_inference_plot['wassertemp_q0.75'].tolist() + df_inference_plot['wassertemp_q0.25'].tolist()[::-1],
+            y=df_inference_plot[f'{channel}_q0.75'].tolist() + df_inference_plot[f'{channel}_q0.25'].tolist()[::-1],
             fill='toself', fillcolor='rgba(23, 113, 241, 0.2)', line=dict(color='rgba(255,255,255,0)'),
             name='25%-75% Quantile'
         ), secondary_y=False)
@@ -231,6 +231,7 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     # Annotate maximum values (Max Median) using SciPy find_peaks
     median_col = f"{channel}_q0.5"
     annotation_artists = []
+    peaks = []
 
     if median_col in df_inference_plot.columns:
         # Distance of at least 18 hours between peaks to avoid double-counting the same day
@@ -261,10 +262,11 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     print(f"Plot saved to: {file_path_pred}")
 
     # Generate HTML plot for better user interaction (mobile-friendly)
-    try:
-        generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestamp_str, peaks if 'peaks' in locals() else [], median_col)
-    except Exception as e:
-        print(f"Warning: Failed to generate HTML plot: {e}")
+    if median_col in df_inference_plot.columns:
+        try:
+            generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestamp_str, peaks, median_col, channel)
+        except Exception as e:
+            print(f"Warning: Failed to generate HTML plot: {e}")
 
     # Remove annotations from the plot before saving the backtest version
     for annotation in annotation_artists:

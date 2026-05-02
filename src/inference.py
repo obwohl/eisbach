@@ -34,12 +34,15 @@ def save_forecast_to_archive(df_forecast, reference_time, archive_path='data/for
         ref_time_dt = pd.to_datetime(reference_time, utc=True)
 
         if (existing_refs_dt == ref_time_dt).any():
-            # Duplicate found, must read fully, filter, and overwrite
+            # Duplicate found, must read fully, filter, and overwrite atomically
             df_archive = pd.read_csv(archive_path, parse_dates=['reference_time', 'target_time'])
             df_archive_refs_dt = pd.to_datetime(df_archive['reference_time'], utc=True)
             df_archive = df_archive[df_archive_refs_dt != ref_time_dt]
             df_archive = pd.concat([df_archive, df_to_save], ignore_index=True)
-            df_archive.to_csv(archive_path, index=False)
+
+            temp_path = archive_path + ".tmp"
+            df_archive.to_csv(temp_path, index=False)
+            os.replace(temp_path, archive_path)
         else:
             # Fast append mode
             df_to_save.to_csv(archive_path, mode='a', header=False, index=False)
@@ -56,12 +59,13 @@ def load_forecast_from_archive(reference_time, archive_path='data/forecast_archi
     if not os.path.exists(archive_path):
         return None
 
-    df_archive = pd.read_csv(archive_path, parse_dates=['reference_time', 'target_time'])
-    if df_archive.empty:
+    # Read only the reference_time column first to avoid loading the whole archive into memory
+    df_refs = pd.read_csv(archive_path, usecols=['reference_time'])
+    if df_refs.empty:
         return None
 
     # Find all unique reference times in the archive
-    unique_refs = df_archive['reference_time'].unique()
+    unique_refs = df_refs['reference_time'].unique()
 
     # Calculate absolute differences using vectorized operations and forcing UTC
     # to avoid TypeError from timezone-aware vs naive comparisons
@@ -76,8 +80,10 @@ def load_forecast_from_archive(reference_time, archive_path='data/forecast_archi
     # Check if within tolerance
     if min_diff <= pd.Timedelta(hours=tolerance_hours):
         print(f"Found honest historical forecast in archive (ref_time: {closest_ref}, diff: {min_diff}).")
-        # Filter the archive for this closest reference time
-        df_forecast = df_archive[df_archive['reference_time'] == closest_ref].copy()
+
+        # Load the full archive now that we know we need it, and filter for the closest reference time
+        df_archive = pd.read_csv(archive_path, parse_dates=['reference_time', 'target_time'])
+        df_forecast = df_archive[df_archive['reference_time'].astype(str) == str(closest_ref)].copy()
 
         # Prepare the dataframe to look like `df_inference` (target_time as index)
         df_forecast = df_forecast.set_index('target_time')
