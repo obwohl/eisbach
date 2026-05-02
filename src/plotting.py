@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from cycler import cycler
 
-def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_corr, df_inference_backtest_192_corr, df_inference_backtest_288_corr):
+def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_corr, df_inference_backtest_192_corr, df_inference_backtest_288_corr, timestamp_str=""):
     # --- Final Plotting ---
 
     # Define the style primer
@@ -52,46 +52,42 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
                 ax.fill_between(df_forecast.index, df_forecast[col_low], df_forecast[col_high],
                                 alpha=alphas[j], color=color, lw=0)
 
-    # Plot all four forecasts for wassertemp
-    plot_forecast(df_inference, 'Forecast Wassertemp', colors[0])
-    plot_forecast(df_inference_backtest_96_corr, 'Backtest -96h', colors[1])
-    plot_forecast(df_inference_backtest_192_corr, 'Backtest -192h', colors[2])
-    plot_forecast(df_inference_backtest_288_corr, 'Backtest -288h', colors[3])
-
-    # Plot the unshifted air temperature forecast on the same axis
-    ax.plot(df_wetter.index, df_wetter['lufttemperatur_c'], label='Air Temp (DWD)', color='purple', linestyle=':', linewidth=1.5, alpha=0.6)
-
-    # Add invisible artists for the legend
+    # Add invisible artists for the legend (added once)
     for j, label in enumerate(quantile_labels):
         ax.fill_between([], [], [], color='gray', alpha=alphas[j], label=label)
 
-    # Final plot adjustments
-    plot_start_date = df_inference_backtest_288_corr.index.min()
-    plot_end_date = df_inference.index.max() # Set the end date to the last point of the main forecast
-    ax.set_xlim(left=plot_start_date, right=plot_end_date) # Set both start and end limits
+    # ----------------------------------------------------
+    # Plot 1: Prediction ONLY
+    # ----------------------------------------------------
+    plot_forecast(df_inference, f'Forecast Wassertemp ({timestamp_str})', colors[0])
 
-    # --- CHIRURGISCHER EINGRIFF -BLOCK START ---
-    # Wir holen uns die Wetter-Daten, die WIRKLICH im aktuellen Zoom-Fenster liegen
-    visible_wetter = df_wetter.loc[(df_wetter.index >= plot_start_date) & (df_wetter.index <= plot_end_date), 'lufttemperatur_c']
+    # Plot the unshifted air temperature forecast on the same axis
+    air_temp_line = ax.plot(df_wetter.index, df_wetter['lufttemperatur_c'], label='Air Temp (DWD)', color='purple', linestyle=':', linewidth=1.5, alpha=0.6)
 
-    # Wir berechnen das Min/Max aus sichtbarem Wetter UND der Vorhersage (damit nichts abgeschnitten wird)
-    # Hinweis: Wir nehmen q0.01 und q0.99 der Vorhersage für die Sicherheit
+    # Calculate view window for Prediction ONLY plot
+    pred_only_start_date = df_inference.index.min() - pd.Timedelta(days=2) # show 2 days of history
+    pred_only_end_date = df_inference.index.max()
+    ax.set_xlim(left=pred_only_start_date, right=pred_only_end_date)
+
+    visible_wetter = df_wetter.loc[(df_wetter.index >= pred_only_start_date) & (df_wetter.index <= pred_only_end_date), 'lufttemperatur_c']
+    visible_history = historical_data.loc[(historical_data['date'] >= pred_only_start_date) & (historical_data['date'] <= pred_only_end_date), 'data']
+
     inference_min = df_inference[f"{channel}_q0.01"].min()
     inference_max = df_inference[f"{channel}_q0.99"].max()
 
+    y_view_min = inference_min
+    y_view_max = inference_max
     if not visible_wetter.empty:
-        y_view_min = min(visible_wetter.min(), inference_min)
-        y_view_max = max(visible_wetter.max(), inference_max)
-    else:
-        y_view_min = inference_min
-        y_view_max = inference_max
+        y_view_min = min(y_view_min, visible_wetter.min())
+        y_view_max = max(y_view_max, visible_wetter.max())
+    if not visible_history.empty:
+        y_view_min = min(y_view_min, visible_history.min())
+        y_view_max = max(y_view_max, visible_history.max())
 
-    # Wir setzen die Y-Achse neu mit einem kleinen Puffer (z.B. 1 Grad oben/unten)
     ax.set_ylim(y_view_min - 0.5, y_view_max + 0.5)
-    # --- CHIRURGISCHER EINFÜGE-BLOCK ENDE ---
 
-    # Main Y-axis
-    ax.set_title(f'Eisbach - backtesting and forecast')
+    # Formatting and titles
+    ax.set_title(f'Eisbach - forecast ({timestamp_str})')
     ax.set_xlabel('Date')
     ax.set_ylabel('Temperatur (°C)')
 
@@ -99,10 +95,45 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     lines, labels = ax.get_legend_handles_labels()
     ax.legend(lines, labels, loc='upper left')
 
-    # --- Save the figure ---
-    # Save as a high-resolution PNG file
-    file_path = 'eisbach_new.png'
-    plt.savefig(file_path, dpi=300, bbox_inches='tight', facecolor=fig.get_facecolor(), edgecolor='none')
-    print(f"Plot saved to: {file_path}")
+    # Save Prediction ONLY Plot
+    file_path_pred = f'Prediction_{timestamp_str}.png' if timestamp_str else 'Prediction.png'
+    plt.savefig(file_path_pred, dpi=300, bbox_inches='tight', facecolor=fig.get_facecolor(), edgecolor='none')
+    print(f"Plot saved to: {file_path_pred}")
 
-    # No plt.show() needed in the automated script
+    # ----------------------------------------------------
+    # Plot 2: Prediction AND Backtests
+    # ----------------------------------------------------
+    # Now plot backtests over the existing plot
+    plot_forecast(df_inference_backtest_96_corr, f'Backtest -96h ({timestamp_str})', colors[1])
+    plot_forecast(df_inference_backtest_192_corr, f'Backtest -192h ({timestamp_str})', colors[2])
+    plot_forecast(df_inference_backtest_288_corr, f'Backtest -288h ({timestamp_str})', colors[3])
+
+    # Final plot adjustments for backtest
+    plot_start_date = df_inference_backtest_288_corr.index.min()
+    plot_end_date = df_inference.index.max() # Set the end date to the last point of the main forecast
+    ax.set_xlim(left=plot_start_date, right=plot_end_date) # Set both start and end limits
+
+    visible_wetter_bt = df_wetter.loc[(df_wetter.index >= plot_start_date) & (df_wetter.index <= plot_end_date), 'lufttemperatur_c']
+
+    y_view_min_bt = inference_min
+    y_view_max_bt = inference_max
+    if not visible_wetter_bt.empty:
+        y_view_min_bt = min(visible_wetter_bt.min(), inference_min)
+        y_view_max_bt = max(visible_wetter_bt.max(), inference_max)
+
+    ax.set_ylim(y_view_min_bt - 0.5, y_view_max_bt + 0.5)
+
+    # Main Y-axis
+    ax.set_title(f'Eisbach - backtesting and forecast ({timestamp_str})')
+
+    # Refresh legends to include backtests
+    lines, labels = ax.get_legend_handles_labels()
+    ax.legend(lines, labels, loc='upper left')
+
+    # Save Backtest Plot
+    file_path_backtest = f'Prediction_Backtest_{timestamp_str}.png' if timestamp_str else 'Prediction_Backtest.png'
+    plt.savefig(file_path_backtest, dpi=300, bbox_inches='tight', facecolor=fig.get_facecolor(), edgecolor='none')
+    print(f"Plot saved to: {file_path_backtest}")
+
+    # Close figure
+    plt.close(fig)
