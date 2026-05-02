@@ -8,3 +8,12 @@ venv/
 .env
 .venv/
 ts_proba_cuda/
+
+# Ignore everything in data folder by default
+data/*
+# But keep the forecast archive
+!data/forecast_archive/
+!data/forecast_archive/*.csv
+
+# Ignore old/random CSVs but allow the main Prediction CSVs if we want to track them manually
+# (Since the daily cron pushes them, we should allow them, but they are tracked in root)

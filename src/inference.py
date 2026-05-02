@@ -2,8 +2,9 @@ import pandas as pd
 import subprocess
 import os
 import sys
+import shutil
 
-def run_inference(df_long):
+def run_inference(df_long, timestamp_str=""):
     # Ensure the 'date' column is in datetime format before we begin
     df_long['date'] = pd.to_datetime(df_long['date'])
 
@@ -57,5 +58,10 @@ def run_inference(df_long):
     df_inference_backtest_96_corr = pd.read_csv('data/inference_backtest_96_corrected.csv', parse_dates=[0], index_col=0)
     df_inference_backtest_192_corr = pd.read_csv('data/inference_backtest_192_corrected.csv', parse_dates=[0], index_col=0)
     df_inference_backtest_288_corr = pd.read_csv('data/inference_backtest_288_corrected.csv', parse_dates=[0], index_col=0)
+
+    # Copy the main inference CSV to the root directory with the timestamp
+    main_csv_name = f"Prediction_{timestamp_str}.csv" if timestamp_str else "Prediction.csv"
+    df_inference.to_csv(main_csv_name)
+    print(f"Saved main readable prediction data to {main_csv_name}")
 
     return df_inference, df_inference_backtest_96_corr, df_inference_backtest_192_corr, df_inference_backtest_288_corr
