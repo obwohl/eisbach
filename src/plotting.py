@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 from cycler import cycler
 
 def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_corr, df_inference_backtest_192_corr, df_inference_backtest_288_corr, timestamp_str=""):
@@ -22,7 +23,7 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
         "ytick.major.right": True, "ytick.minor.left": True, "ytick.minor.right": True,
         "grid.color": "#231F20", "grid.linestyle": ":", "grid.linewidth": 0.4,
         "grid.alpha": 1.0, "legend.frameon": False, "legend.edgecolor": "#231F20",
-        "figure.figsize": [15, 9], "figure.dpi": 96, "figure.facecolor": "#FFFFFF",
+        "figure.figsize": [12, 10], "figure.dpi": 96, "figure.facecolor": "#FFFFFF",
         "figure.edgecolor": "#FFFFFF"
       }
     }
@@ -31,6 +32,7 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     # Define plotting parameters
     channel = 'wassertemp'
     fig, ax = plt.subplots()
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(2.5))
 
     colors = primer['style']['axes.prop_cycle'].by_key()['color']
     quantile_pairs = [(0.01, 0.99), (0.05, 0.95), (0.25, 0.75)]
@@ -65,7 +67,7 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     air_temp_line = ax.plot(df_wetter.index, df_wetter['lufttemperatur_c'], label='Air Temp (DWD)', color='purple', linestyle=':', linewidth=1.5, alpha=0.6)
 
     # Calculate view window for Prediction ONLY plot
-    pred_only_start_date = df_inference.index.min() - pd.Timedelta(days=2) # show 2 days of history
+    pred_only_start_date = df_inference.index.min() - pd.Timedelta(days=1) # show 1 day of history
     pred_only_end_date = df_inference.index.max()
     ax.set_xlim(left=pred_only_start_date, right=pred_only_end_date)
 
@@ -94,6 +96,33 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     # Combine legends
     lines, labels = ax.get_legend_handles_labels()
     ax.legend(lines, labels, loc='upper left')
+
+    # Annotate daily maximum values (Max Median)
+    # Convert index to timezone aware (Europe/Berlin) for grouping and text labels
+    df_local = df_inference.copy()
+    if df_local.index.tzinfo is None:
+        df_local.index = df_local.index.tz_localize('UTC')
+    df_local.index = df_local.index.tz_convert('Europe/Berlin')
+
+    median_col = f"{channel}_q0.5"
+    for date, group in df_local.groupby(df_local.index.date):
+        if median_col in group.columns:
+            # Find row with maximum median temperature
+            max_row = group.loc[group[median_col].idxmax()]
+            max_val = max_row[median_col]
+            # Convert timestamp back to UTC for x-coordinate in plot (since main plot is UTC)
+            max_time_utc = max_row.name.tz_convert('UTC')
+
+            # Extract local time string
+            local_time_str = max_row.name.strftime('%H:%M')
+
+            # Annotate with an arrow
+            ax.annotate(f"Max: {max_val:.1f}°C\n{local_time_str}",
+                        xy=(max_time_utc, max_val),
+                        xytext=(0, 20), textcoords="offset points",
+                        ha='center', va='bottom', fontsize=9,
+                        bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8),
+                        arrowprops=dict(arrowstyle="->", color="black", lw=1.0, alpha=0.7))
 
     # Save Prediction ONLY Plot
     file_path_pred = f'Prediction_{timestamp_str}.png' if timestamp_str else 'Prediction.png'
