@@ -105,8 +105,16 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     df_local.index = df_local.index.tz_convert('Europe/Berlin')
 
     median_col = f"{channel}_q0.5"
+    # Keep track of the annotation artists so we can remove them for the backtest plot
+    annotation_artists = []
+
     for date, group in df_local.groupby(df_local.index.date):
-        if median_col in group.columns:
+        # Skip days that are heavily truncated (e.g., last day ending at noon)
+        # Ensure we have the crucial evening decay hours (20:00 or 21:00) to confirm a true peak,
+        # or the day is almost fully complete (>= 20 hours).
+        hours_present = set(group.index.hour)
+        has_peak_decay = 20 in hours_present or 21 in hours_present
+        if median_col in group.columns and (len(group) >= 20 or has_peak_decay):
             # Find row with maximum median temperature
             max_row = group.loc[group[median_col].idxmax()]
             max_val = max_row[median_col]
@@ -118,17 +126,22 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
             local_time_str = max_row.name.strftime('%H:%M')
 
             # Annotate with an arrow
-            ax.annotate(f"Max: {max_val:.1f}°C\n{local_time_str}",
-                        xy=(max_time_utc, max_val),
-                        xytext=(0, 20), textcoords="offset points",
-                        ha='center', va='bottom', fontsize=9,
-                        bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8),
-                        arrowprops=dict(arrowstyle="->", color="black", lw=1.0, alpha=0.7))
+            annotation = ax.annotate(f"Max: {max_val:.1f}°C\n{local_time_str}",
+                                     xy=(max_time_utc, max_val),
+                                     xytext=(0, 20), textcoords="offset points",
+                                     ha='center', va='bottom', fontsize=9,
+                                     bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8),
+                                     arrowprops=dict(arrowstyle="->", color="black", lw=1.0, alpha=0.7))
+            annotation_artists.append(annotation)
 
     # Save Prediction ONLY Plot
     file_path_pred = f'Prediction_{timestamp_str}.png' if timestamp_str else 'Prediction.png'
     plt.savefig(file_path_pred, dpi=300, bbox_inches='tight', facecolor=fig.get_facecolor(), edgecolor='none')
     print(f"Plot saved to: {file_path_pred}")
+
+    # Remove annotations from the plot before saving the backtest version
+    for annotation in annotation_artists:
+        annotation.remove()
 
     # ----------------------------------------------------
     # Plot 2: Prediction AND Backtests
