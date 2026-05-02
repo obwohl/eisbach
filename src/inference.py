@@ -61,7 +61,7 @@ def run_inference(df_long, timestamp_str=""):
 
     # Copy the main inference CSV to the root directory with the timestamp
     main_csv_name = f"Prediction_{timestamp_str}.csv" if timestamp_str else "Prediction.csv"
-    shutil.copy('data/inference.csv', main_csv_name)
+    df_inference.to_csv(main_csv_name)
     print(f"Saved main readable prediction data to {main_csv_name}")
 
     return df_inference, df_inference_backtest_96_corr, df_inference_backtest_192_corr, df_inference_backtest_288_corr

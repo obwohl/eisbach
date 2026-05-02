@@ -117,9 +117,16 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
 
     y_view_min_bt = inference_min
     y_view_max_bt = inference_max
+
+    for df_bt in [df_inference_backtest_96_corr, df_inference_backtest_192_corr, df_inference_backtest_288_corr]:
+        bt_min = df_bt[f"{channel}_q0.01"].min()
+        bt_max = df_bt[f"{channel}_q0.99"].max()
+        y_view_min_bt = min(y_view_min_bt, bt_min)
+        y_view_max_bt = max(y_view_max_bt, bt_max)
+
     if not visible_wetter_bt.empty:
-        y_view_min_bt = min(visible_wetter_bt.min(), inference_min)
-        y_view_max_bt = max(visible_wetter_bt.max(), inference_max)
+        y_view_min_bt = min(visible_wetter_bt.min(), y_view_min_bt)
+        y_view_max_bt = max(visible_wetter_bt.max(), y_view_max_bt)
 
     ax.set_ylim(y_view_min_bt - 0.5, y_view_max_bt + 0.5)
 
