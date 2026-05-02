@@ -29,13 +29,15 @@ def save_forecast_to_archive(df_forecast, reference_time, archive_path='data/for
         # We only need to check if reference_time already exists to decide if we need
         # a full read-modify-write or a fast append
         df_existing_refs = pd.read_csv(archive_path, usecols=['reference_time'])
-        # Convert both to string to be safe when comparing
-        ref_time_str = str(reference_time)
+        # Convert to strict UTC datetimes for robust comparison
+        existing_refs_dt = pd.to_datetime(df_existing_refs['reference_time'], utc=True)
+        ref_time_dt = pd.to_datetime(reference_time, utc=True)
 
-        if (df_existing_refs['reference_time'].astype(str) == ref_time_str).any():
+        if (existing_refs_dt == ref_time_dt).any():
             # Duplicate found, must read fully, filter, and overwrite
             df_archive = pd.read_csv(archive_path, parse_dates=['reference_time', 'target_time'])
-            df_archive = df_archive[df_archive['reference_time'].astype(str) != ref_time_str]
+            df_archive_refs_dt = pd.to_datetime(df_archive['reference_time'], utc=True)
+            df_archive = df_archive[df_archive_refs_dt != ref_time_dt]
             df_archive = pd.concat([df_archive, df_to_save], ignore_index=True)
             df_archive.to_csv(archive_path, index=False)
         else:
@@ -159,7 +161,18 @@ def run_inference(df_long, timestamp_str=""):
 
     # Copy the main inference CSV to the root directory with the timestamp
     main_csv_name = f"Prediction_{timestamp_str}.csv" if timestamp_str else "Prediction.csv"
-    df_inference.to_csv(main_csv_name)
+
+    # User-facing CSV should be in local time (Europe/Berlin) and formatted cleanly
+    df_inference_local = df_inference.copy()
+    # The index is likely naive or UTC here. If naive, assume UTC.
+    if df_inference_local.index.tzinfo is None:
+        df_inference_local.index = df_inference_local.index.tz_localize('UTC')
+    df_inference_local.index = df_inference_local.index.tz_convert('Europe/Berlin')
+
+    # Format the index as string so it looks normal (e.g. "2026-05-02 12:00") without the offset
+    df_inference_local.index = df_inference_local.index.strftime('%Y-%m-%d %H:%M')
+
+    df_inference_local.to_csv(main_csv_name)
     print(f"Saved main readable prediction data to {main_csv_name}")
 
     return df_inference, backtest_dfs[96], backtest_dfs[192], backtest_dfs[288]
