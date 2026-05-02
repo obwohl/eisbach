@@ -26,14 +26,24 @@ def save_forecast_to_archive(df_forecast, reference_time, archive_path='data/for
     df_to_save = df_to_save[cols]
 
     if os.path.exists(archive_path):
-        df_archive = pd.read_csv(archive_path, parse_dates=['reference_time', 'target_time'])
-        # Remove old rows with the same reference_time
-        df_archive = df_archive[df_archive['reference_time'] != reference_time]
-        df_archive = pd.concat([df_archive, df_to_save], ignore_index=True)
-    else:
-        df_archive = df_to_save
+        # We only need to check if reference_time already exists to decide if we need
+        # a full read-modify-write or a fast append
+        df_existing_refs = pd.read_csv(archive_path, usecols=['reference_time'])
+        # Convert both to string to be safe when comparing
+        ref_time_str = str(reference_time)
 
-    df_archive.to_csv(archive_path, index=False)
+        if (df_existing_refs['reference_time'].astype(str) == ref_time_str).any():
+            # Duplicate found, must read fully, filter, and overwrite
+            df_archive = pd.read_csv(archive_path, parse_dates=['reference_time', 'target_time'])
+            df_archive = df_archive[df_archive['reference_time'].astype(str) != ref_time_str]
+            df_archive = pd.concat([df_archive, df_to_save], ignore_index=True)
+            df_archive.to_csv(archive_path, index=False)
+        else:
+            # Fast append mode
+            df_to_save.to_csv(archive_path, mode='a', header=False, index=False)
+    else:
+        # First time writing the file
+        df_to_save.to_csv(archive_path, index=False)
     print(f"Archived forecast for reference_time {reference_time} to {archive_path}")
 
 def load_forecast_from_archive(reference_time, archive_path='data/forecast_archive/water_temp_predictions_archive.csv', tolerance_hours=2):
@@ -51,10 +61,14 @@ def load_forecast_from_archive(reference_time, archive_path='data/forecast_archi
     # Find all unique reference times in the archive
     unique_refs = df_archive['reference_time'].unique()
 
-    # Calculate absolute differences
-    diffs = [abs(pd.to_datetime(ref) - reference_time) for ref in unique_refs]
-    min_diff_idx = pd.Series(diffs).argmin()
-    min_diff = diffs[min_diff_idx]
+    # Calculate absolute differences using vectorized operations and forcing UTC
+    # to avoid TypeError from timezone-aware vs naive comparisons
+    unique_refs_ts = pd.to_datetime(pd.Series(unique_refs), utc=True)
+    reference_time_utc = pd.to_datetime(reference_time, utc=True)
+
+    diffs = (unique_refs_ts - reference_time_utc).abs()
+    min_diff_idx = diffs.argmin()
+    min_diff = diffs.iloc[min_diff_idx]
     closest_ref = unique_refs[min_diff_idx]
 
     # Check if within tolerance
