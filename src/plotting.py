@@ -111,7 +111,8 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
             max_row = group.loc[group[median_col].idxmax()]
             max_val = max_row[median_col]
             # Convert timestamp back to UTC for x-coordinate in plot (since main plot is UTC)
-            max_time_utc = max_row.name.tz_convert('UTC')
+            # Matplotlib requires naive timestamps if the plot was created with naive timestamps
+            max_time_utc = max_row.name.tz_convert('UTC').tz_localize(None)
 
             # Extract local time string
             local_time_str = max_row.name.strftime('%H:%M')
