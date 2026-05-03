@@ -8,6 +8,11 @@ from plotly.subplots import make_subplots
 
 PLOT_COLORS = ['#1771F1', '#F85C50', '#35D073', '#FFC11E', '#8E44AD']
 
+def hex_to_rgba(hex_color, alpha):
+    """Converts a hex color string (e.g., '#RRGGBB') to an rgba string with the given alpha."""
+    hex_color = hex_color.lstrip('#')
+    return f"rgba({int(hex_color[0:2], 16)}, {int(hex_color[2:4], 16)}, {int(hex_color[4:6], 16)}, {alpha})"
+
 def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestamp_str, peaks, median_col, channel, backtests=None, is_backtest_plot=False):
     """
     Generates an interactive HTML plot using Plotly, optimized for mobile viewing.
@@ -86,22 +91,20 @@ def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestam
 
             # Add 99% quantile
             if f'{channel}_q0.01' in df_bt.columns and f'{channel}_q0.99' in df_bt.columns:
-                rgba_color = f"rgba({int(color[1:3], 16)}, {int(color[3:5], 16)}, {int(color[5:7], 16)}, 0.1)"
                 fig.add_trace(go.Scatter(
                     x=df_bt.index.tolist() + df_bt.index.tolist()[::-1],
                     y=df_bt[f'{channel}_q0.99'].tolist() + df_bt[f'{channel}_q0.01'].tolist()[::-1],
-                    fill='toself', fillcolor=rgba_color, line=dict(color='rgba(255,255,255,0)'),
+                    fill='toself', fillcolor=hex_to_rgba(color, 0.1), line=dict(color='rgba(255,255,255,0)'),
                     name=f'Backtest -{offset}h (1%-99%)',
                     showlegend=False
                 ), secondary_y=False)
 
             # Add 75% quantile
             if f'{channel}_q0.25' in df_bt.columns and f'{channel}_q0.75' in df_bt.columns:
-                rgba_color = f"rgba({int(color[1:3], 16)}, {int(color[3:5], 16)}, {int(color[5:7], 16)}, 0.2)"
                 fig.add_trace(go.Scatter(
                     x=df_bt.index.tolist() + df_bt.index.tolist()[::-1],
                     y=df_bt[f'{channel}_q0.75'].tolist() + df_bt[f'{channel}_q0.25'].tolist()[::-1],
-                    fill='toself', fillcolor=rgba_color, line=dict(color='rgba(255,255,255,0)'),
+                    fill='toself', fillcolor=hex_to_rgba(color, 0.2), line=dict(color='rgba(255,255,255,0)'),
                     name=f'Backtest -{offset}h (25%-75%)',
                     showlegend=False
                 ), secondary_y=False)
@@ -152,7 +155,7 @@ def plot_forecasts(df_long, df_wetter, df_inference, backtests=None, timestamp_s
         "font.size": 10, "text.color": "#231F20", "axes.facecolor": "#FFFFFF",
         "axes.edgecolor": "#231F20", "axes.linewidth": 0.8, "axes.grid": True,
         "axes.labelsize": 10, "axes.labelweight": "normal", "axes.labelcolor": "#231F20",
-        "axes.prop_cycle": cycler(color=["#1771F1", "#F85C50", "#35D073", "#FFC11E", "#8E44AD"]),
+        "axes.prop_cycle": cycler(color=PLOT_COLORS),
         "xtick.major.size": 2, "xtick.minor.size": 1, "xtick.major.width": 0.8,
         "xtick.minor.width": 0.6, "xtick.major.top": True, "xtick.major.bottom": True,
         "xtick.minor.top": True, "xtick.minor.bottom": True, "xtick.color": "#231F20", "xtick.labelsize": 8,
@@ -323,21 +326,22 @@ def plot_forecasts(df_long, df_wetter, df_inference, backtests=None, timestamp_s
     # Plot 2: Prediction AND Backtests
     # ----------------------------------------------------
     # Now plot backtests over the existing plot
-    for i, (offset, df_bt) in enumerate(backtests.items()):
-        color = colors[i + 1] if i + 1 < len(colors) else colors[-1]
-        plot_forecast(df_bt, f'Backtest -{offset}h ({timestamp_str})', color)
+    for i, (offset, _) in enumerate(backtests.items()):
+        if offset in backtests_plot:
+            color = colors[i + 1] if i + 1 < len(colors) else colors[-1]
+            plot_forecast(backtests_plot[offset], f'Backtest -{offset}h ({timestamp_str})', color)
 
     # Final plot adjustments for backtest
-    plot_start_date = min([df_bt.index.min() for df_bt in backtests.values() if not df_bt.empty], default=df_inference.index.min())
-    plot_end_date = df_inference.index.max() # Set the end date to the last point of the main forecast
+    plot_start_date = min([df_bt.index.min() for df_bt in backtests_plot.values()], default=df_inference_plot.index.min())
+    plot_end_date = df_inference_plot.index.max() # Set the end date to the last point of the main forecast
     ax.set_xlim(left=plot_start_date, right=plot_end_date) # Set both start and end limits
 
-    visible_wetter_bt = df_wetter.loc[(df_wetter.index >= plot_start_date) & (df_wetter.index <= plot_end_date), 'lufttemperatur_c']
+    visible_wetter_bt = df_wetter_plot.loc[(df_wetter_plot.index >= plot_start_date) & (df_wetter_plot.index <= plot_end_date), 'lufttemperatur_c']
 
     y_view_min_bt = inference_min
     y_view_max_bt = inference_max
 
-    for df_bt in backtests.values():
+    for df_bt in backtests_plot.values():
         if f"{channel}_q0.01" in df_bt.columns and f"{channel}_q0.99" in df_bt.columns:
             bt_min = df_bt[f"{channel}_q0.01"].min()
             bt_max = df_bt[f"{channel}_q0.99"].max()
