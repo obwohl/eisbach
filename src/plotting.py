@@ -6,14 +6,14 @@ from scipy.signal import find_peaks
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+PLOT_COLORS = ['#1771F1', '#F85C50', '#35D073', '#FFC11E', '#8E44AD']
+
 def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestamp_str, peaks, median_col, channel, backtests=None, is_backtest_plot=False):
     """
     Generates an interactive HTML plot using Plotly, optimized for mobile viewing.
     If backtests is provided, it includes them in the plot.
     """
     fig = make_subplots(specs=[[{"secondary_y": True}]])
-
-    colors = ['#1771F1', '#F85C50', '#35D073', '#FFC11E', '#8E44AD']
 
     # Historical Data
     historical_data = df_long_plot[df_long_plot['cols'] == channel]
@@ -72,14 +72,17 @@ def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestam
     # Add Backtests if provided
     if backtests:
         for i, (offset, df_bt) in enumerate(backtests.items()):
-            color = colors[i + 1] if i + 1 < len(colors) else colors[-1]
+            if df_bt.empty:
+                continue
+            color = PLOT_COLORS[i + 1] if i + 1 < len(PLOT_COLORS) else PLOT_COLORS[-1]
 
             # Add median
-            fig.add_trace(go.Scatter(
-                x=df_bt.index, y=df_bt[median_col],
-                mode='lines', name=f'Backtest -{offset}h',
-                line=dict(color=color, width=2)
-            ), secondary_y=False)
+            if median_col in df_bt.columns:
+                fig.add_trace(go.Scatter(
+                    x=df_bt.index, y=df_bt[median_col],
+                    mode='lines', name=f'Backtest -{offset}h',
+                    line=dict(color=color, width=2)
+                ), secondary_y=False)
 
             # Add 99% quantile
             if f'{channel}_q0.01' in df_bt.columns and f'{channel}_q0.99' in df_bt.columns:
@@ -106,7 +109,7 @@ def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestam
     # Calculate limits
     if is_backtest_plot and backtests:
         # Find the earliest backtest start
-        earliest_start = min([df_bt.index.min() for df_bt in backtests.values()])
+        earliest_start = min([df_bt.index.min() for df_bt in backtests.values() if not df_bt.empty], default=df_inference_plot.index.min())
         start_date = earliest_start
     else:
         start_date = df_inference_plot.index.min() - pd.Timedelta(days=1)
@@ -136,8 +139,10 @@ def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestam
     fig.write_html(html_file, include_plotlyjs='cdn')
     print(f"Interactive HTML plot saved to: {html_file}")
 
-def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_corr, df_inference_backtest_192_corr, df_inference_backtest_288_corr, timestamp_str=""):
+def plot_forecasts(df_long, df_wetter, df_inference, backtests=None, timestamp_str=""):
     # --- Final Plotting ---
+    if backtests is None:
+        backtests = {}
 
     # Define the style primer
     primer = {
@@ -205,15 +210,12 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     df_inference_plot = df_inference.copy()
     df_inference_plot.index = to_local_naive(df_inference_plot.index)
 
-    df_inference_backtest_96_corr_plot = df_inference_backtest_96_corr.copy()
-    df_inference_backtest_96_corr_plot.index = to_local_naive(df_inference_backtest_96_corr_plot.index)
-
-    df_inference_backtest_192_corr_plot = df_inference_backtest_192_corr.copy()
-    df_inference_backtest_192_corr_plot.index = to_local_naive(df_inference_backtest_192_corr_plot.index)
-
-    df_inference_backtest_288_corr_plot = df_inference_backtest_288_corr.copy()
-    df_inference_backtest_288_corr_plot.index = to_local_naive(df_inference_backtest_288_corr_plot.index)
-
+    backtests_plot = {}
+    for offset, df_bt in backtests.items():
+        if not df_bt.empty:
+            df_bt_plot = df_bt.copy()
+            df_bt_plot.index = to_local_naive(df_bt_plot.index)
+            backtests_plot[offset] = df_bt_plot
 
     # Plot Historical Data for wassertemp on the main axis
     historical_data = df_long_plot[df_long_plot['cols'] == channel]
@@ -321,12 +323,12 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     # Plot 2: Prediction AND Backtests
     # ----------------------------------------------------
     # Now plot backtests over the existing plot
-    plot_forecast(df_inference_backtest_96_corr, f'Backtest -96h ({timestamp_str})', colors[1])
-    plot_forecast(df_inference_backtest_192_corr, f'Backtest -192h ({timestamp_str})', colors[2])
-    plot_forecast(df_inference_backtest_288_corr, f'Backtest -288h ({timestamp_str})', colors[3])
+    for i, (offset, df_bt) in enumerate(backtests.items()):
+        color = colors[i + 1] if i + 1 < len(colors) else colors[-1]
+        plot_forecast(df_bt, f'Backtest -{offset}h ({timestamp_str})', color)
 
     # Final plot adjustments for backtest
-    plot_start_date = df_inference_backtest_288_corr.index.min()
+    plot_start_date = min([df_bt.index.min() for df_bt in backtests.values() if not df_bt.empty], default=df_inference.index.min())
     plot_end_date = df_inference.index.max() # Set the end date to the last point of the main forecast
     ax.set_xlim(left=plot_start_date, right=plot_end_date) # Set both start and end limits
 
@@ -335,11 +337,12 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     y_view_min_bt = inference_min
     y_view_max_bt = inference_max
 
-    for df_bt in [df_inference_backtest_96_corr, df_inference_backtest_192_corr, df_inference_backtest_288_corr]:
-        bt_min = df_bt[f"{channel}_q0.01"].min()
-        bt_max = df_bt[f"{channel}_q0.99"].max()
-        y_view_min_bt = min(y_view_min_bt, bt_min)
-        y_view_max_bt = max(y_view_max_bt, bt_max)
+    for df_bt in backtests.values():
+        if f"{channel}_q0.01" in df_bt.columns and f"{channel}_q0.99" in df_bt.columns:
+            bt_min = df_bt[f"{channel}_q0.01"].min()
+            bt_max = df_bt[f"{channel}_q0.99"].max()
+            y_view_min_bt = min(y_view_min_bt, bt_min)
+            y_view_max_bt = max(y_view_max_bt, bt_max)
 
     if not visible_wetter_bt.empty:
         y_view_min_bt = min(visible_wetter_bt.min(), y_view_min_bt)
@@ -357,15 +360,10 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     # Generate HTML plot for Backtest
     if median_col in df_inference_plot.columns:
         try:
-            backtests = {
-                96: df_inference_backtest_96_corr_plot,
-                192: df_inference_backtest_192_corr_plot,
-                288: df_inference_backtest_288_corr_plot
-            }
             # We pass empty peaks here since annotations were removed for the PNG plot
             # If we wanted to keep them in HTML, we would pass `peaks` instead of `[]`
             # For consistency with the PNG behavior where annotations are removed:
-            generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestamp_str, [], median_col, channel, backtests=backtests, is_backtest_plot=True)
+            generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestamp_str, [], median_col, channel, backtests=backtests_plot, is_backtest_plot=True)
         except Exception as e:
             print(f"Warning: Failed to generate Backtest HTML plot: {e}")
 

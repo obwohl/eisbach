@@ -29,10 +29,10 @@ def main():
         df_long, df_wetter = prepare_data()
 
         logging.info("Data preparation complete. Starting inference...")
-        df_inference, df_96, df_192, df_288 = run_inference(df_long, timestamp_str)
+        df_inference, backtests = run_inference(df_long, timestamp_str)
 
         logging.info("Inference complete. Starting plotting...")
-        plot_forecasts(df_long, df_wetter, df_inference, df_96, df_192, df_288, timestamp_str)
+        plot_forecasts(df_long, df_wetter, df_inference, backtests, timestamp_str)
 
         logging.info("Pipeline completed successfully.")
     except Exception as e:
