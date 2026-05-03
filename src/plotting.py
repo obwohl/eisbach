@@ -4,7 +4,6 @@ import matplotlib.ticker as ticker
 from cycler import cycler
 from scipy.signal import find_peaks
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 PLOT_COLORS = ['#1771F1', '#F85C50', '#35D073', '#FFC11E', '#8E44AD']
 
@@ -18,7 +17,7 @@ def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestam
     Generates an interactive HTML plot using Plotly, optimized for mobile viewing.
     If backtests is provided, it includes them in the plot.
     """
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig = go.Figure()
 
     # Historical Data
     historical_data = df_long_plot[df_long_plot['cols'] == channel]
@@ -26,7 +25,7 @@ def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestam
         x=historical_data['date'], y=historical_data['data'],
         mode='lines', name=f'Historical {channel.capitalize()}',
         line=dict(color='black', dash='dash')
-    ), secondary_y=False)
+    ))
 
     # 99% Quantile Band
     if f'{channel}_q0.01' in df_inference_plot.columns and f'{channel}_q0.99' in df_inference_plot.columns:
@@ -35,7 +34,7 @@ def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestam
             y=df_inference_plot[f'{channel}_q0.99'].tolist() + df_inference_plot[f'{channel}_q0.01'].tolist()[::-1],
             fill='toself', fillcolor='rgba(23, 113, 241, 0.1)', line=dict(color='rgba(255,255,255,0)'),
             name='1%-99% Quantile'
-        ), secondary_y=False)
+        ))
 
     # 75% Quantile Band
     if f'{channel}_q0.25' in df_inference_plot.columns and f'{channel}_q0.75' in df_inference_plot.columns:
@@ -44,21 +43,21 @@ def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestam
             y=df_inference_plot[f'{channel}_q0.75'].tolist() + df_inference_plot[f'{channel}_q0.25'].tolist()[::-1],
             fill='toself', fillcolor='rgba(23, 113, 241, 0.2)', line=dict(color='rgba(255,255,255,0)'),
             name='25%-75% Quantile'
-        ), secondary_y=False)
+        ))
 
     # Main Forecast Median
     fig.add_trace(go.Scatter(
         x=df_inference_plot.index, y=df_inference_plot[median_col],
         mode='lines', name='Forecast Median',
         line=dict(color='#1771F1', width=2)
-    ), secondary_y=False)
+    ))
 
     # Air Temperature
     fig.add_trace(go.Scatter(
         x=df_wetter_plot.index, y=df_wetter_plot['lufttemperatur_c'],
         mode='lines', name='Air Temp (DWD)',
         line=dict(color='purple', dash='dot', width=1.5)
-    ), secondary_y=False)
+    ))
 
     # Annotate Peaks
     for peak_idx in peaks:
@@ -135,7 +134,7 @@ def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestam
 
     # Add grid lines
     fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='LightGray')
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='LightGray', secondary_y=False)
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='LightGray')
 
     # Save to HTML
     html_file = 'Prediction_Backtest.html' if is_backtest_plot else 'Prediction.html'
