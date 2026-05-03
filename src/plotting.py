@@ -6,11 +6,14 @@ from scipy.signal import find_peaks
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestamp_str, peaks, median_col, channel):
+def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestamp_str, peaks, median_col, channel, backtests=None, is_backtest_plot=False):
     """
     Generates an interactive HTML plot using Plotly, optimized for mobile viewing.
+    If backtests is provided, it includes them in the plot.
     """
     fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    colors = ['#1771F1', '#F85C50', '#35D073', '#FFC11E', '#8E44AD']
 
     # Historical Data
     historical_data = df_long_plot[df_long_plot['cols'] == channel]
@@ -66,15 +69,57 @@ def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestam
             ax=0, ay=-40, bgcolor="white", bordercolor="gray", opacity=0.8
         )
 
-    # Calculate limits
-    pred_only_start_date = df_inference_plot.index.min() - pd.Timedelta(days=1)
-    pred_only_end_date = df_inference_plot.index.max()
+    # Add Backtests if provided
+    if backtests:
+        for i, (offset, df_bt) in enumerate(backtests.items()):
+            color = colors[i + 1] if i + 1 < len(colors) else colors[-1]
 
-    fig.update_xaxes(range=[pred_only_start_date, pred_only_end_date], title_text="Datum (Ortszeit / Europe/Berlin)")
+            # Add median
+            fig.add_trace(go.Scatter(
+                x=df_bt.index, y=df_bt[median_col],
+                mode='lines', name=f'Backtest -{offset}h',
+                line=dict(color=color, width=2)
+            ), secondary_y=False)
+
+            # Add 99% quantile
+            if f'{channel}_q0.01' in df_bt.columns and f'{channel}_q0.99' in df_bt.columns:
+                rgba_color = f"rgba({int(color[1:3], 16)}, {int(color[3:5], 16)}, {int(color[5:7], 16)}, 0.1)"
+                fig.add_trace(go.Scatter(
+                    x=df_bt.index.tolist() + df_bt.index.tolist()[::-1],
+                    y=df_bt[f'{channel}_q0.99'].tolist() + df_bt[f'{channel}_q0.01'].tolist()[::-1],
+                    fill='toself', fillcolor=rgba_color, line=dict(color='rgba(255,255,255,0)'),
+                    name=f'Backtest -{offset}h (1%-99%)',
+                    showlegend=False
+                ), secondary_y=False)
+
+            # Add 75% quantile
+            if f'{channel}_q0.25' in df_bt.columns and f'{channel}_q0.75' in df_bt.columns:
+                rgba_color = f"rgba({int(color[1:3], 16)}, {int(color[3:5], 16)}, {int(color[5:7], 16)}, 0.2)"
+                fig.add_trace(go.Scatter(
+                    x=df_bt.index.tolist() + df_bt.index.tolist()[::-1],
+                    y=df_bt[f'{channel}_q0.75'].tolist() + df_bt[f'{channel}_q0.25'].tolist()[::-1],
+                    fill='toself', fillcolor=rgba_color, line=dict(color='rgba(255,255,255,0)'),
+                    name=f'Backtest -{offset}h (25%-75%)',
+                    showlegend=False
+                ), secondary_y=False)
+
+    # Calculate limits
+    if is_backtest_plot and backtests:
+        # Find the earliest backtest start
+        earliest_start = min([df_bt.index.min() for df_bt in backtests.values()])
+        start_date = earliest_start
+    else:
+        start_date = df_inference_plot.index.min() - pd.Timedelta(days=1)
+
+    end_date = df_inference_plot.index.max()
+
+    fig.update_xaxes(range=[start_date, end_date], title_text="Datum (Ortszeit / Europe/Berlin)")
     fig.update_yaxes(title_text="Temperatur (°C)", secondary_y=False)
 
+    title_prefix = "Eisbach - backtesting and forecast" if is_backtest_plot else "Eisbach Forecast"
+
     fig.update_layout(
-        title=f"Eisbach Forecast ({timestamp_str})<br><sup>All times in Ortszeit / Europe/Berlin</sup>",
+        title=f"{title_prefix} ({timestamp_str})<br><sup>All times in Ortszeit / Europe/Berlin</sup>",
         plot_bgcolor='white',
         paper_bgcolor='white',
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
@@ -87,7 +132,7 @@ def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestam
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='LightGray', secondary_y=False)
 
     # Save to HTML
-    html_file = f'Prediction_{timestamp_str}.html' if timestamp_str else 'Prediction.html'
+    html_file = 'Prediction_Backtest.html' if is_backtest_plot else 'Prediction.html'
     fig.write_html(html_file, include_plotlyjs='cdn')
     print(f"Interactive HTML plot saved to: {html_file}")
 
@@ -257,7 +302,7 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
             annotation_artists.append(annotation)
 
     # Save Prediction ONLY Plot
-    file_path_pred = f'Prediction_{timestamp_str}.png' if timestamp_str else 'Prediction.png'
+    file_path_pred = 'Prediction.png'
     plt.savefig(file_path_pred, dpi=300, bbox_inches='tight', facecolor=fig.get_facecolor(), edgecolor='none')
     print(f"Plot saved to: {file_path_pred}")
 
@@ -309,8 +354,23 @@ def plot_forecasts(df_long, df_wetter, df_inference, df_inference_backtest_96_co
     lines, labels = ax.get_legend_handles_labels()
     ax.legend(lines, labels, loc='upper left')
 
+    # Generate HTML plot for Backtest
+    if median_col in df_inference_plot.columns:
+        try:
+            backtests = {
+                96: df_inference_backtest_96_corr_plot,
+                192: df_inference_backtest_192_corr_plot,
+                288: df_inference_backtest_288_corr_plot
+            }
+            # We pass empty peaks here since annotations were removed for the PNG plot
+            # If we wanted to keep them in HTML, we would pass `peaks` instead of `[]`
+            # For consistency with the PNG behavior where annotations are removed:
+            generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestamp_str, [], median_col, channel, backtests=backtests, is_backtest_plot=True)
+        except Exception as e:
+            print(f"Warning: Failed to generate Backtest HTML plot: {e}")
+
     # Save Backtest Plot
-    file_path_backtest = f'Prediction_Backtest_{timestamp_str}.png' if timestamp_str else 'Prediction_Backtest.png'
+    file_path_backtest = 'Prediction_Backtest.png'
     plt.savefig(file_path_backtest, dpi=300, bbox_inches='tight', facecolor=fig.get_facecolor(), edgecolor='none')
     print(f"Plot saved to: {file_path_backtest}")
 

@@ -18,7 +18,7 @@ def main():
         logging.info(f"Using timestamp for output files: {timestamp_str}")
 
         # Clean up old prediction files
-        for f in glob.glob("Prediction_*.png") + glob.glob("Prediction_*.csv") + glob.glob("eisbach_new.png"):
+        for f in glob.glob("Prediction_*_*.png") + glob.glob("Prediction_*_*.csv") + glob.glob("Prediction_*_*.html") + glob.glob("eisbach_new.png"):
             try:
                 os.remove(f)
                 logging.info(f"Removed old file: {f}")
