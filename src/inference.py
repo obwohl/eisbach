@@ -165,8 +165,8 @@ def run_inference(df_long, timestamp_str=""):
 
     print("\n--- Backtests Complete. ---")
 
-    # Copy the main inference CSV to the root directory with the timestamp
-    main_csv_name = f"Prediction_{timestamp_str}.csv" if timestamp_str else "Prediction.csv"
+    # Copy the main inference CSV to the root directory with a fixed filename
+    main_csv_name = "Prediction.csv"
 
     # User-facing CSV should be in local time (Europe/Berlin) and formatted cleanly
     df_inference_local = df_inference.copy()
@@ -181,4 +181,4 @@ def run_inference(df_long, timestamp_str=""):
     df_inference_local.to_csv(main_csv_name)
     print(f"Saved main readable prediction data to {main_csv_name}")
 
-    return df_inference, backtest_dfs[96], backtest_dfs[192], backtest_dfs[288]
+    return df_inference, backtest_dfs

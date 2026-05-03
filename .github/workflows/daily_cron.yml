@@ -35,4 +35,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: update forecast and data archive"
-          file_pattern: "data/forecast_archive/*.csv Prediction_*.png Prediction_*.csv" # Speichert nur das Archiv, den neusten Plot und die neuste CSV
+          file_pattern: "data/forecast_archive/*.csv Prediction.png Prediction_Backtest.png Prediction.html Prediction_Backtest.html Prediction.csv" # Speichert nur das Archiv und die neusten Vorhersagen
