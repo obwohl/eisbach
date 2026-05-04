@@ -87,3 +87,30 @@ Zum Abschluss haben wir einen rigorosen **"Apples-to-Apples" Backtesting Showdow
 
 **Gesamtfazit:**
 Wenn es um eine reine, harte Zahl ("Was ist die Temperatur exakt?") geht, hat unser feinabgestimmtes Custom-Modell noch die Nase leicht vorn. Geht es jedoch um verlässliche Risikobewertung, Unsicherheitsbänder und allgemeine Generalisierbarkeit (ohne jemals auf den Eisbach trainiert worden zu sein), ist **Chronos-2 in Kombination mit der multivariaten Future-Covariate-Koppelung** das klar überlegene und modernere System.
+
+---
+
+## 4. Volatility Showdown: Das "Schwimmer-Kippen" Szenario (Intelligente Suche)
+Um nicht nur zufällige Zeitfenster zu testen, haben wir den gesamten 10-Jahres-Datensatz algorithmisch nach extremen Schwankungen durchsucht. Insbesondere für uns Schwimmer/Surfer ist es spannend, wenn das Wasser an der Schwelle zwischen "Kalt" und "Angenehm" (13°C - 16°C) stark kippt.
+
+### Methodik der intelligenten Suche
+* **24h Fenster:** Wir haben die 5 Fenster (ohne Überlappung) extrahiert, die die absolut höchste Varianz (maximale Volatilität) innerhalb von 24 Stunden aufweisen.
+* **96h Fenster:** Wir haben 4 Zeiträume von 4 Tagen extrahiert, bei denen die Durchschnittstemperatur im "Kipp"-Bereich von 13°C bis 16°C lag, und innerhalb derer es zu massiven Abstürzen oder Anstiegen (hoher Trend x Varianz) kam.
+
+Auf diese ausgewählten Extremszenarien haben wir das **Custom Baseline Modell** gegen das **Chronos-2 Modell** (mit der perfekten multivariaten Koppelung: Eisbach + Past Isar + Future Luft) antreten lassen.
+
+### Visualisierung der Extrem-Vorhersagen
+Im Unterordner `plots/` finden sich die generierten side-by-side Plots.
+* `volatile_24h_1.png` bis `volatile_24h_5.png`
+* `volatile_96h_1.png` bis `volatile_96h_4.png`
+
+**Jeder Plot vergleicht Apples-to-Apples:**
+1. Die echte gemessene Wassertemperatur (Schwarze Linie).
+2. Den vorhergesagten Median (Gepunktete Linie).
+3. Das Wahrscheinlichkeitsband bzw. die Quantile (Eingefärbter Korridor).
+
+### Ergebnisse der Extrem-Tests
+* **Verlässlichkeit bei starken Brüchen (96h):** Das Custom Baseline Modell wurde zwar speziell für den Eisbach trainiert, verliert aber bei plötzlichen, starken Wetterumschwüngen nach 2-3 Tagen oft komplett die Konfidenz (das rote Unsicherheitsband explodiert förmlich, was sich in sehr schlechten CRPS Werten niederschlägt).
+* **Die Macht der Future Covariates:** Chronos-2, unterstützt durch die Einspeisung der zukünftigen Lufttemperatur, schmiegt sein Unsicherheitsband (blau) selbst in diesen extremen Schwankungen viel realistischer an die tatsächliche Kurve an. Der Median folgt den Einbrüchen der Wassertemperatur fast schon gespenstisch genau, da das Modell begreift, wie der starke Abfall der Lufttemperatur die Wassertemperatur der nächsten 4 Tage diktieren wird.
+
+Das Zero-Shot Chronos-2 Modell ist in volatilen Kipp-Szenarien dank echter Feature-Koppelung (Isar Trägheit + Zukünftiger Lufttemperatur-Trend) unserem trainierten Custom-Modell deutlich überlegen.
