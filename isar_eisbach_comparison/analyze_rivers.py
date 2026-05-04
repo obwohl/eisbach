@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 import torch
 import os
-from chronos import BaseChronosPipeline
 import matplotlib.pyplot as plt
 import seaborn as sns
+from chronos import BaseChronosPipeline
 
 def mean_absolute_error(y_true, y_pred):
     return np.mean(np.abs(y_true - y_pred))
@@ -28,24 +28,6 @@ def crps(y_true, y_pred_quantiles, quantiles):
         crps_vals.append(val)
     return np.mean(crps_vals)
 
-def evaluate_chronos(pipeline, context, target, prediction_length, num_samples=20):
-    context_tensor = torch.tensor(context, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
-
-    try:
-        quantiles_tensor, _ = pipeline.predict_quantiles(
-            context_tensor,
-            prediction_length=prediction_length,
-            quantile_levels=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-        )
-        # For univariate, shape is (1, pred_len, num_quantiles)
-        q_preds = quantiles_tensor[0].numpy().T
-        median_pred = q_preds[4, :]
-        mae = mean_absolute_error(target, median_pred)
-        crps_val = crps(target, q_preds, np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]))
-        return mae, crps_val
-    except AttributeError:
-        pass
-
 def run():
     csv_path = "isar_eisbach_comparison/isar_eisbach_data.csv"
     if not os.path.exists(csv_path):
@@ -55,64 +37,93 @@ def run():
     df_combined = pd.read_csv(csv_path, index_col=0, parse_dates=True)
     df_ffill = df_combined.ffill().bfill()
 
+    print("\n--- Explorative Datenanalyse ---")
+    print(df_combined.describe())
+    df_diff = df_combined['wassertemp_eisbach'] - df_combined['wassertemp_isar']
+    print("\nDifferenz (Eisbach - Isar):")
+    print(df_diff.describe())
+
+    plt.figure(figsize=(10, 6))
+    sns.histplot(df_diff.dropna(), kde=True)
+    plt.title('Verteilung der Temperaturdifferenz (Eisbach - Isar)')
+    plt.xlabel('Temperaturdifferenz (°C)')
+    plt.savefig('isar_eisbach_comparison/diff_dist.png')
+
+    plt.figure(figsize=(10, 6))
+    plt.scatter(df_combined['wassertemp_isar'], df_combined['wassertemp_eisbach'], alpha=0.5)
+    plt.plot([0, 20], [0, 20], 'r--')
+    plt.title('Scatterplot Isar vs Eisbach Wassertemperatur')
+    plt.xlabel('Isar (°C)')
+    plt.ylabel('Eisbach (°C)')
+    plt.savefig('isar_eisbach_comparison/scatter.png')
+
     pipeline = BaseChronosPipeline.from_pretrained(
         "amazon/chronos-2",
         device_map="cpu",
-        dtype=torch.bfloat16,
+        torch_dtype=torch.bfloat16,
     )
 
     results = []
+    quantiles = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     for horizons in [24, 96]:
         print(f"\nEvaluating Horizon: {horizons}h")
         train_end = len(df_ffill) - horizons
         if train_end <= 0: continue
 
-        context_eisbach = df_ffill['wassertemp_eisbach'].iloc[:train_end].values
         target_eisbach = df_ffill['wassertemp_eisbach'].iloc[train_end:train_end+horizons].values
-        mae_eisbach_uni, crps_eisbach_uni = evaluate_chronos(pipeline, context_eisbach, target_eisbach, horizons)
-
-        context_isar = df_ffill['wassertemp_isar'].iloc[:train_end].values
         target_isar = df_ffill['wassertemp_isar'].iloc[train_end:train_end+horizons].values
-        mae_isar_uni, crps_isar_uni = evaluate_chronos(pipeline, context_isar, target_isar, horizons)
+
+        # 1. Univariate
+        # For chronos 2, shape: (batch, n_variates, history_length). Univariate means n_variates=1
+        context_eisbach_uni = torch.tensor(df_ffill['wassertemp_eisbach'].iloc[:train_end].values, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
+        quantiles_tensor_eisbach, _ = pipeline.predict_quantiles(context_eisbach_uni, prediction_length=horizons, quantile_levels=quantiles)
+        # quantiles_tensor returns a list of tensors for chronos2 (one per batch item)
+        # Each tensor has shape (n_variates, prediction_length, len(quantile_levels))
+        q_preds = quantiles_tensor_eisbach[0][0].numpy().T # Shape: (len(quantiles), pred_length)
+        mae_eisbach_uni = mean_absolute_error(target_eisbach, q_preds[4, :])
+        crps_eisbach_uni = crps(target_eisbach, q_preds, np.array(quantiles))
+
+        context_isar_uni = torch.tensor(df_ffill['wassertemp_isar'].iloc[:train_end].values, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
+        quantiles_tensor_isar, _ = pipeline.predict_quantiles(context_isar_uni, prediction_length=horizons, quantile_levels=quantiles)
+        q_preds = quantiles_tensor_isar[0][0].numpy().T
+        mae_isar_uni = mean_absolute_error(target_isar, q_preds[4, :])
+        crps_isar_uni = crps(target_isar, q_preds, np.array(quantiles))
 
         results.append({'Horizon': horizons, 'River': 'Eisbach', 'Type': 'Univariate', 'MAE': mae_eisbach_uni, 'CRPS': crps_eisbach_uni})
         results.append({'Horizon': horizons, 'River': 'Isar', 'Type': 'Univariate', 'MAE': mae_isar_uni, 'CRPS': crps_isar_uni})
 
-        # Multivariate approach in chronos-2 by flattening covariates into the sequence, or we just leave as NaN because it's not supported natively for one target.
-        # But wait, earlier the error was "operands could not be broadcast together with shapes (24,) (24,2)"
-        # This is because the output is (2, 24, 9) representing two predictions! We just need to select index 0 for the target!
-        context_eisbach_mult = [
-            torch.tensor(df_ffill['wassertemp_eisbach'].iloc[:train_end].values, dtype=torch.float32),
-            torch.tensor(df_ffill['temperature'].iloc[:train_end].values, dtype=torch.float32)
-        ]
+        # 2. Multivariate (with future known covariates via the list of dicts approach supported by Chronos 2)
+        # We need "target" (history_length,)
+        # "past_covariates": {"temperature": (history_length,)}
+        # "future_covariates": {"temperature": (prediction_length,)}
+
+        inputs_eisbach_mult = [{
+            "target": df_ffill['wassertemp_eisbach'].iloc[:train_end].values,
+            "past_covariates": {"temperature": df_ffill['temperature'].iloc[:train_end].values},
+            "future_covariates": {"temperature": df_ffill['temperature'].iloc[train_end:train_end+horizons].values}
+        }]
 
         try:
-            quantiles_tensor, _ = pipeline.predict_quantiles(
-                context_eisbach_mult,
-                prediction_length=horizons,
-                quantile_levels=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-            )
-            # Two series predicted independently. quantiles_tensor is (2, pred_len, num_quantiles)
-            q_preds_mult = quantiles_tensor[0].numpy().T
+            quantiles_tensor_eisbach_mult, _ = pipeline.predict_quantiles(inputs_eisbach_mult, prediction_length=horizons, quantile_levels=quantiles)
+            # Result is a list, we take index 0, variate 0
+            q_preds_mult = quantiles_tensor_eisbach_mult[0][0].numpy().T
             mae_eisbach_mult = mean_absolute_error(target_eisbach, q_preds_mult[4, :])
-            crps_eisbach_mult = crps(target_eisbach, q_preds_mult, np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]))
+            crps_eisbach_mult = crps(target_eisbach, q_preds_mult, np.array(quantiles))
         except Exception as e:
             print(f"Multivariate error for Eisbach: {e}")
             mae_eisbach_mult, crps_eisbach_mult = np.nan, np.nan
 
-        context_isar_mult = [
-            torch.tensor(df_ffill['wassertemp_isar'].iloc[:train_end].values, dtype=torch.float32),
-            torch.tensor(df_ffill['temperature'].iloc[:train_end].values, dtype=torch.float32)
-        ]
+        inputs_isar_mult = [{
+            "target": df_ffill['wassertemp_isar'].iloc[:train_end].values,
+            "past_covariates": {"temperature": df_ffill['temperature'].iloc[:train_end].values},
+            "future_covariates": {"temperature": df_ffill['temperature'].iloc[train_end:train_end+horizons].values}
+        }]
+
         try:
-            quantiles_tensor, _ = pipeline.predict_quantiles(
-                context_isar_mult,
-                prediction_length=horizons,
-                quantile_levels=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-            )
-            q_preds_mult = quantiles_tensor[0].numpy().T
+            quantiles_tensor_isar_mult, _ = pipeline.predict_quantiles(inputs_isar_mult, prediction_length=horizons, quantile_levels=quantiles)
+            q_preds_mult = quantiles_tensor_isar_mult[0][0].numpy().T
             mae_isar_mult = mean_absolute_error(target_isar, q_preds_mult[4, :])
-            crps_isar_mult = crps(target_isar, q_preds_mult, np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]))
+            crps_isar_mult = crps(target_isar, q_preds_mult, np.array(quantiles))
         except Exception as e:
             print(f"Multivariate error for Isar: {e}")
             mae_isar_mult, crps_isar_mult = np.nan, np.nan
