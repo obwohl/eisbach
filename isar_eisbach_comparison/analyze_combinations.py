@@ -3,28 +3,8 @@ import numpy as np
 import torch
 import os
 from chronos import BaseChronosPipeline
+from isar_eisbach_comparison.metrics import mean_absolute_error, crps, mean_interval_score
 
-def mean_absolute_error(y_true, y_pred):
-    return np.mean(np.abs(y_true - y_pred))
-
-def crps(y_true, y_pred_quantiles, quantiles):
-    crps_vals = []
-    for t in range(len(y_true)):
-        y_t = y_true[t]
-        q_preds = y_pred_quantiles[:, t]
-        sort_idx = np.argsort(quantiles)
-        q_preds = q_preds[sort_idx]
-        qs = quantiles[sort_idx]
-        val = 0
-        for i in range(1, len(qs)):
-            x_m = (q_preds[i] + q_preds[i-1]) / 2
-            p_m = (qs[i] + qs[i-1]) / 2
-            if y_t < x_m:
-                val += (p_m**2) * (q_preds[i] - q_preds[i-1])
-            else:
-                val += ((1-p_m)**2) * (q_preds[i] - q_preds[i-1])
-        crps_vals.append(val)
-    return np.mean(crps_vals)
 
 def evaluate_combination(pipeline, inputs_list, target_true, horizons, quantiles):
     try:

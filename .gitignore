@@ -17,3 +17,8 @@ data/*
 
 # Ignore old/random CSVs but allow the main Prediction CSVs if we want to track them manually
 # (Since the daily cron pushes them, we should allow them, but they are tracked in root)
+isar_eisbach_comparison/finetuned_chronos2/
+*.log
+*.pid
+*_10_years*.csv
+scripts/id_ed25519*

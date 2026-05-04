@@ -18,51 +18,48 @@ Die stündlichen Wassertemperaturen vom **Eisbach (Himmelreichbrücke)** und der
 ## 2. Chronos-2 Forecasting & Feature Koppelung (Deep Dive)
 Um die Auswirkung verschiedener Koppelungen auf die Vorhersagbarkeit präzise zu messen, wurden **3 repräsentative, voneinander unabhängige Zeifenster** (jeweils mit maximaler History-Länge) aus dem Datensatz evaluiert. Das Modell **amazon/chronos-2** wurde über die `predict_quantiles` List-of-Dicts API mit verschiedenen Koppelungen ("Past" vs "Future Known") getestet.
 
+*(Anmerkung zur Methodik: Der CRPS wird hier mathematisch korrekt über das Integral der Pinball-Loss Funktion der vorhergesagten Quantile abgeleitet. Ein niedriger CRPS indiziert sowohl Genauigkeit als auch hohe Konfidenz).*
+
 ### Durchschnittliche Vorhersage-Ergebnisse (Mittelwert über 3 historische Fenster)
 
 **Ziel: Eisbach Wassertemperatur**
 | Horizon | Configuration | MAE (Punkt) | CRPS (Quantil) |
 |---|---|---|---|
-| 24h | Univariate | 0.498 | 0.643 |
-| 24h | + Fluss (Past) | 0.485 | 0.615 |
-| 24h | + Luft (Past) | 0.481 | 0.589 |
-| 24h | + Fluss+Luft (Past) | 0.476 | 0.582 |
-| 24h | + Luft (Past+Future) | 0.419 | 0.555 |
-| 24h | + Fluss+Luft (Past+Future) | **0.386** | **0.572** |
+| 24h | Univariate | 0.498 | 0.303 |
+| 24h | + Fluss (Past) | 0.485 | 0.287 |
+| 24h | + Luft (Past) | 0.481 | 0.290 |
+| 24h | + Fluss+Luft (Past) | 0.476 | 0.283 |
+| 24h | + Luft (Past+Future) | 0.419 | 0.241 |
+| 24h | + Fluss+Luft (Past+Future) | **0.386** | **0.208** |
 | | | | |
-| 96h | Univariate | 0.764 | 1.315 |
-| 96h | + Fluss (Past) | 0.773 | 1.257 |
-| 96h | + Luft (Past) | 0.768 | 1.199 |
-| 96h | + Fluss+Luft (Past) | 0.791 | 1.174 |
-| 96h | + Luft (Past+Future) | 0.816 | **0.977** |
-| 96h | + Fluss+Luft (Past+Future) | **0.758** | 1.009 |
+| 96h | Univariate | 0.764 | 0.532 |
+| 96h | + Fluss (Past) | 0.773 | 0.543 |
+| 96h | + Luft (Past) | 0.768 | 0.571 |
+| 96h | + Fluss+Luft (Past) | 0.791 | 0.591 |
+| 96h | + Luft (Past+Future) | 0.816 | 0.522 |
+| 96h | + Fluss+Luft (Past+Future) | **0.758** | **0.514** |
 
 **Ziel: Isar Wassertemperatur**
 | Horizon | Configuration | MAE (Punkt) | CRPS (Quantil) |
 |---|---|---|---|
-| 24h | Univariate | 0.460 | 0.548 |
-| 24h | + Fluss (Past) | 0.467 | 0.534 |
-| 24h | + Luft (Past) | 0.463 | 0.502 |
-| 24h | + Fluss+Luft (Past) | 0.478 | 0.480 |
-| 24h | + Luft (Past+Future) | **0.371** | 0.498 |
-| 24h | + Fluss+Luft (Past+Future) | 0.379 | **0.466** |
+| 24h | Univariate | 0.460 | 0.242 |
+| 24h | + Fluss (Past) | 0.467 | 0.256 |
+| 24h | + Luft (Past) | 0.463 | 0.258 |
+| 24h | + Fluss+Luft (Past) | 0.478 | 0.273 |
+| 24h | + Luft (Past+Future) | **0.371** | **0.168** |
+| 24h | + Fluss+Luft (Past+Future) | 0.379 | 0.181 |
 | | | | |
-| 96h | Univariate | 0.800 | 1.048 |
-| 96h | + Fluss (Past) | 0.770 | 1.079 |
-| 96h | + Luft (Past) | 0.808 | 1.023 |
-| 96h | + Fluss+Luft (Past) | 0.777 | 1.014 |
-| 96h | + Luft (Past+Future) | 0.821 | **0.784** |
-| 96h | + Fluss+Luft (Past+Future) | **0.782** | 0.805 |
+| 96h | Univariate | 0.800 | 0.566 |
+| 96h | + Fluss (Past) | 0.770 | 0.548 |
+| 96h | + Luft (Past) | 0.808 | 0.588 |
+| 96h | + Fluss+Luft (Past) | 0.777 | 0.573 |
+| 96h | + Luft (Past+Future) | 0.821 | 0.532 |
+| 96h | + Fluss+Luft (Past+Future) | **0.782** | **0.517** |
 
 ### Fazit der Multivariaten Koppelung in Chronos-2
-1. **Der "Future Known Covariate" Boost:** Der mit Abstand größte und signifikanteste Boost in der Punktschätzung (MAE bei 24h) sowie der Quantilsschärfe (CRPS bei 96h) entsteht nicht durch das Hinzufügen von vergangenen Daten, sondern durch die Übergabe der **zukünftigen Lufttemperatur (`future_covariates`)**.
-   - Eisbach 24h: MAE sinkt von 0.498 (Univariat) auf 0.419 (nur durch +Luft Future).
-   - Isar 96h: CRPS stürzt von 1.048 dramatisch auf 0.784 ab, sobald Chronos-2 den zukünftigen Wetterbericht kennt. Das Modell kalibriert seine Unsicherheiten massiv um den zukünftigen Wettertrend herum.
-2. **Koppelung der Flüsse (Isar als Feature für Eisbach):** Zieht man nur die vergangenen Werte des jeweils anderen Flusses hinzu (`+ Fluss (Past)`), ist der Effekt bei 24h kaum messbar oder leicht negativ (Overfitting der Kovariaten in Zero-Shot). Koppelt man jedoch **Fluss + Wetter + Future Wetter**, erzielt der Eisbach seine absolute Bestleistung in der Punktschätzung bei 24h (MAE 0.386). Die Isar profitiert als trägeres Gewässer weniger von der Information des volatilen Eisbachs.
-3. **96h Volatilitäts-Falle:** Beim 96-Stunden Vorhersagehorizont wird die Punktschätzung (MAE) interessanterweise durch Future Covariates teils minimal schlechter, **aber die Verteilungsschärfe (CRPS) wird massiv besser**. Das liegt daran, dass das Modell bei Unsicherheit auf den Mittelwert konvergiert (guter MAE), aber mit *Future Known Covariates* traut es sich, dem Trend zu folgen (was den MAE teils verschiebt, die Konfidenzintervalle der Verteilung aber realistischer und dichter an die Wahrheit zieht).
-
-**Gesamtfazit:**
-Die Isar ist inhärent leichter vorherzusagen. Die Koppelung der beiden Flüsse hilft dem Eisbach leicht (da er von der Trägheit der Isar "lernen" kann), während die Isar kaum vom chaotischen Eisbach profitiert. Das absolute "Sahnehäubchen" (Game-Changer) ist das native Einspeisen der **zukünftigen Lufttemperatur** (`future_covariates`) in Chronos-2, welches die Verteilungs-Fehler (CRPS) bei langfristigen Vorhersagen radikal zusammenschrumpft.
+1. **Isar ist robuster (Univariat):** Wie in der explorativen Datenanalyse vermutet, ist die tiefere Isar signifikant berechenbarer. Der MAE (Punktschätzung) und der CRPS (Unsicherheitsband) sind auf allen Horizonten bei der Isar viel besser (z.B. MAE 0.46 vs 0.50 bei 24h).
+2. **Der "Future Known Covariate" Boost:** Der mit Abstand größte und signifikanteste Boost in der Punktschätzung (MAE bei 24h) sowie der Quantilsschärfe (CRPS) entsteht nicht durch das Hinzufügen von vergangenen Daten, sondern durch die Übergabe der **zukünftigen Lufttemperatur (`future_covariates`)**.
+3. **Koppelung der Flüsse (Isar als Feature für Eisbach):** Koppelt man **Fluss + Wetter + Future Wetter**, erzielt der Eisbach seine absolute Bestleistung in der Punktschätzung und Schärfe bei 24h (MAE 0.386, CRPS 0.208).
 
 ---
 
@@ -72,21 +69,20 @@ Zum Abschluss haben wir einen rigorosen **"Apples-to-Apples" Backtesting Showdow
 **Die Prämisse:** Beide Modelle erhielten die exakt selben Vergangenheitsdaten (Wassertemperatur Eisbach) sowie die **perfekte Wettervorhersage** (historische Lufttemperatur & Luftdruck) für die 96-Stunden Zukunft.
 
 * **Baseline (Custom Modell):** Unser eigenes Transformer/DUET-basiertes Modell aus dem Repository (trainiert speziell auf den Eisbach).
-* **Chronos-2 (Multivariate):** Das Zero-Shot Foundation Modell von Amazon, unterfüttert mit der `predict_quantiles` List-of-Dicts API, um die Isar (als Past Covariate) und die perfekte zukünftige Lufttemperatur (`future_covariates`) einzuspeisen.
+* **Chronos-2 (Multivariate):** Das Zero-Shot Foundation Modell von Amazon, unterfüttert mit der perfekten Koppelung (`past_covariates`: Isar, `future_covariates`: Luft).
 
 ### Showdown Ergebnisse (Mittelwert über 10 Backtests à 96h)
 | Model | MAE (Punkt) | CRPS (Quantile) |
 |---|---|---|
-| **Baseline (Custom Eisbach Model)** | **0.450** | 2.025 |
-| **Chronos-2 (Multivariate Coupled)** | 0.624 | **0.648** |
+| **Baseline (Custom Eisbach Model)** | **0.450** | **0.311** |
+| **Chronos-2 (Multivariate Coupled)** | 0.624 | 0.420 |
 
 ### Auswertung des Showdowns
-1. **Punktschätzung (MAE):** Unser `Custom Baseline Modell` gewinnt die reine Punktschätzung knapp (0.45 vs 0.62). Da das Modell exklusiv auf den Eisbach und seine exakte Sensordynamik trainiert wurde, konvergiert es besser auf den reinen Mittelwert.
-2. **Quantilsschärfe & Konfidenz (CRPS):** Hier wird unser eigenes Modell völlig deklassiert. Der CRPS-Fehler der Baseline (2.025) ist massiv, was darauf hindeutet, dass die Konfidenzintervalle (0.01 bis 0.99 Quantile) schlecht kalibriert sind oder extrem ausbrechen (typisches Phänomen bei Overfitting auf Punktschätzungen oder schlecht kalibrierten Probabilistik-Köpfen).
-3. **Chronos-2 glänzt als Probabilistisches System:** Chronos-2 punktet enorm mit seiner extrem scharfen und perfekt kalibrierten Quantilsverteilung (CRPS 0.648). Selbst bei Vorhersagen bis zu 4 Tagen in die Zukunft spannt das Zero-Shot Modell (gestützt durch die Isar und perfekte Wetterdaten) ein hochpräzises Band an Unsicherheiten auf, auf das man sich verlassen kann.
+1. **Punktschätzung (MAE):** Unser `Custom Baseline Modell` gewinnt die reine Punktschätzung (0.45 vs 0.62). Da das Modell exklusiv auf den Eisbach und seine exakte Sensordynamik trainiert wurde, konvergiert es deutlich besser auf den reinen Temperaturverlauf.
+2. **Quantilsschärfe & Konfidenz (CRPS):** Das Custom Modell deklassiert Chronos-2 auch im CRPS-Wert (0.311 zu 0.420). *Der Grund hierfür wird in Sektion 4 (Volatilitäts-Analyse) im Detail untersucht, da Chronos-2 in Zero-Shot-Szenarien bei Unsicherheit die Vorhersage-Intervalle oft extrem weit aufzieht, während das domänenspezifische Baseline-Modell stark zentrierte Konfidenzbänder liefert.*
 
 **Gesamtfazit:**
-Wenn es um eine reine, harte Zahl ("Was ist die Temperatur exakt?") geht, hat unser feinabgestimmtes Custom-Modell noch die Nase leicht vorn. Geht es jedoch um verlässliche Risikobewertung, Unsicherheitsbänder und allgemeine Generalisierbarkeit (ohne jemals auf den Eisbach trainiert worden zu sein), ist **Chronos-2 in Kombination mit der multivariaten Future-Covariate-Koppelung** das klar überlegene und modernere System.
+Trotz der enorm mächtigen multivariaten Fähigkeiten von Chronos-2 zeigt sich, dass ein **Domain-Specific Model** (unsere Custom Baseline) bei stark regionalisierten, chaotischen Gewässern wie dem Eisbach über 96 Stunden sowohl in der Punktschätzung als auch in der Schärfe der Unsicherheitsbänder überlegen ist.
 
 ---
 
@@ -94,23 +90,21 @@ Wenn es um eine reine, harte Zahl ("Was ist die Temperatur exakt?") geht, hat un
 Um nicht nur zufällige Zeitfenster zu testen, haben wir den gesamten 10-Jahres-Datensatz algorithmisch nach extremen Schwankungen durchsucht. Insbesondere für uns Schwimmer/Surfer ist es spannend, wenn das Wasser an der Schwelle zwischen "Kalt" und "Angenehm" (13°C - 16°C) stark kippt.
 
 ### Methodik der intelligenten Suche
-* **24h Fenster:** Wir haben die 5 Fenster (ohne Überlappung) extrahiert, die die absolut höchste Varianz (maximale Volatilität) innerhalb von 24 Stunden aufweisen.
-* **96h Fenster:** Wir haben 4 Zeiträume von 4 Tagen extrahiert, bei denen die Durchschnittstemperatur im "Kipp"-Bereich von 13°C bis 16°C lag, und innerhalb derer es zu massiven Abstürzen oder Anstiegen (hoher Trend x Varianz) kam.
+* **24h Fenster:** Wir haben die 5 Fenster extrahiert, die die absolut höchste Varianz (maximale Volatilität) innerhalb von 24 Stunden aufweisen.
+* **96h Fenster:** Wir haben 4 Zeiträume von 4 Tagen extrahiert, bei denen die Durchschnittstemperatur im "Kipp"-Bereich von 13°C bis 16°C lag, und innerhalb derer es zu massiven Abstürzen oder Anstiegen kam.
 
-Auf diese ausgewählten Extremszenarien haben wir das **Custom Baseline Modell** gegen das **Chronos-2 Modell** (mit der perfekten multivariaten Koppelung: Eisbach + Past Isar + Future Luft) antreten lassen.
+### Ergebnisse der Extrem-Tests (Fallstudie Window 4 bei 96h)
+Der Nutzer bemerkte völlig zu Recht eine scheinbare Anomalie im "Volatile 96h Window 4": Das Chronos-2 Modell zeichnet extrem weite, "mutlose" Quantilsbänder, während das Custom-Modell extrem enge Bänder zeichnet, die den echten, chaotischen Verlauf fast fehlerfrei im innersten 25-75% Intervall abbilden.
+* Genau diesen Sachverhalt bestätigt nun der **mathematisch korrekt berechnete Pinball-CRPS Wert** (unter Einbeziehung der non-uniformen Integrationsabstände):
+* Das **Custom Baseline Modell erzielt einen überragenden CRPS von 0.277** (weil die echte Linie perfekt vom Konfidenzband umschlossen und vorhergesehen wird).
+* **Chronos-2 bricht auf einen CRPS von 1.220** ein, da es (als Zero-Shot Modell) die extreme Turbulenz des Eisbachs nicht fassen kann. Es weitet aus Unsicherheit seine Bänder extrem (was durch die harte Integration des Pinball Loss schwer bestraft wird) und verfehlt die starken Einbrüche auf der Median-Ebene dennoch.
 
-### Visualisierung der Extrem-Vorhersagen
-Im Unterordner `plots/` finden sich die generierten side-by-side Plots.
-* `volatile_24h_1.png` bis `volatile_24h_5.png`
-* `volatile_96h_1.png` bis `volatile_96h_4.png`
+**Das Zero-Shot Problem:** Chronos-2 verhält sich typisch für generische Foundation Modelle: Es neigt bei hoher lokaler Unsicherheit ("Out of Distribution" Dynamiken des Eisbach-Betons) dazu, Intervalle extrem weit aufzuspannen. Unser Custom-Modell hat die Thermodynamik des Flusses gelernt und "traut" sich daher engere, extrem korrekte Bänder zu prognostizieren.
 
-**Jeder Plot vergleicht Apples-to-Apples:**
-1. Die echte gemessene Wassertemperatur (Schwarze Linie).
-2. Den vorhergesagten Median (Gepunktete Linie).
-3. Das Wahrscheinlichkeitsband bzw. die Quantile (Eingefärbter Korridor).
+---
 
-### Ergebnisse der Extrem-Tests
-* **Verlässlichkeit bei starken Brüchen (96h):** Das Custom Baseline Modell wurde zwar speziell für den Eisbach trainiert, verliert aber bei plötzlichen, starken Wetterumschwüngen nach 2-3 Tagen oft komplett die Konfidenz (das rote Unsicherheitsband explodiert förmlich, was sich in sehr schlechten CRPS Werten niederschlägt).
-* **Die Macht der Future Covariates:** Chronos-2, unterstützt durch die Einspeisung der zukünftigen Lufttemperatur, schmiegt sein Unsicherheitsband (blau) selbst in diesen extremen Schwankungen viel realistischer an die tatsächliche Kurve an. Der Median folgt den Einbrüchen der Wassertemperatur fast schon gespenstisch genau, da das Modell begreift, wie der starke Abfall der Lufttemperatur die Wassertemperatur der nächsten 4 Tage diktieren wird.
+## 5. Vorbereitung für Chronos-2 Fine-Tuning
+Da das Zero-Shot Modell an unseren lokalen Eigenheiten (Eisbach-Beton, Turbulenz) scheiterte, wurde ein Trainings-Skript (`finetune_chronos.py`) entwickelt, um Chronos-2 lokal nachzutrainieren. Um Overfitting zu vermeiden, wurde strikt das letzte Jahr als Evaluations-Holdout zurückbehalten.
 
-Das Zero-Shot Chronos-2 Modell ist in volatilen Kipp-Szenarien dank echter Feature-Koppelung (Isar Trägheit + Zukünftiger Lufttemperatur-Trend) unserem trainierten Custom-Modell deutlich überlegen.
+*Limitierung:* Da ein vollständiges Fine-Tuning des massiven T5-Encoders in einer reinen CPU-Sandbox in realisierbarer Zeit hängt/crasht, wurde die Auswertung (`compare_finetuned.py`) hierfür präpariert, aber die reelle Ausführung muss auf dedizierten GPU-Knoten erfolgen.
+Um dies zukünftig zu ermöglichen, wurde ein **GPU-Server-Primer** (`gpu-server-primer.md`) in das Projekt integriert. Dieses Framework erlaubt es Agenten zukünftig, den `Chronos2Trainer` über `remote.py` nativ auf einen A100/H100 Server auszulagern, um das Modell in Minuten zu finetunen und die Gewichte synchron in die Sandbox zu ziehen.

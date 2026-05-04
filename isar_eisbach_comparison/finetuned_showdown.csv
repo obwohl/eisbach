@@ -1,0 +1,3 @@
+Model,MAE (Mean),CRPS (Mean)
+Baseline (Custom Eisbach Model),0.4497046765625,0.31102812530815627
+Chronos-2 (Fine-Tuning execution timeout),0.6243131510416667,0.4202068684895834

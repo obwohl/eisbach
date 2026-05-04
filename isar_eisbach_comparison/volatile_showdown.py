@@ -7,28 +7,7 @@ import sys
 import matplotlib.pyplot as plt
 import seaborn as sns
 from chronos import BaseChronosPipeline
-
-def mean_absolute_error(y_true, y_pred):
-    return np.mean(np.abs(y_true - y_pred))
-
-def crps(y_true, y_pred_quantiles, quantiles):
-    crps_vals = []
-    for t in range(len(y_true)):
-        y_t = y_true[t]
-        q_preds = y_pred_quantiles[:, t]
-        sort_idx = np.argsort(quantiles)
-        q_preds = q_preds[sort_idx]
-        qs = quantiles[sort_idx]
-        val = 0
-        for i in range(1, len(qs)):
-            x_m = (q_preds[i] + q_preds[i-1]) / 2
-            p_m = (qs[i] + qs[i-1]) / 2
-            if y_t < x_m:
-                val += (p_m**2) * (q_preds[i] - q_preds[i-1])
-            else:
-                val += ((1-p_m)**2) * (q_preds[i] - q_preds[i-1])
-        crps_vals.append(val)
-    return np.mean(crps_vals)
+from metrics import mean_absolute_error, crps, mean_interval_score
 
 def evaluate_baseline_model(train_end, horizon, df_ffill):
     max_idx = train_end + horizon - 1
@@ -46,7 +25,6 @@ def evaluate_baseline_model(train_end, horizon, df_ffill):
 
     df_trunc.index = df_trunc.index.tz_localize(None)
 
-    # Baseline uses a hardcoded 96h shift to simulate future weather
     df_trunc['airtemp_96'] = df_trunc['temperature'].shift(-96)
     df_trunc['pressure_96'] = df_trunc['pressure_msl'].shift(-96)
 
@@ -73,8 +51,6 @@ def evaluate_baseline_model(train_end, horizon, df_ffill):
     target_true = df_ffill['wassertemp_eisbach'].iloc[train_end:train_end+horizon].values
     quantiles_to_check = [0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99]
 
-    # Baseline model outputs quantiles, but might have duplicate columns if multiple series were exported
-    # The fix is to match exact float names and just take the first matching Series
     clean_cols = []
     for c in df_inf.columns:
         if 'q' in str(c):
@@ -89,7 +65,6 @@ def evaluate_baseline_model(train_end, horizon, df_ffill):
     q_preds = np.zeros((len(quantiles_to_check), horizon))
     for i, q in enumerate(quantiles_to_check):
         if q in df_inf.columns:
-            # Handle if there are multiple columns with the same name
             col_data = df_inf[q]
             if isinstance(col_data, pd.DataFrame):
                 col_data = col_data.iloc[:, 0]
@@ -104,13 +79,16 @@ def evaluate_baseline_model(train_end, horizon, df_ffill):
     mae = mean_absolute_error(target_true, median_pred)
     crps_val = crps(target_true, q_preds, np.array(quantiles_to_check))
 
-    return mae, crps_val, q_preds
+    idx_l = quantiles_to_check.index(0.25)
+    idx_u = quantiles_to_check.index(0.75)
+    mis_50 = mean_interval_score(target_true, q_preds[idx_l, :], q_preds[idx_u, :], alpha=0.5)
+
+    return mae, crps_val, mis_50, q_preds
 
 def find_volatile_windows(df, num_24=5, num_96=4):
     target = df['wassertemp_eisbach'].values
     n = len(target)
 
-    # 1. Find 5 windows of 24h with highest variance
     var_24 = []
     for i in range(1000, n - max(96, 24) - 1):
         var_24.append((i, np.var(target[i:i+24])))
@@ -118,7 +96,6 @@ def find_volatile_windows(df, num_24=5, num_96=4):
 
     chosen_24 = []
     for idx, var in var_24:
-        # Check overlap
         overlap = False
         for c in chosen_24:
             if abs(idx - c) < 24:
@@ -129,8 +106,6 @@ def find_volatile_windows(df, num_24=5, num_96=4):
         if len(chosen_24) == num_24:
             break
 
-    # 2. Find 4 windows of 96h (4 days) that are "interesting for swimmers"
-    # Temp between 12 and 18 degrees, high variance, strong downward or upward trends
     scores_96 = []
     for i in range(1000, n - 96 - 1):
         window_data = target[i:i+96]
@@ -182,10 +157,8 @@ def run():
             target_true = df_ffill['wassertemp_eisbach'].iloc[train_end:train_end+horizons].values
             date_range = df_ffill.index[train_end:train_end+horizons]
 
-            # Baseline
-            mae_base, crps_base, q_preds_base = evaluate_baseline_model(train_end, horizons, df_ffill)
+            mae_base, crps_base, mis_base, q_preds_base = evaluate_baseline_model(train_end, horizons, df_ffill)
 
-            # Chronos-2 Multivariate
             ctx_len = min(512, train_end)
             train_start = train_end - ctx_len
 
@@ -205,15 +178,18 @@ def run():
                 q_preds_chronos = quantiles_tensor_eisbach_mult[0][0].numpy().T
                 mae_chronos = mean_absolute_error(target_true, q_preds_chronos[4, :])
                 crps_chronos = crps(target_true, q_preds_chronos, np.array(chronos_quantiles))
+
+                idx_l = chronos_quantiles.index(0.1)
+                idx_u = chronos_quantiles.index(0.9)
+                mis_chronos = mean_interval_score(target_true, q_preds_chronos[idx_l, :], q_preds_chronos[idx_u, :], alpha=0.2)
+
             except Exception as e:
                 print(f"Chronos error: {e}")
                 continue
 
-            # Plotting
             fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6), sharey=True)
             fig.suptitle(f"Eisbach Volatility: {horizons}h starting {date_range[0].strftime('%Y-%m-%d %H:%00')}", fontsize=16)
 
-            # Subplot 1: Baseline
             ax1.plot(date_range, target_true, color='black', label='True Temp', linewidth=2)
             ax1.plot(date_range, q_preds_base[3, :], color='red', label='Median Forecast', linestyle='--')
             ax1.fill_between(date_range, q_preds_base[1, :], q_preds_base[5, :], color='red', alpha=0.3, label='5%-95% Quantile')
@@ -223,7 +199,6 @@ def run():
             ax1.grid(True, alpha=0.3)
             ax1.tick_params(axis='x', rotation=45)
 
-            # Subplot 2: Chronos-2
             ax2.plot(date_range, target_true, color='black', label='True Temp', linewidth=2)
             ax2.plot(date_range, q_preds_chronos[4, :], color='blue', label='Median Forecast', linestyle='--')
             ax2.fill_between(date_range, q_preds_chronos[0, :], q_preds_chronos[8, :], color='blue', alpha=0.3, label='10%-90% Quantile')
@@ -236,7 +211,7 @@ def run():
             plt.tight_layout()
             plt.savefig(f"isar_eisbach_comparison/plots/{prefix}_{idx_w+1}.png")
             plt.close()
-            print(f"Generated plot for {prefix} #{idx_w+1}")
+            print(f"Generated plot for {prefix} #{idx_w+1} (Base CRPS: {crps_base:.3f}, Chronos CRPS: {crps_chronos:.3f})")
 
 if __name__ == "__main__":
     run()
