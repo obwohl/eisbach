@@ -1,0 +1,3 @@
+Model,MAE (Mean),CRPS (Mean)
+Baseline (Custom Eisbach Model),0.4497046765625,0.2161718169202381
+Chronos-2 (Multivariate Coupled),0.6243131510416667,0.5025965711805556
