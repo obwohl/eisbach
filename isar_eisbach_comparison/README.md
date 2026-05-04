@@ -15,26 +15,51 @@ Die stündlichen Wassertemperaturen vom **Eisbach (Himmelreichbrücke)** und der
 
 ---
 
-## 2. Chronos-2 Forecasting (24h & 96h)
-Das Modell **amazon/chronos-2** (Zero-Shot Time Series Foundation Model) wurde genutzt, um auf Basis dieser gewaltigen Datenhistorie (die letzten Tage vor dem Validierungspunkt) Vorhersagen zu treffen. Wir nutzen Univariate sowie **echte Multivariate Koppelung** via *Past & Future Covariates* (`chronos2` Dictionary-API), indem wir **die Lufttemperatur UND den jeweils anderen Fluss in die Vorhersage einkoppeln**.
+## 2. Chronos-2 Forecasting & Feature Koppelung (Deep Dive)
+Um die Auswirkung verschiedener Koppelungen auf die Vorhersagbarkeit präzise zu messen, wurden **3 repräsentative, voneinander unabhängige Zeifenster** (jeweils mit maximaler History-Länge) aus dem Datensatz evaluiert. Das Modell **amazon/chronos-2** wurde über die `predict_quantiles` List-of-Dicts API mit verschiedenen Koppelungen ("Past" vs "Future Known") getestet.
 
-### Vorhersage-Ergebnisse
-| Horizon | River | Type | MAE (Punkt) | CRPS (Quantil) |
-|---|---|---|---|---|
-| **24h** | **Eisbach** | Univariate | 0.642 | 0.615 |
-| 24h | Isar | Univariate | 0.450 | 0.379 |
-| **24h** | **Eisbach** | **Multivariate (Gekoppelt)** | **0.258** | **0.483** |
-| 24h | Isar | **Multivariate (Gekoppelt)** | **0.151** | **0.356** |
-| **96h** | **Eisbach** | Univariate | 0.753 | 1.068 |
-| 96h | Isar | Univariate | 0.680 | 0.801 |
-| **96h** | **Eisbach** | **Multivariate (Gekoppelt)** | **0.302** | **0.375** |
-| 96h | Isar | **Multivariate (Gekoppelt)** | **0.266** | **0.323** |
+### Durchschnittliche Vorhersage-Ergebnisse (Mittelwert über 3 historische Fenster)
 
-### Fazit der Vorhersagbarkeit & Multivariater Kopplung
-1. **Isar ist robuster (Univariat):** Wie in der explorativen Datenanalyse vermutet, ist die tiefere Isar signifikant berechenbarer. Der MAE (Punktschätzung) und der CRPS (Unsicherheitsband) sind auf allen Horizonten bei der Isar viel besser (z.B. MAE 0.45 vs 0.64 bei 24h).
-2. **Gigantischer multivariater Boost durch Kopplung:** Die echte Koppelung beider Flüsse (als gegenseitige zukünftige Co-Variate) plus Lufttemperatur transformiert die Performance massiv:
-   - Beim **Eisbach (24h)** sinkt der Punktfehler (MAE) um fast 60% von 0.642 auf **0.258**.
-   - Bei der **Isar (24h)** sinkt der MAE gar von 0.450 auf unglaubliche **0.151**!
-3. **Langfristige Stabilität (96h):** Ohne Koppelung verliert Chronos-2 bei 96h komplett die Orientierung für den volatilen Eisbach (CRPS bricht auf 1.068 aus). *Mit der Koppelung an die trägere Isar und die Lufttemperatur* fängt sich das Modell radikal ein: Der CRPS für den Eisbach stürzt von 1.068 auf brillante **0.375**, was sogar besser ist als die 24h univariate Vorhersage!
+**Ziel: Eisbach Wassertemperatur**
+| Horizon | Configuration | MAE (Punkt) | CRPS (Quantil) |
+|---|---|---|---|
+| 24h | Univariate | 0.498 | 0.643 |
+| 24h | + Fluss (Past) | 0.485 | 0.615 |
+| 24h | + Luft (Past) | 0.481 | 0.589 |
+| 24h | + Fluss+Luft (Past) | 0.476 | 0.582 |
+| 24h | + Luft (Past+Future) | 0.419 | 0.555 |
+| 24h | + Fluss+Luft (Past+Future) | **0.386** | **0.572** |
+| | | | |
+| 96h | Univariate | 0.764 | 1.315 |
+| 96h | + Fluss (Past) | 0.773 | 1.257 |
+| 96h | + Luft (Past) | 0.768 | 1.199 |
+| 96h | + Fluss+Luft (Past) | 0.791 | 1.174 |
+| 96h | + Luft (Past+Future) | 0.816 | **0.977** |
+| 96h | + Fluss+Luft (Past+Future) | **0.758** | 1.009 |
 
-**Fazit:** Der Eisbach ist als alleinstehendes System hyper-sensibel und chaotisch. Sobald man in Chronos-2 jedoch die trägere Isar als "Anker" und die Lufttemperatur als Treiber ankoppelt (Multivariate), löst das Modell die zugrundeliegende physikalische Thermodynamik der Gewässer beinahe perfekt auf.
+**Ziel: Isar Wassertemperatur**
+| Horizon | Configuration | MAE (Punkt) | CRPS (Quantil) |
+|---|---|---|---|
+| 24h | Univariate | 0.460 | 0.548 |
+| 24h | + Fluss (Past) | 0.467 | 0.534 |
+| 24h | + Luft (Past) | 0.463 | 0.502 |
+| 24h | + Fluss+Luft (Past) | 0.478 | 0.480 |
+| 24h | + Luft (Past+Future) | **0.371** | 0.498 |
+| 24h | + Fluss+Luft (Past+Future) | 0.379 | **0.466** |
+| | | | |
+| 96h | Univariate | 0.800 | 1.048 |
+| 96h | + Fluss (Past) | 0.770 | 1.079 |
+| 96h | + Luft (Past) | 0.808 | 1.023 |
+| 96h | + Fluss+Luft (Past) | 0.777 | 1.014 |
+| 96h | + Luft (Past+Future) | 0.821 | **0.784** |
+| 96h | + Fluss+Luft (Past+Future) | **0.782** | 0.805 |
+
+### Fazit der Multivariaten Koppelung in Chronos-2
+1. **Der "Future Known Covariate" Boost:** Der mit Abstand größte und signifikanteste Boost in der Punktschätzung (MAE bei 24h) sowie der Quantilsschärfe (CRPS bei 96h) entsteht nicht durch das Hinzufügen von vergangenen Daten, sondern durch die Übergabe der **zukünftigen Lufttemperatur (`future_covariates`)**.
+   - Eisbach 24h: MAE sinkt von 0.498 (Univariat) auf 0.419 (nur durch +Luft Future).
+   - Isar 96h: CRPS stürzt von 1.048 dramatisch auf 0.784 ab, sobald Chronos-2 den zukünftigen Wetterbericht kennt. Das Modell kalibriert seine Unsicherheiten massiv um den zukünftigen Wettertrend herum.
+2. **Koppelung der Flüsse (Isar als Feature für Eisbach):** Zieht man nur die vergangenen Werte des jeweils anderen Flusses hinzu (`+ Fluss (Past)`), ist der Effekt bei 24h kaum messbar oder leicht negativ (Overfitting der Kovariaten in Zero-Shot). Koppelt man jedoch **Fluss + Wetter + Future Wetter**, erzielt der Eisbach seine absolute Bestleistung in der Punktschätzung bei 24h (MAE 0.386). Die Isar profitiert als trägeres Gewässer weniger von der Information des volatilen Eisbachs.
+3. **96h Volatilitäts-Falle:** Beim 96-Stunden Vorhersagehorizont wird die Punktschätzung (MAE) interessanterweise durch Future Covariates teils minimal schlechter, **aber die Verteilungsschärfe (CRPS) wird massiv besser**. Das liegt daran, dass das Modell bei Unsicherheit auf den Mittelwert konvergiert (guter MAE), aber mit *Future Known Covariates* traut es sich, dem Trend zu folgen (was den MAE teils verschiebt, die Konfidenzintervalle der Verteilung aber realistischer und dichter an die Wahrheit zieht).
+
+**Gesamtfazit:**
+Die Isar ist inhärent leichter vorherzusagen. Die Koppelung der beiden Flüsse hilft dem Eisbach leicht (da er von der Trägheit der Isar "lernen" kann), während die Isar kaum vom chaotischen Eisbach profitiert. Das absolute "Sahnehäubchen" (Game-Changer) ist das native Einspeisen der **zukünftigen Lufttemperatur** (`future_covariates`) in Chronos-2, welches die Verteilungs-Fehler (CRPS) bei langfristigen Vorhersagen radikal zusammenschrumpft.
