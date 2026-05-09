@@ -86,7 +86,7 @@ def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestam
                     x=df_bt.index, y=df_bt[median_col],
                     mode='lines', name=f'Backtest -{offset}h',
                     line=dict(color=color, width=2)
-                ), secondary_y=False)
+                ))
 
             # Add 99% quantile
             if f'{channel}_q0.01' in df_bt.columns and f'{channel}_q0.99' in df_bt.columns:
@@ -96,7 +96,7 @@ def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestam
                     fill='toself', fillcolor=hex_to_rgba(color, 0.1), line=dict(color='rgba(255,255,255,0)'),
                     name=f'Backtest -{offset}h (1%-99%)',
                     showlegend=False
-                ), secondary_y=False)
+                ))
 
             # Add 75% quantile
             if f'{channel}_q0.25' in df_bt.columns and f'{channel}_q0.75' in df_bt.columns:
@@ -106,7 +106,7 @@ def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestam
                     fill='toself', fillcolor=hex_to_rgba(color, 0.2), line=dict(color='rgba(255,255,255,0)'),
                     name=f'Backtest -{offset}h (25%-75%)',
                     showlegend=False
-                ), secondary_y=False)
+                ))
 
     # Calculate limits
     if is_backtest_plot and backtests:
@@ -119,7 +119,7 @@ def generate_html_plot(df_long_plot, df_wetter_plot, df_inference_plot, timestam
     end_date = df_inference_plot.index.max()
 
     fig.update_xaxes(range=[start_date, end_date], title_text="Datum (Ortszeit / Europe/Berlin)")
-    fig.update_yaxes(title_text="Temperatur (°C)", secondary_y=False)
+    fig.update_yaxes(title_text="Temperatur (°C)")
 
     title_prefix = "Eisbach - backtesting and forecast" if is_backtest_plot else "Eisbach Forecast"
 
