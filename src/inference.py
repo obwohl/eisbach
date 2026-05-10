@@ -10,11 +10,6 @@ def _run_single_backtest_task(offset, last_timestamp, df_long):
     Helper function to run a single backtest.
     Designed to be called in parallel by a ProcessPoolExecutor.
     """
-    import pandas as pd
-    import subprocess
-    import sys
-    from src.inference import load_forecast_from_archive
-
     print(f"Preparing and running -{offset}h backtest...")
     backtest_end_date = last_timestamp - pd.Timedelta(hours=offset)
     output_csv = f'data/inference_backtest_{offset}_corrected.csv'
@@ -172,8 +167,8 @@ def run_inference(df_long, timestamp_str=""):
     backtest_offsets = [96, 192, 288]
     backtest_dfs = {}
 
-    print(f"\nRunning {len(backtest_offsets)} backtests in parallel...")
-    with ProcessPoolExecutor() as executor:
+    print(f"\nRunning {len(backtest_offsets)} backtests in parallel (max 2 workers)...")
+    with ProcessPoolExecutor(max_workers=2) as executor:
         futures = [
             executor.submit(_run_single_backtest_task, offset, last_timestamp, df_long)
             for offset in backtest_offsets
