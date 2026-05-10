@@ -3,6 +3,45 @@ import subprocess
 import os
 import sys
 import shutil
+from concurrent.futures import ProcessPoolExecutor
+
+def _run_single_backtest_task(offset, last_timestamp, df_long):
+    """
+    Helper function to run a single backtest.
+    Designed to be called in parallel by a ProcessPoolExecutor.
+    """
+    import pandas as pd
+    import subprocess
+    import sys
+    from src.inference import load_forecast_from_archive
+
+    print(f"Preparing and running -{offset}h backtest...")
+    backtest_end_date = last_timestamp - pd.Timedelta(hours=offset)
+    output_csv = f'data/inference_backtest_{offset}_corrected.csv'
+
+    # Check archive first
+    archived_df = load_forecast_from_archive(backtest_end_date)
+    if archived_df is not None:
+        # Save the loaded archive to CSV to keep flow consistent
+        archived_df.to_csv(output_csv)
+        return offset, archived_df
+
+    # Fallback to computing the backtest if not in archive
+    # For backtests, we also truncate exactly at backtest_end_date.
+    df_long_backtest = df_long[df_long['date'] <= backtest_end_date].copy()
+
+    data_file = f'data/df_long_backtest_{offset}_corrected.csv'
+    df_long_backtest.to_csv(data_file, index=False)
+
+    subprocess.run([
+        sys.executable, 'ts_proba_cuda/run_single_forecast.py',
+        '--checkpoint', 'ts_proba_cuda/checkpoints/best_model.pt',
+        '--data-file', data_file,
+        '--output-csv', output_csv
+    ], check=True)
+
+    result_df = pd.read_csv(output_csv, parse_dates=[0], index_col=0)
+    return offset, result_df
 
 def save_forecast_to_archive(df_forecast, reference_time, archive_path='data/forecast_archive/water_temp_predictions_archive.csv'):
     """
@@ -129,39 +168,19 @@ def run_inference(df_long, timestamp_str=""):
     # Save the main forecast to our archive using last_timestamp as the reference_time
     save_forecast_to_archive(df_inference, last_timestamp)
 
-    # --- Prepare and run backtests ---
+    # --- Prepare and run backtests in parallel ---
     backtest_offsets = [96, 192, 288]
     backtest_dfs = {}
 
-    for i, offset in enumerate(backtest_offsets, 1):
-        print(f"\n[{i}/{len(backtest_offsets)}] Preparing and running -{offset}h backtest...")
-        backtest_end_date = last_timestamp - pd.Timedelta(hours=offset)
-
-        output_csv = f'data/inference_backtest_{offset}_corrected.csv'
-
-        # Check archive first
-        archived_df = load_forecast_from_archive(backtest_end_date)
-        if archived_df is not None:
-            # Save the loaded archive to CSV to keep flow consistent
-            archived_df.to_csv(output_csv)
-            backtest_dfs[offset] = archived_df
-            continue
-
-        # Fallback to computing the backtest if not in archive
-        # For backtests, we also truncate exactly at backtest_end_date.
-        df_long_backtest = df_long[df_long['date'] <= backtest_end_date].copy()
-
-        data_file = f'data/df_long_backtest_{offset}_corrected.csv'
-
-        df_long_backtest.to_csv(data_file, index=False)
-        subprocess.run([
-            sys.executable, 'ts_proba_cuda/run_single_forecast.py',
-            '--checkpoint', 'ts_proba_cuda/checkpoints/best_model.pt',
-            '--data-file', data_file,
-            '--output-csv', output_csv
-        ], check=True)
-
-        backtest_dfs[offset] = pd.read_csv(output_csv, parse_dates=[0], index_col=0)
+    print(f"\nRunning {len(backtest_offsets)} backtests in parallel...")
+    with ProcessPoolExecutor() as executor:
+        futures = [
+            executor.submit(_run_single_backtest_task, offset, last_timestamp, df_long)
+            for offset in backtest_offsets
+        ]
+        for future in futures:
+            offset, result_df = future.result()
+            backtest_dfs[offset] = result_df
 
     print("\n--- Backtests Complete. ---")
 
