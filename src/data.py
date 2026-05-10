@@ -120,13 +120,24 @@ def prepare_data():
         logging.error("Water temperature data is empty. Aborting preparation.")
         return pd.DataFrame(), pd.DataFrame()
 
+    # Sort ascending for robust 'infer' handling (Autumn transition)
+    df_wt = df_wt.sort_values('timestamp', ascending=True)
+
     # 2. KEY FIX: Zeitumstellung robust handhaben (Frühling & Herbst)
     # 'nonexistent' fängt den 29.03.2026 02:00 Uhr ab, 'ambiguous' den Herbst.
-    df_wt['timestamp'] = df_wt['timestamp'].dt.tz_localize(
-        'Europe/Berlin',
-        ambiguous='infer',
-        nonexistent='shift_forward'
-    )
+    try:
+        df_wt['timestamp'] = df_wt['timestamp'].dt.tz_localize(
+            'Europe/Berlin',
+            ambiguous='infer',
+            nonexistent='shift_forward'
+        )
+    except Exception as e:
+        logging.error(f"Error during DST localization: {e}. Falling back to ambiguous='NaT'.")
+        df_wt['timestamp'] = df_wt['timestamp'].dt.tz_localize(
+            'Europe/Berlin',
+            ambiguous='NaT',
+            nonexistent='shift_forward'
+        )
 
     # 3. Resampling erst NACH der Lokalisierung
     df_wt = df_wt.set_index('timestamp').resample('1h').first().reset_index()
