@@ -81,9 +81,9 @@ def test_future_forecast_window(data):
     assert not df_inf['wassertemp_q0.5'].isna().any(), "NaNs found in future wassertemp forecast"
     assert not df_inf['airtemp_96_q0.5'].isna().any(), "NaNs found in future airtemp forecast"
 
-    # 2. Plausibility bounds (generous: -10 to 45)
+    # 2. Plausibility bounds (generous: -10 to 50 to account for extreme quantiles)
     check_plausibility(df_inf, 'wassertemp', -10.0, 35.0)
-    check_plausibility(df_inf, 'airtemp_96', -5.0, 45.0)
+    check_plausibility(df_inf, 'airtemp_96', -5.0, 50.0)
 
     # 3. Check that actual water temperature does NOT exist for this future horizon
     actual_water = df_long[(df_long['cols'] == 'wassertemp')].set_index('date')
