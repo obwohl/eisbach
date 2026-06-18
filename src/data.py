@@ -88,8 +88,10 @@ def fetch_data_from_url(url, column_name):
 
     df = pd.DataFrame(data)
     if 'Datum/Uhrzeit' in df.columns:
+        df['Datum/Uhrzeit'] = df['Datum/Uhrzeit'].str.replace(' Uhr', '', regex=False)
         df['timestamp'] = pd.to_datetime(df['Datum/Uhrzeit'], format='%d.%m.%Y %H:%M', errors='coerce')
     elif 'Datum' in df.columns and 'Uhrzeit' in df.columns:
+        df['Uhrzeit'] = df['Uhrzeit'].str.replace(' Uhr', '', regex=False)
         df['timestamp'] = pd.to_datetime(df['Datum'] + ' ' + df['Uhrzeit'], format="%d.%m.%Y %H:%M", errors='coerce')
 
     df.dropna(subset=['timestamp'], inplace=True)
