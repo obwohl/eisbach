@@ -1,4 +1,4 @@
-"""Regression tests for the DST handling in src.data.
+"""Regression tests for the DST handling in eisbach.data.
 
 The autumn fold used to crash the whole pipeline whenever the gauge dropped a single
 sample during the repeated hour. Because the input window is 40 days wide, that would
@@ -8,7 +8,7 @@ have taken the forecast down for six weeks. See TODO.md section 0.7.
 import pandas as pd
 import pytest
 
-from src.data import localize_local_time
+from eisbach.data import localize_local_time
 
 BERLIN = "Europe/Berlin"
 

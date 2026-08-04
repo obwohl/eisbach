@@ -1,0 +1,89 @@
+name: Eisbach Forecast
+
+on:
+  # Primary trigger. Self-contained: no external service, no token that can quietly
+  # expire. GitHub's scheduler is often late and occasionally skips, which is an
+  # acceptable trade for a twice-daily forecast that depends on nothing outside GitHub.
+  schedule:
+    - cron: '0 5 * * *'
+    - cron: '0 17 * * *'
+
+  # Manual runs, for testing a change or catching up after a missed one. Its real value
+  # is simply existing: the previous workflow had no way to be started by hand at all.
+  workflow_dispatch:
+
+  # Optional external trigger, for a more punctual schedule. See docs/scheduling.md.
+  repository_dispatch:
+    types: [trigger_forecast]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: forecast
+  cancel-in-progress: false
+
+jobs:
+  forecast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install
+        run: |
+          pip install --index-url https://download.pytorch.org/whl/cpu torch
+          pip install -e .
+
+      # ~10 MB, pinned by SHA256. Cached so it is fetched once rather than every run.
+      - name: Cache model checkpoint
+        uses: actions/cache@v4
+        with:
+          path: data/model
+          key: checkpoint-${{ hashFiles('eisbach/model/checkpoint.py') }}
+
+      - name: Forecast
+        run: python main.py
+
+      # The archive is the only copy of every forecast we have made and of the DWD
+      # forecasts as they were issued, so it belongs in the repository. It is
+      # month-partitioned, so each run appends to one small file.
+      - name: Commit archive
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/archive
+          git diff --cached --quiet && echo "archive unchanged" && exit 0
+          git commit -m "chore: archive forecast $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push
+
+      # Plots and the CSV are regenerated from scratch every run, so keeping their
+      # history is pointless — and it is what grew .git to 175 MB. They go to an orphan
+      # branch that is replaced wholesale each time, so storage stays flat forever.
+      - name: Publish outputs
+        run: |
+          git checkout --orphan outputs-tmp
+          git rm -rq --cached .
+          git add -f Prediction.png Prediction_Backtest.png Prediction.csv
+          git commit -m "Forecast of $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push --force origin outputs-tmp:outputs
+
+      - name: Report failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // A silent failure is how this pipeline went unnoticed for three days.
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Forecast run failed (${new Date().toISOString().slice(0, 10)})`,
+              body: `The scheduled forecast failed.\n\n[Run log](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n\nLogs expire, so capture anything useful before they do.`,
+              labels: ['forecast-failure'],
+            });

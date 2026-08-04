@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from src import archive
+from eisbach import archive
 
 
 @pytest.fixture
