@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: write
+  issues: write  # the failure notification below opens one
 
 concurrency:
   group: forecast
@@ -61,7 +62,7 @@ jobs:
           git add data/archive
           git diff --cached --quiet && echo "archive unchanged" && exit 0
           git commit -m "chore: archive forecast $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push
+          git push origin HEAD:${{ github.ref_name }}
 
       # Plots and the CSV are regenerated from scratch every run, so keeping their
       # history is pointless — and it is what grew .git to 175 MB. They go to an orphan
