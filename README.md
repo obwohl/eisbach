@@ -24,9 +24,19 @@ fetched and archived but is **not** currently a model input.
 
 ## The model
 
-A custom **DUET-Prob** network — a mixture of experts over linear and Echo State Network
-experts, with a Student-t output head. It is not a foundation model, and despite what
-earlier versions of this README claimed, it is **not** Chronos-2 or AutoGluon.
+The forecast does not come from a foundation model with a wrapper around it. It comes
+from a **DUET-Prob** network I built and trained myself, specifically for this river.
+
+The interesting part is the expert mixture. Water temperature in a shallow concrete
+channel is chaotic and strongly weather-driven, and a generic sequence model handles that
+badly — it hedges. This one routes between two linear experts and nine **Echo State
+Network** experts, which are reservoir models: a fixed random recurrent state that the
+network learns to read out rather than to train through. They are unusually well suited
+to chaotic dynamics, and using them as mixture components on weather-coupled data is the
+part of this project I would actually defend at a whiteboard.
+
+The output head is a Student-t distribution rather than a point estimate, so the forecast
+is a full predictive distribution and the quantile bands mean something.
 
 | | |
 | --- | --- |
@@ -35,15 +45,29 @@ earlier versions of this README claimed, it is **not** Chronos-2 or AutoGluon.
 | Channels | `wassertemp`, `airtemp_96`, `pressure_96` |
 | Output | Student-t distribution, sampled at 7 quantiles |
 
-The inference code lives in `eisbach/model/`, vendored from
-[`obwohl/ts_proba_cuda`](https://github.com/obwohl/ts_proba_cuda) — see
+The training code lives in [`obwohl/ts_proba_cuda`](https://github.com/obwohl/ts_proba_cuda),
+my fork of a time-series benchmarking project, developed well past its origin. This
+repository vendors only the ~150 KB of it that inference actually reaches — see
 `eisbach/model/PROVENANCE.md` for the exact commit and what was stripped. The 10 MB
 checkpoint is downloaded on first use and verified against a pinned SHA256.
 
-AutoGluon / Chronos-Bolt was evaluated as the comparison arm and lost; the custom model
-was better on both point accuracy (MAE 0.45 vs 0.62) and calibration (CRPS 0.311 vs
-0.420) over 10 backtest windows. That comparison is **parked, not abandoned** — the code
-and measurements are in `archive/`.
+The checkpoint in production is deliberately not the newest one. Later training runs
+explored further but forecast worse on this river, so the pin sits on the configuration
+that actually won its backtests.
+
+**Against a foundation model.** Amazon's Chronos-2 was evaluated head to head, over 10
+backtest windows, both models given identical history and the same perfect weather:
+
+| | MAE | CRPS |
+| --- | --- | --- |
+| This model | **0.450** | **0.311** |
+| Chronos-2, multivariate | 0.624 | 0.420 |
+
+The gap widens on the volatile windows, where Chronos-2 responds to uncertainty by
+widening its intervals until they stop saying anything (CRPS 1.220 against 0.277 on the
+worst case). A model that has learned one river's thermodynamics can commit to a narrow
+band; a zero-shot model cannot. The comparison code and full results are in `archive/`,
+along with an AutoGluon / Chronos-Bolt arm that is **parked, not abandoned**.
 
 ## Backtests, and how honest they are
 
