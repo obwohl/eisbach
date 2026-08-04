@@ -27,7 +27,8 @@ precedence rule: a regenerable row may never overwrite a genuine one.
 Storage is month-partitioned CSV under ``data/archive/``. CSV rather than a database
 because the archive is append-mostly, is committed to git, and should stay readable by
 hand; month partitions because rewriting one 900 KB file per month deltas well in git,
-whereas rewriting one ever-growing file per run does not (see TODO.md section 0.6).
+whereas rewriting one ever-growing file per run does not — that pattern put 171 MB of
+revisions of a single 3 MB file into this repository's history.
 Partitioning is by the month of ``reference_time``, so a single forecast never straddles
 two files even when its horizon crosses a month boundary.
 """

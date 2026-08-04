@@ -1,8 +1,9 @@
 """Regression tests for the DST handling in eisbach.data.
 
 The autumn fold used to crash the whole pipeline whenever the gauge dropped a single
-sample during the repeated hour. Because the input window is 40 days wide, that would
-have taken the forecast down for six weeks. See TODO.md section 0.7.
+sample during the repeated hour: `ambiguous='infer'` raises when it cannot find both
+repeats. Because the input window is 40 days wide, one missing sample would have taken
+the forecast down for the following six weeks.
 """
 
 import pandas as pd

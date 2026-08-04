@@ -14,7 +14,6 @@ eisbach/validate.py   post-run plausibility gate
 eisbach/plotting.py   matplotlib output
 eisbach/model/        vendored inference code — see below
 archive/              unmaintained research code, never imported or run
-TODO.md               audit findings and remaining work
 ```
 
 ## Things that will bite you
