@@ -47,7 +47,7 @@ CHECKPOINT_URL = (
 
 CHECKPOINT_FILENAME = "best_model.pt"
 
-#: Repository root: eisbach/model/checkpoint.py -> eisbach/model -> src -> <repo>
+#: Repository root: eisbach/model/checkpoint.py -> eisbach/model -> eisbach -> <repo>
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
 DEFAULT_CACHE_DIR = _REPO_ROOT / "data" / "model"

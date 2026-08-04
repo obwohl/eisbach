@@ -75,13 +75,13 @@ def frames():
     weather_index = pd.date_range(
         REFERENCE - pd.Timedelta(days=14), REFERENCE + pd.Timedelta(days=5), freq="h", tz="UTC",
     )
-    df_wetter = pd.DataFrame(
+    df_weather = pd.DataFrame(
         {"lufttemperatur_c": [8.0 + (i % 24) / 6 for i in range(len(weather_index))]},
         index=weather_index,
     )
 
     df_inference = _quantile_frame(future_index)
-    return df_long, df_wetter, df_inference
+    return df_long, df_weather, df_inference
 
 
 def _backtest(kind: str, offset_hours: int) -> FakeBacktest:
@@ -119,10 +119,10 @@ def keep_figure(monkeypatch):
 
 
 def test_writes_both_pngs_and_no_html(frames, in_tmp_cwd):
-    df_long, df_wetter, df_inference = frames
+    df_long, df_weather, df_inference = frames
     backtests = {96: _backtest("live", 96), 192: _backtest("oracle", 192)}
 
-    plot_forecasts(df_long, df_wetter, df_inference, backtests, pd.Timestamp("2026-04-01 00:00", tz="UTC"))
+    plot_forecasts(df_long, df_weather, df_inference, backtests, pd.Timestamp("2026-04-01 00:00", tz="UTC"))
 
     for name in ("Prediction.png", "Prediction_Backtest.png"):
         png = in_tmp_cwd / name
@@ -133,9 +133,9 @@ def test_writes_both_pngs_and_no_html(frames, in_tmp_cwd):
 
 
 def test_empty_backtests_does_not_raise(frames, in_tmp_cwd):
-    df_long, df_wetter, df_inference = frames
+    df_long, df_weather, df_inference = frames
 
-    plot_forecasts(df_long, df_wetter, df_inference, {}, pd.Timestamp("2026-04-01 00:00", tz="UTC"))
+    plot_forecasts(df_long, df_weather, df_inference, {}, pd.Timestamp("2026-04-01 00:00", tz="UTC"))
 
     assert (in_tmp_cwd / "Prediction.png").exists()
     assert (in_tmp_cwd / "Prediction_Backtest.png").exists()
@@ -143,19 +143,19 @@ def test_empty_backtests_does_not_raise(frames, in_tmp_cwd):
 
 
 def test_backtests_default_to_none(frames, in_tmp_cwd):
-    df_long, df_wetter, df_inference = frames
+    df_long, df_weather, df_inference = frames
 
-    plot_forecasts(df_long, df_wetter, df_inference)
+    plot_forecasts(df_long, df_weather, df_inference)
 
     assert (in_tmp_cwd / "Prediction_Backtest.png").exists()
 
 
 def test_oracle_is_labelled_and_dashed(frames, in_tmp_cwd, keep_figure):
-    df_long, df_wetter, df_inference = frames
+    df_long, df_weather, df_inference = frames
     live = _backtest("live", 96)
     oracle = _backtest("oracle", 192)
 
-    plot_forecasts(df_long, df_wetter, df_inference, {96: live, 192: oracle},
+    plot_forecasts(df_long, df_weather, df_inference, {96: live, 192: oracle},
                    pd.Timestamp("2026-04-01 00:00", tz="UTC"))
 
     ax = keep_figure["fig"].axes[0]
@@ -176,10 +176,10 @@ def test_oracle_is_labelled_and_dashed(frames, in_tmp_cwd, keep_figure):
 
 
 def test_no_oracle_note_when_all_backtests_are_honest(frames, in_tmp_cwd, keep_figure):
-    df_long, df_wetter, df_inference = frames
+    df_long, df_weather, df_inference = frames
     backtests = {96: _backtest("live", 96), 192: _backtest("replay", 192)}
 
-    plot_forecasts(df_long, df_wetter, df_inference, backtests, pd.Timestamp("2026-04-01 00:00", tz="UTC"))
+    plot_forecasts(df_long, df_weather, df_inference, backtests, pd.Timestamp("2026-04-01 00:00", tz="UTC"))
 
     title = keep_figure["fig"].axes[0].get_title()
     assert "actually occurred" not in title
@@ -187,7 +187,7 @@ def test_no_oracle_note_when_all_backtests_are_honest(frames, in_tmp_cwd, keep_f
 
 
 def test_empty_backtest_frames_are_skipped(frames, in_tmp_cwd, keep_figure):
-    df_long, df_wetter, df_inference = frames
+    df_long, df_weather, df_inference = frames
     empty = FakeBacktest(
         offset_hours=288,
         reference_time=REFERENCE - pd.Timedelta(hours=288),
@@ -195,7 +195,8 @@ def test_empty_backtest_frames_are_skipped(frames, in_tmp_cwd, keep_figure):
         kind="oracle",
     )
 
-    plot_forecasts(df_long, df_wetter, df_inference, {288: empty}, pd.Timestamp("2026-04-01 00:00", tz="UTC"))
+    plot_forecasts(df_long, df_weather, df_inference, {288: empty},
+                   pd.Timestamp("2026-04-01 00:00", tz="UTC"))
 
     _handles, labels = keep_figure["fig"].axes[0].get_legend_handles_labels()
     assert empty.label not in labels
@@ -205,9 +206,9 @@ def test_empty_backtest_frames_are_skipped(frames, in_tmp_cwd, keep_figure):
 
 def test_plots_in_local_berlin_time(frames, in_tmp_cwd, keep_figure):
     """The x-axis is naive Europe/Berlin, i.e. shifted from the UTC input."""
-    df_long, df_wetter, df_inference = frames
+    df_long, df_weather, df_inference = frames
 
-    plot_forecasts(df_long, df_wetter, df_inference, {96: _backtest("live", 96)},
+    plot_forecasts(df_long, df_weather, df_inference, {96: _backtest("live", 96)},
                    pd.Timestamp("2026-04-01 00:00", tz="UTC"))
 
     ax = keep_figure["fig"].axes[0]

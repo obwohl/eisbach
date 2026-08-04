@@ -202,7 +202,7 @@ GAUGE_URL = (
 def prepare_data():
     """Fetch everything the pipeline needs.
 
-    Returns ``(df_long, df_wetter, df_wt)``: the model's input frame, the hourly weather
+    Returns ``(df_long, df_weather, df_wt)``: the model's input frame, the hourly weather
     in UTC, and the raw hourly water temperature. The latter two are returned separately
     because a replay backtest has to reassemble the input frame from a *different*
     weather forecast, and cannot do that from ``df_long`` alone — by then the covariates
@@ -227,12 +227,12 @@ def prepare_data():
     # Resample only after localizing, or the DST hour lands in the wrong bucket.
     df_wt = df_wt.set_index('timestamp').resample('1h').first().reset_index()
 
-    df_wetter = get_prepared_weather_data()
-    df_long = assemble_long_frame(df_wt, df_wetter)
+    df_weather = get_prepared_weather_data()
+    df_long = assemble_long_frame(df_wt, df_weather)
 
     df_wt_utc = df_wt.copy()
     df_wt_utc['timestamp'] = df_wt_utc['timestamp'].dt.tz_convert('UTC')
-    return df_long, df_wetter.tz_convert('UTC'), df_wt_utc
+    return df_long, df_weather.tz_convert('UTC'), df_wt_utc
 
 
 #: How far ahead the weather covariates are shifted, in hours. This is what lets the
@@ -241,18 +241,18 @@ def prepare_data():
 COVARIATE_SHIFT_HOURS = 96
 
 
-def assemble_long_frame(df_wt: pd.DataFrame, df_wetter: pd.DataFrame) -> pd.DataFrame:
+def assemble_long_frame(df_wt: pd.DataFrame, df_weather: pd.DataFrame) -> pd.DataFrame:
     """Merge water temperature with weather and shape it into the model's input frame.
 
     Factored out of :func:`prepare_data` so that a replay backtest can rebuild the same
     frame from a *historical* weather forecast instead of the current one, which is the
     difference between an honest backtest and an oracle one.
 
-    ``df_wt`` has a ``timestamp`` column and a ``wassertemp`` column; ``df_wetter`` is
+    ``df_wt`` has a ``timestamp`` column and a ``wassertemp`` column; ``df_weather`` is
     indexed by timestamp with ``lufttemperatur_c`` and ``pressure`` columns. Both must be
     timezone-aware.
     """
-    weather = df_wetter.copy()
+    weather = df_weather.copy()
     weather.index.name = 'timestamp'
     df_merged = pd.merge(
         df_wt,

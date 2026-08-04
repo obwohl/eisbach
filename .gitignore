@@ -30,3 +30,6 @@ Prediction.csv
 
 *.log
 *.pid
+
+# Working notes, deliberately untracked.
+TODO.md

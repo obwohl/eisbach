@@ -18,9 +18,9 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
           cache: pip
@@ -32,10 +32,18 @@ jobs:
           pip install --index-url https://download.pytorch.org/whl/cpu torch
           pip install -e ".[dev]"
 
+      # The model tests fetch the 10 MB checkpoint once. Cached so that is not
+      # re-downloaded on every push and every pull request.
+      - name: Cache model checkpoint
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: data/model
+          key: checkpoint-${{ hashFiles('eisbach/model/checkpoint.py') }}
+
       - name: Lint
         run: ruff check .
 
       - name: Test
-        # The unit tests must not touch the network; anything that does belongs in the
-        # pipeline run, not here.
+        # Offline apart from the checkpoint fetch above. Nothing here may hit GKD or
+        # Bright Sky — a test that needs live data belongs in the pipeline run.
         run: pytest -q

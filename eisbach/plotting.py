@@ -223,7 +223,7 @@ def _issued_label(issued_at) -> str:
     return stamp.tz_convert("Europe/Berlin").strftime("%Y-%m-%d %H:%M")
 
 
-def plot_forecasts(df_long, df_wetter, df_inference, backtests=None, issued_at=None) -> None:
+def plot_forecasts(df_long, df_weather, df_inference, backtests=None, issued_at=None) -> None:
     """Write ``Prediction.png`` and ``Prediction_Backtest.png``.
 
     ``backtests`` maps an offset in hours to a :class:`eisbach.inference.Backtest`.
@@ -240,7 +240,7 @@ def plot_forecasts(df_long, df_wetter, df_inference, backtests=None, issued_at=N
     # Everything is plotted in naive local time; see _to_local_naive.
     df_long_plot = df_long.copy()
     df_long_plot['date'] = _to_local_naive(df_long_plot['date'])
-    df_wetter_plot = _localized_copy(df_wetter)
+    df_weather_plot = _localized_copy(df_weather)
     df_inference_plot = _localized_copy(df_inference)
     prepared_backtests = _prepare_backtests(backtests)
 
@@ -253,7 +253,7 @@ def plot_forecasts(df_long, df_wetter, df_inference, backtests=None, issued_at=N
     # Image 1: the forecast on its own.
     # ------------------------------------------------------------------
     _plot_fan(ax, df_inference_plot, 'Forecast', colors[0])
-    ax.plot(df_wetter_plot.index, df_wetter_plot['lufttemperatur_c'], label='Air Temp (DWD)',
+    ax.plot(df_weather_plot.index, df_weather_plot['lufttemperatur_c'], label='Air Temp (DWD)',
             color='purple', linestyle=':', linewidth=1.5, alpha=0.6)
 
     forecast_start = df_inference_plot.index.min() - pd.Timedelta(days=1)  # 1 day of history
@@ -262,11 +262,11 @@ def plot_forecasts(df_long, df_wetter, df_inference, backtests=None, issued_at=N
 
     inference_span = (df_inference[f'{CHANNEL}_q0.01'].min(), df_inference[f'{CHANNEL}_q0.99'].max())
 
-    visible_wetter = _clip(df_wetter_plot['lufttemperatur_c'], forecast_start, forecast_end)
+    visible_weather = _clip(df_weather_plot['lufttemperatur_c'], forecast_start, forecast_end)
     visible_history = historical.loc[
         (historical['date'] >= forecast_start) & (historical['date'] <= forecast_end), 'data'
     ]
-    y_span = _widen(inference_span, _span(visible_wetter))
+    y_span = _widen(inference_span, _span(visible_weather))
     y_span = _widen(y_span, _span(visible_history))
     ax.set_ylim(y_span[0] - 0.5, y_span[1] + 0.5)
 
@@ -304,7 +304,7 @@ def plot_forecasts(df_long, df_wetter, df_inference, backtests=None, issued_at=N
                 y_span_bt, (df_bt[f'{CHANNEL}_q0.01'].min(), df_bt[f'{CHANNEL}_q0.99'].max()),
             )
     y_span_bt = _widen(
-        y_span_bt, _span(_clip(df_wetter_plot['lufttemperatur_c'], backtest_start, backtest_end)),
+        y_span_bt, _span(_clip(df_weather_plot['lufttemperatur_c'], backtest_start, backtest_end)),
     )
     ax.set_ylim(y_span_bt[0] - 0.5, y_span_bt[1] + 0.5)
 

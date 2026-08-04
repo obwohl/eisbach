@@ -10,8 +10,8 @@ byte-for-byte identical to upstream; do not edit it -- see PROVENANCE.md.
 
 class TransformerConfig:
     """
-    Konfigurationsklasse. Kombiniert Defaults mit übergebenen Argumenten.
-    Bereinigt und auf die Bedürfnisse des neuen Modells zugeschnitten.
+    Configuration holder: merges the defaults below with the checkpoint's config_dict.
+    Extracted from the upstream trainer module so inference does not have to import it.
     """
     def __init__(self, **kwargs):
         defaults = {
@@ -25,7 +25,7 @@ class TransformerConfig:
             "loss_coef": 1.0, # MoE loss coefficient
 
             # --- MoE Parameters (Expert Configuration) ---
-            # NEU: Hybride Experten-Konfiguration
+            # Hybrid expert mixture: linear experts plus reservoir (ESN) experts.
             "num_linear_experts": 2,
             "num_univariate_esn_experts": 1,
             "num_multivariate_esn_experts": 1,
@@ -53,9 +53,9 @@ class TransformerConfig:
             # --- Training / Optimization ---
             "lr": 1e-4,
             "lradj": "cosine_warmup", "num_epochs": 100,
-            "accumulation_steps": 1, # NEU: Für Gradienten-Akkumulation
+            "accumulation_steps": 1,  # gradient accumulation (training only)
             "batch_size": 128, "patience": 10,
-            "num_workers": 4,  # <<< HIER HINZUFÜGEN
+            "num_workers": 4,
 
             # --- NEW: Tier 2 Training Strategies ---
             "use_agc": False,       # Use Adaptive Gradient Clipping
@@ -63,7 +63,7 @@ class TransformerConfig:
 
             # --- Data & Miscellaneous ---
             "moving_avg": 25, "CI": False, "freq": "h",
-            "quantiles": [0.1, 0.5, 0.9], # Für die Inferenz
+            "quantiles": [0.1, 0.5, 0.9],  # overridden at inference time
             "norm_mode": "subtract_median", # Preferred normalization mode
 
             # --- NEW: Projection Head Configuration ---
@@ -90,16 +90,16 @@ class TransformerConfig:
 
         # Abgeleitete Werte
         if hasattr(self, 'seq_len'):
-            # Diese Werte werden von manchen Sub-Modulen erwartet
+            # Expected by some sub-modules even though inference never varies them.
             self.input_size = self.seq_len
             self.label_len = self.seq_len // 2
         else:
-            raise AttributeError("Konfiguration muss 'seq_len' enthalten.")
+            raise AttributeError("config_dict must contain 'seq_len'")
 
         if hasattr(self, 'horizon'):
             self.pred_len = self.horizon
         else:
-            raise AttributeError("Konfiguration muss 'horizon' enthalten.")
+            raise AttributeError("config_dict must contain 'horizon'")
 
         # 'k' muss kleiner oder gleich der Gesamtanzahl Experten sein.
         # Wir setzen es hier sicherheitshalber nach der Experten-Definition.

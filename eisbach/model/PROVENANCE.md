@@ -13,7 +13,7 @@ for the sake of a single forward pass.
 | Original entrypoint | `ts_proba_cuda/run_single_forecast.py` (was run as a subprocess) |
 | Checkpoint | `checkpoints/best_model.pt` @ same commit, SHA256 `1c7a531768d883af0c70aea1d7fe62fe59638000bf70097d61fb90f2bc4309b0`, 10 843 610 bytes |
 
-## ⚠️ Upstream HEAD is NOT compatible with this checkpoint
+## Warning: ts_proba_cuda HEAD is NOT compatible with this checkpoint
 
 Vendor from commit `a8de6942…` and nothing else. `ts_proba_cuda` HEAD has diverged
 materially from this commit and **does not load `best_model.pt`**. If you ever need
@@ -41,7 +41,32 @@ Neither line exists at `a8de6942`. At HEAD the first raises
 `try/except` swallows before exiting 0 — so the caller's `check=True` sees success
 and reads a stale CSV. Vendoring makes that class of silent breakage impossible.
 
-## Files taken from upstream
+## Authorship
+
+`ts_proba_cuda` is the author's own repository — a fork of the DUET time-series work,
+developed well past its origin. So "vendored" here means *copied from my other
+repository*, not *borrowed from a third party*. Within that, two lineages are mixed:
+
+**Written for this project** (the substance — a mixture of experts over reservoir models,
+which is not part of DUET as published):
+
+| File | What it is |
+| --- | --- |
+| `duet/layers/esn/reservoir_expert.py` | Echo State Network expert. Fixed random recurrent reservoir, learned read-out, JIT-compiled state loop. |
+| `duet/layers/expert_factory.py` | Builds the hybrid linear + reservoir expert mixture. |
+| `duet/models/duet_prob_model.py` | The probabilistic model: routing, per-channel projection heads, distribution output. |
+| `duet/layers/linear_extractor_cluster.py` | Expert routing and gating. |
+
+**Inherited** from the DUET / Autoformer / Time-Series-Library lineage, unmodified:
+`duet/layers/RevIN.py`, `duet/layers/Autoformer_EncDec.py`, `duet/utils/masked_attention.py`,
+`duet/layers/distributional_router_encoder.py`, `duet/student_t_standalone.py`.
+Those projects are MIT-licensed; this repository is MIT-licensed too, and the
+`LICENSE` file at the root covers the combined work.
+
+**Written for this repository specifically:** `api.py`, `checkpoint.py`, `config.py`
+(the last extracted from the upstream trainer module so inference need not import it).
+
+## Files taken from ts_proba_cuda
 
 All paths below are relative to the upstream repo root. They are byte-for-byte
 copies **except** for the import rewrites noted in the last column, so a future
@@ -112,9 +137,19 @@ Dropped from the inference path: `scikit-learn`, `optuna`, `tensorboard`,
 
 ## Deliberate behavioural changes vs `run_single_forecast.py`
 
-The numerical output is unchanged — see `tests/test_model_vendored.py`, which runs
-the original script as a subprocess and the new in-process path on identical input
-and asserts the results are bit-identical. Only the plumbing differs:
+The numerical output is unchanged. This was verified during the migration by running
+the original script as a subprocess against the new in-process path on identical input:
+maximum absolute difference 5.6e-05 across 2016 values, which is float32 CSV
+serialisation alone, and bit-identical once both were put through the same
+`to_csv`/`read_csv` round-trip the original used.
+
+That comparison lives in `tests/test_model_vendored.py`, but it **skips now** — it needs
+the `ts_proba_cuda` checkout, which this change removed. It is kept as a record and as a
+harness for anyone who re-attaches the submodule; it is not a check that runs in CI. The
+tests around it that do not need the original — output contract, quantile monotonicity,
+checksum enforcement — still run.
+
+Only the plumbing differs:
 
 1. **No subprocess, no CSV round-trip.** `eisbach.model.load_model()` /
    `eisbach.model.forecast()` return a `pandas.DataFrame` directly.

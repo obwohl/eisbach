@@ -38,7 +38,7 @@ def test_prepare_data_equivalence(mocker):
     mocker.patch('eisbach.data.get_prepared_weather_data', return_value=mock_wetter)
 
     # Run the function
-    df_long, df_wetter, df_wt = prepare_data()
+    df_long, df_weather, df_wt = prepare_data()
 
     # The raw water temperature is returned separately so a replay backtest can
     # reassemble the input frame from a historical weather forecast.

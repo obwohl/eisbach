@@ -80,14 +80,14 @@ def _predict(model, config, df_long: pd.DataFrame, cutoff: pd.Timestamp) -> pd.D
     return forecast(model, config, long_to_wide(truncated))
 
 
-def _replay_weather(df_wetter: pd.DataFrame, snapshot: pd.DataFrame,
+def _replay_weather(df_weather: pd.DataFrame, snapshot: pd.DataFrame,
                     reference_time: pd.Timestamp) -> pd.DataFrame:
     """Splice observed weather with the forecast that was current at ``reference_time``.
 
     This reproduces what a live run would have seen: measurements up to the reference
     time, and beyond it a forecast — not hindsight.
     """
-    observed = df_wetter.loc[df_wetter.index <= reference_time, ["lufttemperatur_c", "pressure"]]
+    observed = df_weather.loc[df_weather.index <= reference_time, ["lufttemperatur_c", "pressure"]]
 
     predicted = snapshot.copy()
     predicted["timestamp"] = pd.to_datetime(predicted["timestamp"], utc=True)
@@ -110,7 +110,7 @@ def _resolve_backtest(
     model,
     config,
     df_long: pd.DataFrame,
-    df_wetter: pd.DataFrame,
+    df_weather: pd.DataFrame,
     df_wt: pd.DataFrame,
     archive_root: Path,
 ) -> Backtest:
@@ -142,7 +142,7 @@ def _resolve_backtest(
         rows, _issued_at = snapshot
         replay_long = assemble_long_frame(
             df_wt[df_wt["timestamp"] <= reference_time],
-            _replay_weather(df_wetter, rows, reference_time),
+            _replay_weather(df_weather, rows, reference_time),
         )
         result = _predict(model, config, replay_long, reference_time)
         kind, covariates = archive.KIND_REPLAY, archive.COVARIATE_DWD_ARCHIVED
@@ -175,7 +175,7 @@ def _resolve_backtest(
 
 def run_inference(
     df_long: pd.DataFrame,
-    df_wetter: pd.DataFrame,
+    df_weather: pd.DataFrame,
     df_wt: pd.DataFrame,
     archive_root: Path = archive.DEFAULT_ROOT,
 ) -> tuple[pd.DataFrame, dict[int, Backtest]]:
@@ -208,7 +208,7 @@ def run_inference(
     )
     # Snapshot the weather forecast as issued, so this moment can be replayed later even
     # if the model output is ever lost.
-    archive.write_weather_snapshot(df_wetter.reset_index(), root=archive_root)
+    archive.write_weather_snapshot(df_weather.reset_index(), root=archive_root)
     archive.write_observations(
         observed.set_index("date")[["data"]].rename(columns={"data": "wassertemp"}),
         root=archive_root,
@@ -221,7 +221,7 @@ def run_inference(
             model=model,
             config=config,
             df_long=df_long,
-            df_wetter=df_wetter,
+            df_weather=df_weather,
             df_wt=df_wt,
             archive_root=archive_root,
         )

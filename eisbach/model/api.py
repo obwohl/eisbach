@@ -67,7 +67,7 @@ def load_model(
     checkpoint_path:
         Path to a ``.pt`` checkpoint. If omitted, it is resolved (and if
         necessary downloaded and hash-verified) via
-        :func:`src.model.checkpoint.resolve_checkpoint`.
+        :func:`eisbach.model.checkpoint.resolve_checkpoint`.
     device:
         Torch device to place the model on. Defaults to :func:`pick_device`.
 

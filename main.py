@@ -24,16 +24,16 @@ def main() -> int:
         issued_at = pd.Timestamp.now(tz="UTC")
 
         logger.info("Fetching water temperature and weather...")
-        df_long, df_wetter, df_wt = prepare_data()
+        df_long, df_weather, df_wt = prepare_data()
 
         logger.info("Running forecast and backtests...")
-        df_inference, backtests = run_inference(df_long, df_wetter, df_wt)
+        df_inference, backtests = run_inference(df_long, df_weather, df_wt)
 
         logger.info("Checking the result is plausible...")
         validate_run(df_inference, backtests, df_long)
 
         logger.info("Plotting...")
-        plot_forecasts(df_long, df_wetter, df_inference, backtests, issued_at=issued_at)
+        plot_forecasts(df_long, df_weather, df_inference, backtests, issued_at=issued_at)
 
         logger.info("Done.")
         return 0

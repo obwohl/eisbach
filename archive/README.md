@@ -3,15 +3,15 @@
 **Nothing in this directory is maintained, imported, run, or tested.**
 
 No production code depends on anything here. Nothing under `archive/` is imported by
-`main.py` or `src/`, exercised by `tests/`, or invoked by any CI workflow. The
-dependencies these files need are not in the root `requirements.txt`, and several of
+`main.py` or `eisbach/`, exercised by `tests/`, or invoked by any CI workflow. The
+dependencies these files need are not in the root `pyproject.toml`, and several of
 the scripts will not run at all without edits (see the traps below).
 
 This tree is kept for the **research record only** — so that findings and pipelines
 that took real effort to produce do not have to be reconstructed from scratch if
 someone wants to revisit them.
 
-**The production pipeline is `main.py` + `src/`.** If you are looking for the code
+**The production pipeline is `main.py` + `eisbach/`.** If you are looking for the code
 that actually generates the forecast, it is there, not here.
 
 ---
@@ -67,10 +67,18 @@ and must not be cited as such. (Its MAE column is in fact identical to
 completed — the training script `finetune_chronos.py` was written but never
 successfully run.
 
+**Which CRPS the top-level README cites, and why.** The two files disagree on CRPS
+(0.216 / 0.503 here versus 0.311 / 0.420 in `finetuned_showdown.csv`) because the later
+run recomputed it as a proper pinball-loss integral over non-uniform quantile spacing.
+The README quotes the later pair. That is legitimate — it is a valid *stock* chronos-2
+comparison, which is exactly what the README claims it to be — but note that only the
+label on that file is wrong, not the arithmetic. Both runs put this model ahead on both
+metrics, so the conclusion does not depend on which pair you take.
+
 ### 2. `weather_10_years_pressure.csv` cannot be regenerated
 
 There is **no generator for `weather_10_years_pressure.csv` anywhere in the repository**
-— not in `src/`, not in this directory, not in the deleted files. It is consumed
+— not in `eisbach/`, not in this directory, not in the deleted files. It is consumed
 (by `volatile_showdown.py`) but never produced. If it is ever lost it cannot be
 reproduced from this repo. The same caveat applies in weaker form to
 `isar_eisbach_10_years.csv` and `weather_10_years.csv`.
