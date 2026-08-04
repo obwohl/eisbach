@@ -1,7 +1,9 @@
-import pytest
-import pandas as pd
 from datetime import datetime
-from src.data import fetch_brightsky_data, fetch_data_from_url
+
+import pandas as pd
+
+from eisbach.data import fetch_brightsky_data, fetch_data_from_url
+
 
 def test_fetch_brightsky_data_empty(mocker):
     # Mock requests.get to return empty weather data

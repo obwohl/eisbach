@@ -1,0 +1,24 @@
+# Extra dependencies for the ARCHIVED research scripts in this directory.
+#
+# This file documents what the surviving scripts import. It is NOT installed by
+# the production pipeline and nothing here is tested. Installing it is only
+# necessary if you deliberately want to re-run one of the archived analyses.
+#
+# Only the packages that are NOT already in the repository-root requirements.txt
+# are listed. pandas, numpy, torch, matplotlib, requests and beautifulsoup4 come
+# from there.
+
+# analyze_combinations.py, analyze_rivers.py, volatile_showdown.py
+#   -> from chronos import BaseChronosPipeline  ("amazon/chronos-2")
+chronos
+
+# analyze_diff_patterns.py, analyze_rivers.py, volatile_showdown.py
+#   -> import seaborn as sns
+seaborn
+
+# NOTE: `transformers` is intentionally absent. It was needed only by
+# finetune_chronos.py (`from transformers import TrainingArguments`), which has
+# been deleted along with the rest of the never-completed fine-tuning work.
+# Verified by grep: no surviving file in this directory imports transformers.
+# (chronos may still pull it in transitively; that is a different matter from
+# this code needing it directly.)

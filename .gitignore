@@ -7,18 +7,29 @@ env/
 venv/
 .env
 .venv/
-ts_proba_cuda/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
 
-# Ignore everything in data folder by default
+# Scratch data. The archive under data/archive/ is the exception: it is the only copy
+# of every forecast we have ever made, and of the DWD forecasts as they were issued.
 data/*
-# But keep the forecast archive
-!data/forecast_archive/
-!data/forecast_archive/*.csv
+!data/archive/
+!data/archive/**
 
-# Ignore old/random CSVs but allow the main Prediction CSVs if we want to track them manually
-# (Since the daily cron pushes them, we should allow them, but they are tracked in root)
-isar_eisbach_comparison/finetuned_chronos2/
+# The model checkpoint is fetched on demand and verified against a pinned SHA256,
+# so it never belongs in git.
+data/model/
+
+# Generated outputs. These are published to the `outputs` branch by CI rather than
+# committed to main — see .github/workflows/forecast.yml. Committing them here is what
+# grew .git to 175 MB.
+Prediction.png
+Prediction_Backtest.png
+Prediction.csv
+
 *.log
 *.pid
-*_10_years*.csv
-scripts/id_ed25519*
+
+# Working notes, deliberately untracked.
+TODO.md

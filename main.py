@@ -1,43 +1,48 @@
+"""Entrypoint: fetch, forecast, plot.
+
+Run with ``python main.py``. Everything it produces — the two PNGs, ``Prediction.csv``
+and the archive under ``data/archive/`` — is written relative to the working directory.
+"""
+
 import logging
 import sys
-import warnings
-import os
-import glob
-from datetime import datetime
-from src.data import prepare_data
-from src.inference import run_inference
-from src.plotting import plot_forecasts
 
-# For automated execution, logging should be used.
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+import pandas as pd
 
-def main():
+from eisbach.data import prepare_data
+from eisbach.inference import run_inference
+from eisbach.plotting import plot_forecasts
+from eisbach.validate import validate_run
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+logger = logging.getLogger(__name__)
+
+
+def main() -> int:
     try:
-        # Generate timestamp string
-        timestamp_str = datetime.now().strftime('%Y-%m-%d_%H-%M')
-        logging.info(f"Using timestamp for output files: {timestamp_str}")
+        issued_at = pd.Timestamp.now(tz="UTC")
 
-        # Clean up old prediction files
-        for f in glob.glob("Prediction_*_*.png") + glob.glob("Prediction_*_*.csv") + glob.glob("Prediction_*_*.html") + glob.glob("eisbach_new.png"):
-            try:
-                os.remove(f)
-                logging.info(f"Removed old file: {f}")
-            except Exception as e:
-                logging.warning(f"Failed to remove old file {f}: {e}")
+        logger.info("Fetching water temperature and weather...")
+        df_long, df_weather, df_wt = prepare_data()
 
-        logging.info("Starting data preparation...")
-        df_long, df_wetter = prepare_data()
+        logger.info("Running forecast and backtests...")
+        df_inference, backtests = run_inference(df_long, df_weather, df_wt)
 
-        logging.info("Data preparation complete. Starting inference...")
-        df_inference, backtests = run_inference(df_long, timestamp_str)
+        logger.info("Checking the result is plausible...")
+        validate_run(df_inference, backtests, df_long)
 
-        logging.info("Inference complete. Starting plotting...")
-        plot_forecasts(df_long, df_wetter, df_inference, backtests, timestamp_str)
+        logger.info("Plotting...")
+        plot_forecasts(df_long, df_weather, df_inference, backtests, issued_at=issued_at)
 
-        logging.info("Pipeline completed successfully.")
-    except Exception as e:
-        logging.exception(f"An error occurred during execution: {e}")
-        sys.exit(1)
+        logger.info("Done.")
+        return 0
+    except Exception:
+        # Log the traceback rather than just the message: when this fails it fails in
+        # CI, where the traceback is the only thing anyone will have to go on.
+        logger.exception("Pipeline failed")
+        return 1
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

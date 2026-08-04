@@ -1,40 +1,94 @@
 # Eisbach Forecast
 
-This project uses modern time-series forecasting (Chronos-2 via AutoGluon) to predict the water temperature of the Eisbach river in Munich, driven by historical water temperature data and future weather covariates.
+A 96-hour probabilistic forecast of the water temperature of the Eisbach in Munich,
+regenerated twice a day.
 
-## Workflow & Output Tracking
-The workflow is triggered via a daily cronjob (or manually via GitHub dispatch). Upon execution, the following happens:
+![Latest forecast](https://raw.githubusercontent.com/obwohl/eisbach/outputs/Prediction.png)
 
-1. **Clean-Up**: Previous prediction plots and CSV files in the root folder are deleted to prevent unnecessary repo bloat.
-2. **Inference**: A forecast is calculated.
-3. **Data Outputs**:
-   - `Prediction_[YYYY-MM-DD_HH-MM].csv`: A readable, raw prediction file including quantile ranges. Only the newest file is tracked.
-4. **Plot Outputs**:
-   - `Prediction_[YYYY-MM-DD_HH-MM].png`: A clean visualization showing just the main prediction along with historical context and air temperature.
-   - `Prediction_Backtest_[YYYY-MM-DD_HH-MM].png`: An extended plot that includes the main forecast as well as historical backtests (-96h, -192h, -288h) for accuracy verification.
-   - Both plots dynamically embed the execution timestamp in the file name and the plot title.
-5. **Archiving (`src/archive_forecast.py`)**:
-   - A pure, 5-day non-overlapping weather forecast archive is maintained at `data/forecast_archive/forecast_5d_archive.csv`.
-   - To avoid redundant overlapping data, the script explicitly verifies the timestamp of the last archive entry. A new 5-day window is appended *only* if the previous entry is at least ~5 days old (4 days, 23 hours to account for runner variations).
-   - This ensures we keep clean, true 5-day forward predictions for future quality validation without data duplication.
+## The model
 
-## Directory Structure
-- `data/`: Used for intermediate execution data (ignored by git, except the `forecast_archive` sub-folder).
-- `src/`: Core Python modules for data fetching, inference, plotting, and archiving.
-- `.github/workflows/`: Contains the CI/CD pipeline definition (`daily_cron.yml`), which handles auto-committing the newest prediction outputs and archive data back to the repository.
+A **DUET-Prob** network I built and trained for this river. Not a foundation model with a
+wrapper around it.
 
-## Installation & Local Execution
-Ensure `ts_proba_cuda` submodule is initialized:
+It routes between linear experts and **Echo State Network** experts — reservoir models
+with a fixed random recurrent state that the network learns to read out. They handle
+chaotic dynamics well, which is what a shallow concrete channel in changing weather
+produces. The output is a Student-t distribution, so the quantile bands mean something.
+
+| | |
+| --- | --- |
+| Parameters | 2.7 M |
+| Context → horizon | 384 h → 96 h |
+| Inputs | water temperature, air temperature, air pressure |
+| Output | 7 quantiles, 1 % to 99 % |
+
+### Against a foundation model
+
+Ten backtest windows, identical history, same perfect weather for both:
+
+| | MAE ↓ | CRPS ↓ |
+| --- | --- | --- |
+| **This model** | **0.450** | **0.311** |
+| Chronos-2 (Amazon), multivariate | 0.624 | 0.420 |
+
+The gap widens on volatile windows, where Chronos-2 answers uncertainty by widening its
+intervals until they stop saying anything. A model that has learned one river's
+thermodynamics can commit to a narrow band; a zero-shot model cannot.
+
+## Backtests you can trust
+
+Every plot shows backtests at −96 h, −192 h and −288 h. They are not equally honest, and
+the archive records which is which:
+
+| Kind | Future weather came from | Honest? |
+| --- | --- | --- |
+| `live` | the forecast available at the time | yes |
+| `replay` | an archived forecast, as issued | yes |
+| `oracle` | the weather that actually occurred | **no** — flatters the model |
+
+`live` is preferred and free: it is a forecast we really made, retrieved rather than
+recomputed. `oracle` is the last resort and is drawn dashed and labelled, so a
+too-good-looking backtest is never mistaken for real-world skill.
+
+## Data
+
+| Input | Source |
+| --- | --- |
+| Water temperature | [GKD Bayern](https://www.gkd.bayern.de), gauge *München Himmelreichbrücke* |
+| Weather | [Bright Sky](https://brightsky.dev) / DWD, station `03379` |
+
+Weather covariates are shifted 96 hours backwards, so at any timestamp the model sees the
+weather four days ahead — the known-future information a forecast provides.
+
+## Running it
+
 ```bash
-git submodule update --init --recursive
+pip install --index-url https://download.pytorch.org/whl/cpu torch   # CPU-only; skip if you want CUDA
+pip install -e ".[dev]"
+python main.py
 ```
 
-Install requirements:
-```bash
-pip install -r requirements.txt
+The 10 MB checkpoint downloads on first run and is verified against a pinned SHA256.
+Inference is CPU-only and the pipeline takes under a minute.
+
+## Layout
+
+```
+main.py            entrypoint
+eisbach/data.py    data sources and feature assembly
+eisbach/model/     the forecasting model
+eisbach/archive.py forecast storage, with provenance
+eisbach/validate.py plausibility gate — a bad forecast fails the run
+eisbach/plotting.py output
+archive/           earlier research, unmaintained
+docs/              operational notes
 ```
 
-Run the pipeline:
-```bash
-PYTHONPATH=. python main.py
-```
+Plots and the CSV are published to the [`outputs`](https://github.com/obwohl/eisbach/tree/outputs)
+branch. `data/archive/` holds every forecast ever made and the DWD forecasts as they were
+issued — it is the only copy of both.
+
+## Licence
+
+MIT. The model code descends from the DUET and Autoformer time-series work; see
+`eisbach/model/PROVENANCE.md` for what is inherited and what is mine.
