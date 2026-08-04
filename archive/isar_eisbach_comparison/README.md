@@ -103,8 +103,15 @@ Der Nutzer bemerkte völlig zu Recht eine scheinbare Anomalie im "Volatile 96h W
 
 ---
 
-## 5. Vorbereitung für Chronos-2 Fine-Tuning
-Da das Zero-Shot Modell an unseren lokalen Eigenheiten (Eisbach-Beton, Turbulenz) scheiterte, wurde ein Trainings-Skript (`finetune_chronos.py`) entwickelt, um Chronos-2 lokal nachzutrainieren. Um Overfitting zu vermeiden, wurde strikt das letzte Jahr als Evaluations-Holdout zurückbehalten.
+## 5. Chronos-2 Fine-Tuning — begonnen, nie abgeschlossen
 
-*Limitierung:* Da ein vollständiges Fine-Tuning des massiven T5-Encoders in einer reinen CPU-Sandbox in realisierbarer Zeit hängt/crasht, wurde die Auswertung (`compare_finetuned.py`) hierfür präpariert, aber die reelle Ausführung muss auf dedizierten GPU-Knoten erfolgen.
-Um dies zukünftig zu ermöglichen, wurde ein **GPU-Server-Primer** (`gpu-server-primer.md`) in das Projekt integriert. Dieses Framework erlaubt es Agenten zukünftig, den `Chronos2Trainer` über `remote.py` nativ auf einen A100/H100 Server auszulagern, um das Modell in Minuten zu finetunen und die Gewichte synchron in die Sandbox zu ziehen.
+Da das Zero-Shot Modell an unseren lokalen Eigenheiten (Eisbach-Beton, Turbulenz) scheiterte, war ein lokales Nachtrainieren von Chronos-2 der naheliegende nächste Schritt. Ein Trainings-Skript wurde entwickelt (das letzte Jahr strikt als Evaluations-Holdout zurückbehalten, um Overfitting zu vermeiden), und eine Auswertung wurde vorbereitet.
+
+**Dieser Arbeitsstrang wurde nie abgeschlossen.** Ein vollständiges Fine-Tuning des massiven T5-Encoders hängt/crasht in einer reinen CPU-Sandbox; es hätte auf dedizierten GPU-Knoten laufen müssen. Dazu ist es nie gekommen. **Es existieren keine fine-getunten Gewichte und keine fine-getunten Ergebnisse.**
+
+Die zugehörige Tooling-Kette wurde inzwischen entfernt:
+
+* das Trainings-Skript und das Auswertungs-Skript sind gelöscht — das Auswertungs-Skript hat nie ein fine-getuntes Modell geladen, sondern das Zero-Shot `amazon/chronos-2` evaluiert und das Ergebnis lediglich entsprechend beschriftet;
+* der GPU-Server-Primer und das zugehörige Remote-Ausführungs-Skript sind ebenfalls gelöscht (Sicherheitsgründe, siehe `TODO.md` §0.9).
+
+> ⚠️ **Achtung, Falle:** Die noch vorhandene Datei `finetuned_showdown.csv` enthält **trotz ihres Namens keine fine-getunten Ergebnisse** — es sind Zero-Shot-Zahlen. Siehe `../README.md` für Details.
