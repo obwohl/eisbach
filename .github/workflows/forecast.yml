@@ -19,6 +19,8 @@ on:
 permissions:
   contents: write
   issues: write  # the failure notification below opens one
+  pages: write        # publishing the plots
+  id-token: write     # required by actions/deploy-pages
 
 concurrency:
   group: forecast
@@ -65,15 +67,17 @@ jobs:
           git push origin HEAD:${{ github.ref_name }}
 
       # Plots and the CSV are regenerated from scratch every run, so keeping their
-      # history is pointless — and it is what grew .git to 175 MB. They go to an orphan
-      # branch that is replaced wholesale each time, so storage stays flat forever.
-      - name: Publish outputs
+      # history is pointless — committing them is what grew .git to 175 MB. GitHub Pages
+      # deploys them without touching git at all, and gives them a URL a human can open.
+      - name: Assemble the published page
         run: |
-          git checkout --orphan outputs-tmp
-          git rm -rq --cached .
-          git add -f Prediction.png Prediction_Backtest.png Prediction.csv
-          git commit -m "Forecast of $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push --force origin outputs-tmp:outputs
+          mkdir -p public
+          cp docs/page/index.html public/
+          cp Prediction.png Prediction_Backtest.png Prediction.csv public/
+
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: public
 
       - name: Report failure
         if: failure()
@@ -88,3 +92,16 @@ jobs:
               body: `The scheduled forecast failed.\n\n[Run log](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n\nLogs expire, so capture anything useful before they do.`,
               labels: ['forecast-failure'],
             });
+
+  # Deployment has to be its own job: actions/deploy-pages requires the github-pages
+  # environment, which cannot be attached to a job that does anything else.
+  publish:
+    needs: forecast
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

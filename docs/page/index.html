@@ -1,0 +1,39 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eisbach water temperature forecast</title>
+<style>
+  :root { color-scheme: light dark }
+  body {
+    font: 16px/1.6 system-ui, -apple-system, sans-serif;
+    max-width: 62rem;
+    margin: 3rem auto;
+    padding: 0 1.25rem;
+  }
+  h1 { font-size: 1.75rem; margin-bottom: .25rem }
+  h2 { font-size: 1.25rem; margin-top: 3rem }
+  p { max-width: 46rem }
+  img { width: 100%; height: auto; margin: 1.25rem 0; border-radius: 4px }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #8883; font-size: .9rem }
+  a { color: inherit }
+</style>
+
+<h1>Eisbach water temperature</h1>
+<p>A 96-hour probabilistic forecast for the Eisbach in Munich, regenerated twice a day.
+   Each plot carries its own issue time.</p>
+
+<img src="Prediction.png" alt="Forecast with recent history and air temperature">
+
+<h2>With backtests</h2>
+<p>The same forecast alongside backtests at &minus;96&#8202;h, &minus;192&#8202;h and
+   &minus;288&#8202;h. Solid backtests are honest — they are forecasts that were really
+   made at the time, or replays against the weather forecast as it was then issued.
+   Dashed ones are oracle backtests, computed with the weather that actually occurred,
+   so they flatter the model and are not evidence of real-world skill.</p>
+
+<img src="Prediction_Backtest.png" alt="Forecast with three backtests">
+
+<footer>
+  <a href="Prediction.csv">Quantiles as CSV</a> &middot;
+  <a href="https://github.com/obwohl/eisbach">Source and method</a>
+</footer>

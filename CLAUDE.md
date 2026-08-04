@@ -14,6 +14,7 @@ eisbach/validate.py   post-run plausibility gate
 eisbach/plotting.py   matplotlib output
 eisbach/model/        vendored inference code — see below
 archive/              unmaintained research code, never imported or run
+docs/page/            template for the published site
 ```
 
 ## Things that will bite you
@@ -44,9 +45,9 @@ a leak, just a smaller one.
 of the DWD forecasts as they were issued. GKD serves only a rolling window, so anything
 not captured is eventually unrecoverable. Treat it as append-only.
 
-**Generated outputs do not belong in `main`.** The PNGs and CSV go to the orphan
-`outputs` branch, which is replaced wholesale each run. Committing them to `main` is what
-grew `.git` to 175 MB.
+**Generated outputs do not belong in git.** The PNGs and CSV are deployed to GitHub Pages
+via `actions/upload-pages-artifact`, which bypasses git entirely, so republishing them
+twice a day costs no history. Committing them is what grew `.git` to 175 MB.
 
 ## Conventions
 

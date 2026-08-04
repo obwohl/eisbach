@@ -3,7 +3,9 @@
 A 96-hour probabilistic forecast of the water temperature of the Eisbach in Munich,
 regenerated twice a day.
 
-![Latest forecast](https://raw.githubusercontent.com/obwohl/eisbach/outputs/Prediction.png)
+**→ [obwohl.github.io/eisbach](https://obwohl.github.io/eisbach/)**
+
+![Latest forecast](https://obwohl.github.io/eisbach/Prediction.png)
 
 ## The model
 
@@ -84,9 +86,8 @@ archive/           earlier research, unmaintained
 docs/              operational notes
 ```
 
-Plots and the CSV are published to the [`outputs`](https://github.com/obwohl/eisbach/tree/outputs)
-branch. `data/archive/` holds every forecast ever made and the DWD forecasts as they were
-issued — it is the only copy of both.
+`docs/page/` is the template for the published site; `data/archive/` holds every forecast
+ever made and the DWD forecasts as they were issued — it is the only copy of both.
 
 ## Licence
 
