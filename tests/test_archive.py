@@ -277,3 +277,109 @@ def test_migration_is_idempotent(tmp_path, root):
 
 def test_migration_of_missing_file_is_a_noop(tmp_path, root):
     assert archive.migrate_legacy_forecasts(tmp_path / "not_here.csv", root=root) == 0
+
+
+def weather_rows(start, periods=3):
+    return pd.DataFrame({
+        "timestamp": pd.date_range(start, periods=periods, freq="1h"),
+        "temperature": [18.0, 19.0, 20.0][:periods],
+    })
+
+
+def test_a_runs_own_snapshot_is_eligible_however_late_it_was_fetched(root):
+    """A run reads the gauge, then fetches the weather. The gap is not a leak — that
+    forecast is literally the one the run used."""
+    anchor = pd.Timestamp("2026-05-10 10:00", tz="UTC")
+    archive.write_weather_snapshot(
+        weather_rows(anchor), archived_at=anchor + pd.Timedelta(minutes=17),
+        reference_time=anchor, root=root,
+    )
+
+    assert archive.load_weather_snapshot(anchor, root=root) is not None
+
+
+def test_a_stale_anchor_with_a_late_fetch_is_rejected(root):
+    """The dangerous case: a delayed gauge.
+
+    A run at 16:00 still anchored to a 09:00 reading holds a weather forecast issued at
+    16:00. Accepting it for a 10:00 replay would leak six hours of forecast while
+    labelling the result honest.
+    """
+    archive.write_weather_snapshot(
+        weather_rows(pd.Timestamp("2026-05-10 09:00", tz="UTC")),
+        archived_at=pd.Timestamp("2026-05-10 16:00", tz="UTC"),
+        reference_time=pd.Timestamp("2026-05-10 09:00", tz="UTC"),
+        root=root,
+    )
+
+    assert archive.load_weather_snapshot(
+        pd.Timestamp("2026-05-10 10:00", tz="UTC"), root=root,
+    ) is None
+
+
+def test_an_earlier_anchor_fetched_in_time_is_accepted(root):
+    """The same fallback is fine when the fetch really did precede the request."""
+    archive.write_weather_snapshot(
+        weather_rows(pd.Timestamp("2026-05-10 09:00", tz="UTC")),
+        archived_at=pd.Timestamp("2026-05-10 09:10", tz="UTC"),
+        reference_time=pd.Timestamp("2026-05-10 09:00", tz="UTC"),
+        root=root,
+    )
+
+    hit = archive.load_weather_snapshot(pd.Timestamp("2026-05-10 10:00", tz="UTC"), root=root)
+
+    assert hit is not None
+    _rows, anchor = hit
+    assert anchor == pd.Timestamp("2026-05-10 09:00", tz="UTC")
+
+
+def test_a_retry_before_the_gauge_advances_replaces_the_snapshot(root):
+    """Two runs can share an anchor — a retry, or a manual run before the gauge ticks.
+
+    They differ only in fetch time, so deduplicating on that would keep both and leave a
+    replay choosing arbitrarily between two sets of identical timestamps.
+    """
+    anchor = pd.Timestamp("2026-05-10 10:00", tz="UTC")
+    first = weather_rows(anchor)
+    second = weather_rows(anchor)
+    second["temperature"] = [30.0, 31.0, 32.0]
+
+    archive.write_weather_snapshot(
+        first, archived_at=anchor + pd.Timedelta(minutes=5), reference_time=anchor, root=root)
+    archive.write_weather_snapshot(
+        second, archived_at=anchor + pd.Timedelta(minutes=40), reference_time=anchor, root=root)
+
+    stored = pd.read_csv(root / "weather" / "2026-05.csv")
+    assert len(stored) == 3, "an anchor must hold exactly one snapshot"
+
+    rows, _anchor = archive.load_weather_snapshot(anchor, root=root)
+    assert rows["temperature"].tolist() == [30.0, 31.0, 32.0], "the refreshed run wins"
+
+
+def test_distinct_anchors_still_accumulate(root):
+    """Collapsing by anchor must not collapse genuinely different runs."""
+    for hour in (10, 22):
+        anchor = pd.Timestamp(f"2026-05-10 {hour}:00", tz="UTC")
+        archive.write_weather_snapshot(
+            weather_rows(anchor), archived_at=anchor + pd.Timedelta(minutes=5),
+            reference_time=anchor, root=root,
+        )
+
+    stored = pd.read_csv(root / "weather" / "2026-05.csv")
+    assert len(stored) == 6
+    assert stored["reference_time"].nunique() == 2
+
+
+def test_legacy_snapshots_without_an_anchor_still_load(root):
+    """The five-daily archive predates anchors; those rows fall back to their fetch."""
+    issued = pd.Timestamp("2026-05-10 09:00", tz="UTC")
+    legacy = weather_rows(issued)
+    legacy["archive_timestamp"] = issued.isoformat()
+    (root / "weather").mkdir(parents=True, exist_ok=True)
+    legacy.to_csv(root / "weather" / "2026-05.csv", index=False)
+
+    hit = archive.load_weather_snapshot(pd.Timestamp("2026-05-10 10:00", tz="UTC"), root=root)
+
+    assert hit is not None
+    _rows, anchor = hit
+    assert anchor == issued

@@ -102,6 +102,17 @@ def _as_utc(value) -> pd.Timestamp:
     return ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
 
 
+def _as_utc_series(values) -> pd.Series:
+    """Parse a column of timestamps to UTC, tolerating a column that is not there.
+
+    Returns an all-NaT series for a missing column, so callers can treat "written before
+    this field existed" the same as "this row has no value".
+    """
+    if values is None:
+        return pd.Series(pd.NaT, dtype="datetime64[ns, UTC]")
+    return pd.to_datetime(values, utc=True, errors="coerce", format="mixed")
+
+
 def _read_partition(path: Path) -> pd.DataFrame:
     if not path.exists() or path.stat().st_size == 0:
         return pd.DataFrame()
@@ -305,8 +316,13 @@ def write_weather_snapshot(df_weather: pd.DataFrame, *, archived_at=None,
     path = _partition_path(root, "weather", reference_time)
     existing = _read_partition(path)
     if not existing.empty:
-        # Idempotent: re-archiving the same run replaces rather than duplicates.
-        existing = existing[existing["archive_timestamp"].astype(str) != archived_at.isoformat()]
+        # One snapshot per anchor. A retry before the gauge advances shares the anchor
+        # but not the fetch time, so deduplicating on the fetch would keep both and leave
+        # a replay to pick between two sets of the same timestamps arbitrarily. The
+        # newest fetch for an anchor is the one that run actually forecast from.
+        superseded = _as_utc_series(existing.get("reference_time")) == reference_time
+        same_fetch = existing["archive_timestamp"].astype(str) == archived_at.isoformat()
+        existing = existing[~(superseded | same_fetch)]
         snapshot = pd.concat([existing, snapshot], ignore_index=True)
     _write_partition(path, snapshot)
 
@@ -326,11 +342,21 @@ def load_weather_snapshot(reference_time, *, max_age_hours: float = 12,
     weather a moment later, so those differ by minutes; keying on the fetch time would
     mean a run's own snapshot could never replay that run's anchor.
 
-    The window is deliberately **one-sided**: only snapshots anchored at or before
-    ``reference_time`` are eligible. One anchored later belongs to a run that knew more
-    than the run we are reconstructing, and using it would leak the future — less
-    blatantly than an oracle backtest, but in the same direction. An older snapshot
-    merely makes the replay slightly more pessimistic, which is the safe way to be wrong.
+    Eligibility is **one-sided**, and two clocks bound it, because a snapshot carries two
+    kinds of knowledge:
+
+    - its *anchor* bounds what the run knew about the river,
+    - its *fetch time* bounds what it knew about the weather.
+
+    A snapshot anchored exactly at ``reference_time`` is that run's own, so it is the
+    forecast that run really used, whenever it happened to be fetched. Falling back to an
+    older anchor is different: that snapshot only qualifies if it was also *fetched* by
+    ``reference_time``. Otherwise a delayed gauge — a run at 16:00 still anchored to a
+    09:00 reading — would hand a 10:00 replay a forecast issued six hours in its future,
+    and label the result honest.
+
+    An older snapshot merely makes the replay slightly more pessimistic, which is the
+    safe way to be wrong.
     """
     reference_time = _as_utc(reference_time)
     window = pd.Timedelta(hours=max_age_hours)
@@ -344,23 +370,29 @@ def load_weather_snapshot(reference_time, *, max_age_hours: float = 12,
         return None
 
     df = pd.concat(frames, ignore_index=True)
-    # Snapshots written before reference_time existed fall back to their fetch time.
-    if "reference_time" in df.columns:
-        anchor = pd.to_datetime(df["reference_time"], utc=True, format="mixed")
-        anchor = anchor.fillna(pd.to_datetime(df["archive_timestamp"], utc=True, format="mixed"))
-    else:
-        anchor = pd.to_datetime(df["archive_timestamp"], utc=True, format="mixed")
+    fetched = _as_utc_series(df["archive_timestamp"])
+    # Snapshots written before anchors existed fall back to their fetch time.
+    anchor = _as_utc_series(df.get("reference_time")).fillna(fetched)
 
-    eligible_mask = (anchor <= reference_time) & (anchor >= reference_time - window)
+    in_window = anchor >= reference_time - window
+    own_run = anchor == reference_time
+    earlier_run = (anchor < reference_time) & (fetched <= reference_time)
+    eligible_mask = in_window & (own_run | earlier_run)
+
     if not eligible_mask.any():
-        logger.info("No weather snapshot anchored in the %sh before %s", max_age_hours, reference_time)
+        logger.info("No weather snapshot usable for a replay at %s", reference_time)
         return None
 
     chosen_at = anchor[eligible_mask].max()
-    snapshot = df[eligible_mask & (anchor == chosen_at)].copy()
+    at_anchor = eligible_mask & (anchor == chosen_at)
+    # An anchor may hold more than one fetch in archives written before writes started
+    # collapsing them. The newest is the one that run forecast from.
+    latest_fetch = fetched[at_anchor].max()
+    snapshot = df[at_anchor & (fetched == latest_fetch)].copy()
+
     logger.info(
-        "Replaying weather forecast anchored at %s (%s before %s)",
-        chosen_at, reference_time - chosen_at, reference_time,
+        "Replaying weather forecast anchored at %s, fetched %s (%s before %s)",
+        chosen_at, latest_fetch, reference_time - chosen_at, reference_time,
     )
     return snapshot, chosen_at
 
