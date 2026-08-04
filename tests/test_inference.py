@@ -253,3 +253,78 @@ def test_no_observations_is_a_hard_error(run, tmp_path):
     with pytest.raises(ValueError, match="no water temperature"):
         inference.run_inference(empty, make_weather(), make_water(),
                                 archive_root=tmp_path / "archive")
+
+
+def test_a_runs_own_snapshot_can_replay_its_own_anchor(run):
+    """Regression: the snapshot a run writes must be usable to replay that run.
+
+    The gauge reading a run is anchored to is always slightly older than the run itself
+    — the run reads the gauge, then fetches the weather. Keying snapshots by fetch time
+    made every snapshot look like it was issued *after* the anchor it belonged to, so
+    the one-sided window rejected it and every replay silently degraded to an oracle
+    backtest. The replay path would never have fired.
+    """
+    run()
+
+    hit = archive.load_weather_snapshot(LAST_OBSERVATION, root=run.root)
+
+    assert hit is not None, "a run cannot replay its own anchor"
+    _rows, anchor = hit
+    assert anchor == LAST_OBSERVATION
+
+
+def test_the_second_run_replays_the_first(run):
+    """End to end: after one run, a backtest reaching back to it must be honest.
+
+    Only the weather snapshot is left behind — the stored forecast is removed first, so
+    this exercises the replay path rather than the cheaper archive lookup.
+    """
+    run()
+    for partition in (run.root / "forecasts").glob("*.csv"):
+        partition.unlink()
+
+    _, backtests = run()
+
+    assert backtests[96].kind == archive.KIND_ORACLE, "no snapshot that far back yet"
+    replayable = archive.load_weather_snapshot(LAST_OBSERVATION, root=run.root)
+    assert replayable is not None
+
+
+def test_replay_accepts_both_snapshot_schemas(run):
+    """Older snapshots hold Bright Sky's raw column names, newer ones the processed ones.
+
+    Both land in the same monthly partition, so a partition is a union of the two
+    schemas. Renaming the raw names blindly would collide with the processed ones and
+    produce two columns of the same name.
+    """
+    reference = LAST_OBSERVATION - pd.Timedelta(hours=192)
+    raw = pd.DataFrame({
+        "timestamp": pd.date_range(reference, periods=120, freq="1h"),
+        "temperature": np.linspace(12, 22, 120),
+        "pressure_msl": np.linspace(1005, 1015, 120),
+    })
+    archive.write_weather_snapshot(raw, archived_at=reference, root=run.root)
+
+    # The run writes a processed-schema snapshot into the same partition.
+    _, backtests = run()
+
+    assert backtests[192].kind == archive.KIND_REPLAY
+
+
+def test_canonical_weather_prefers_processed_names():
+    from eisbach.inference import _canonical_weather
+
+    index = pd.date_range("2026-05-10", periods=3, freq="1h", tz="UTC")
+    both = pd.DataFrame({
+        "timestamp": index,
+        "temperature": [1.0, 2.0, 3.0],
+        "lufttemperatur_c": [10.0, 20.0, 30.0],
+        "pressure_msl": [1000.0, 1001.0, 1002.0],
+        "pressure": [900.0, 901.0, 902.0],
+    })
+
+    result = _canonical_weather(both)
+
+    assert list(result.columns) == ["lufttemperatur_c", "pressure"]
+    assert result["lufttemperatur_c"].tolist() == [10.0, 20.0, 30.0]
+    assert result["pressure"].tolist() == [900.0, 901.0, 902.0]

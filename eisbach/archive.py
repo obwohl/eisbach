@@ -271,28 +271,48 @@ def load_forecast(
 
 
 def write_weather_snapshot(df_weather: pd.DataFrame, *, archived_at=None,
-                           root: Path = DEFAULT_ROOT) -> Path:
+                           reference_time=None, root: Path = DEFAULT_ROOT) -> Path:
     """Store a DWD forecast exactly as it was issued.
 
     This is what makes ``replay`` backtests possible later: it is the only record of
     what the weather forecast *said*, as opposed to what the weather then did.
+
+    Two timestamps are recorded, and the distinction matters:
+
+    ``archive_timestamp``
+        When the snapshot was actually fetched. A fact about the fetch.
+    ``reference_time``
+        The anchor of the run that fetched it — the last gauge observation. This is what
+        a replay looks up by, because the question a replay asks is *which weather
+        forecast did the run anchored here actually use?*
+
+    They are never equal: the gauge reading is always a little older than the run that
+    consumes it. Keying by fetch time alone would mean a run's own snapshot could never
+    replay that run's anchor, which silently turns every replay into an oracle backtest.
     """
     if df_weather.empty:
         raise ValueError("refusing to archive an empty weather snapshot")
 
     archived_at = _as_utc(archived_at if archived_at is not None else pd.Timestamp.now(tz="UTC"))
+    reference_time = _as_utc(reference_time) if reference_time is not None else archived_at
+
     snapshot = df_weather.copy()
     snapshot["archive_timestamp"] = archived_at.isoformat()
+    snapshot["reference_time"] = reference_time
 
-    path = _partition_path(root, "weather", archived_at)
+    # Partition by reference time, so a snapshot sits with the run it belongs to.
+    path = _partition_path(root, "weather", reference_time)
     existing = _read_partition(path)
     if not existing.empty:
-        # Idempotent: re-archiving the same instant replaces rather than duplicates.
+        # Idempotent: re-archiving the same run replaces rather than duplicates.
         existing = existing[existing["archive_timestamp"].astype(str) != archived_at.isoformat()]
         snapshot = pd.concat([existing, snapshot], ignore_index=True)
     _write_partition(path, snapshot)
 
-    logger.info("Archived %d weather rows issued at %s to %s", len(df_weather), archived_at, path)
+    logger.info(
+        "Archived %d weather rows for reference %s (fetched %s) to %s",
+        len(df_weather), reference_time, archived_at, path,
+    )
     return path
 
 
@@ -300,12 +320,16 @@ def load_weather_snapshot(reference_time, *, max_age_hours: float = 12,
                           root: Path = DEFAULT_ROOT):
     """Return the DWD forecast that was current at ``reference_time``, or ``None``.
 
-    The window is deliberately **one-sided**: only snapshots issued at or before
-    ``reference_time`` are eligible. A snapshot issued later contains information that a
-    run at ``reference_time`` could not have had, and using it would leak the future —
-    less blatantly than an oracle backtest, but in exactly the same direction. An older
-    snapshot merely makes the replay slightly more pessimistic, which is the safe way to
-    be wrong.
+    Matching is on the snapshot's ``reference_time`` — the anchor of the run that
+    fetched it — not on when the fetch happened. A run reads the gauge, then fetches the
+    weather a moment later, so those differ by minutes; keying on the fetch time would
+    mean a run's own snapshot could never replay that run's anchor.
+
+    The window is deliberately **one-sided**: only snapshots anchored at or before
+    ``reference_time`` are eligible. One anchored later belongs to a run that knew more
+    than the run we are reconstructing, and using it would leak the future — less
+    blatantly than an oracle backtest, but in the same direction. An older snapshot
+    merely makes the replay slightly more pessimistic, which is the safe way to be wrong.
     """
     reference_time = _as_utc(reference_time)
     window = pd.Timedelta(hours=max_age_hours)
@@ -319,17 +343,22 @@ def load_weather_snapshot(reference_time, *, max_age_hours: float = 12,
         return None
 
     df = pd.concat(frames, ignore_index=True)
-    issued = pd.to_datetime(df["archive_timestamp"], utc=True, format="mixed")
-    eligible = df[(issued <= reference_time) & (issued >= reference_time - window)]
-    if eligible.empty:
-        logger.info("No weather snapshot issued in the %sh before %s", max_age_hours, reference_time)
+    # Snapshots written before reference_time existed fall back to their fetch time.
+    if "reference_time" in df.columns:
+        anchor = pd.to_datetime(df["reference_time"], utc=True, format="mixed")
+        anchor = anchor.fillna(pd.to_datetime(df["archive_timestamp"], utc=True, format="mixed"))
+    else:
+        anchor = pd.to_datetime(df["archive_timestamp"], utc=True, format="mixed")
+
+    eligible_mask = (anchor <= reference_time) & (anchor >= reference_time - window)
+    if not eligible_mask.any():
+        logger.info("No weather snapshot anchored in the %sh before %s", max_age_hours, reference_time)
         return None
 
-    issued_eligible = pd.to_datetime(eligible["archive_timestamp"], utc=True, format="mixed")
-    chosen_at = issued_eligible.max()
-    snapshot = eligible[issued_eligible == chosen_at].copy()
+    chosen_at = anchor[eligible_mask].max()
+    snapshot = df[eligible_mask & (anchor == chosen_at)].copy()
     logger.info(
-        "Replaying weather forecast issued %s (%s before %s)",
+        "Replaying weather forecast anchored at %s (%s before %s)",
         chosen_at, reference_time - chosen_at, reference_time,
     )
     return snapshot, chosen_at

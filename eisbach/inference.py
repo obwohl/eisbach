@@ -80,6 +80,34 @@ def _predict(model, config, df_long: pd.DataFrame, cutoff: pd.Timestamp) -> pd.D
     return forecast(model, config, long_to_wide(truncated))
 
 
+#: Bright Sky's own column names, as they appear in older archived snapshots.
+_RAW_WEATHER_NAMES = {"temperature": "lufttemperatur_c", "pressure_msl": "pressure"}
+
+
+def _canonical_weather(snapshot: pd.DataFrame) -> pd.DataFrame:
+    """Reduce an archived weather snapshot to a timestamp index and the two covariates.
+
+    Snapshots exist in two shapes: the raw Bright Sky payload, which is what the
+    original five-daily archive stored, and the processed frame the pipeline works with.
+    Accept both, and take the processed names where a row carries both — renaming blindly
+    would produce two columns of the same name and fail on lookup.
+    """
+    frame = snapshot.copy()
+    frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True)
+    frame = frame.set_index("timestamp").sort_index()
+
+    columns = {}
+    for raw, canonical in _RAW_WEATHER_NAMES.items():
+        if canonical in frame.columns and frame[canonical].notna().any():
+            columns[canonical] = frame[canonical]
+        elif raw in frame.columns:
+            columns[canonical] = frame[raw]
+        else:
+            raise ValueError(f"weather snapshot has neither {canonical!r} nor {raw!r}")
+
+    return pd.DataFrame(columns).astype(float)
+
+
 def _replay_weather(df_weather: pd.DataFrame, snapshot: pd.DataFrame,
                     reference_time: pd.Timestamp) -> pd.DataFrame:
     """Splice observed weather with the forecast that was current at ``reference_time``.
@@ -89,14 +117,7 @@ def _replay_weather(df_weather: pd.DataFrame, snapshot: pd.DataFrame,
     """
     observed = df_weather.loc[df_weather.index <= reference_time, ["lufttemperatur_c", "pressure"]]
 
-    predicted = snapshot.copy()
-    predicted["timestamp"] = pd.to_datetime(predicted["timestamp"], utc=True)
-    predicted = (
-        predicted.set_index("timestamp")
-        .rename(columns={"temperature": "lufttemperatur_c", "pressure_msl": "pressure"})
-        .loc[:, ["lufttemperatur_c", "pressure"]]
-        .sort_index()
-    )
+    predicted = _canonical_weather(snapshot)
     predicted = predicted[predicted.index > reference_time]
 
     spliced = pd.concat([observed, predicted])
@@ -207,8 +228,11 @@ def run_inference(
         root=archive_root,
     )
     # Snapshot the weather forecast as issued, so this moment can be replayed later even
-    # if the model output is ever lost.
-    archive.write_weather_snapshot(df_weather.reset_index(), root=archive_root)
+    # if the model output is ever lost. Keyed to the run's anchor rather than to the
+    # fetch time — see archive.write_weather_snapshot.
+    archive.write_weather_snapshot(
+        df_weather.reset_index(), reference_time=last_timestamp, root=archive_root,
+    )
     archive.write_observations(
         observed.set_index("date")[["data"]].rename(columns={"data": "wassertemp"}),
         root=archive_root,
