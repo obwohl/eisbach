@@ -1,8 +1,11 @@
 name: CI
 
 on:
+  # A branch with an open pull request would otherwise be tested twice per push, once
+  # for each event, and the two runs land in different concurrency groups so neither
+  # cancels the other.
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
 
 permissions:
