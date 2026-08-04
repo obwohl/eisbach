@@ -3,7 +3,11 @@
 A 96-hour probabilistic forecast of the water temperature of the Eisbach in Munich,
 published as a plot and a quantile table twice a day.
 
-![Latest forecast](Prediction.png)
+![Latest forecast](https://raw.githubusercontent.com/obwohl/eisbach/outputs/Prediction.png)
+
+*Regenerated twice a day. The plots live on the [`outputs`](https://github.com/obwohl/eisbach/tree/outputs)
+branch, which is replaced wholesale each run — keeping 1 GB a year of regenerable PNGs in
+`main`'s history was how this repository got to a 175 MB `.git`.*
 
 ## What it does
 
@@ -91,14 +95,17 @@ so a stored forecast can always be attributed to the code and checkpoint that pr
 
 ## Outputs
 
-| File | Contents |
-| --- | --- |
-| `Prediction.png` | The forecast, with history and air temperature |
-| `Prediction_Backtest.png` | The same, plus the three backtests |
-| `Prediction.csv` | The forecast as quantiles, in local time |
-| `data/archive/forecasts/YYYY-MM.csv` | Every forecast ever made, with provenance |
-| `data/archive/weather/YYYY-MM.csv` | DWD forecasts as issued, enabling `replay` |
-| `data/archive/observations/YYYY-MM.csv` | Measured values, so verification needs no re-scrape |
+Regenerable outputs go to the `outputs` branch; the archive is the only copy of its data
+and stays in `main`.
+
+| File | Where | Contents |
+| --- | --- | --- |
+| `Prediction.png` | `outputs` | The forecast, with history and air temperature |
+| `Prediction_Backtest.png` | `outputs` | The same, plus the three backtests |
+| `Prediction.csv` | `outputs` | The forecast as quantiles, in local time |
+| `data/archive/forecasts/YYYY-MM.csv` | `main` | Every forecast ever made, with provenance |
+| `data/archive/weather/YYYY-MM.csv` | `main` | DWD forecasts as issued, enabling `replay` |
+| `data/archive/observations/YYYY-MM.csv` | `main` | Measured values, so verification needs no re-scrape |
 
 ## Running it
 
@@ -111,7 +118,7 @@ The checkpoint downloads automatically on first run (~10 MB, cached in `data/mod
 Inference is CPU-only and the whole pipeline takes well under a minute.
 
 ```bash
-pytest          # unit tests, no network access required
+pytest          # offline, apart from that one checkpoint fetch
 ruff check .
 ```
 
