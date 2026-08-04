@@ -1,8 +1,5 @@
 import logging
 import sys
-import warnings
-import os
-import glob
 from datetime import datetime
 from src.data import prepare_data
 from src.inference import run_inference
@@ -17,13 +14,9 @@ def main():
         timestamp_str = datetime.now().strftime('%Y-%m-%d_%H-%M')
         logging.info(f"Using timestamp for output files: {timestamp_str}")
 
-        # Clean up old prediction files
-        for f in glob.glob("Prediction_*_*.png") + glob.glob("Prediction_*_*.csv") + glob.glob("Prediction_*_*.html") + glob.glob("eisbach_new.png"):
-            try:
-                os.remove(f)
-                logging.info(f"Removed old file: {f}")
-            except Exception as e:
-                logging.warning(f"Failed to remove old file {f}: {e}")
+        # Outputs are written to fixed filenames and overwritten in place, so there is
+        # nothing to clean up. The old glob-based cleanup matched timestamped names that
+        # this pipeline stopped producing.
 
         logging.info("Starting data preparation...")
         df_long, df_wetter = prepare_data()

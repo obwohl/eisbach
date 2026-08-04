@@ -110,6 +110,33 @@ def fetch_data_from_url(url, column_name):
     return df_final
 
 
+def localize_local_time(timestamps: pd.Series, timezone_name: str = 'Europe/Berlin') -> pd.Series:
+    """Attach the local timezone to naive wall-clock timestamps.
+
+    The gauge publishes local wall-clock time, which is ambiguous for one hour every
+    autumn and impossible for one hour every spring.
+
+    ``ambiguous='infer'`` resolves the autumn fold correctly *when both repeats of the
+    hour are present*. They frequently are not — a single dropped sample is enough — and
+    pandas then raises, killing the run. Because the input window is 40 days wide, one
+    missing sample would break every run for the following six weeks.
+
+    So: infer when we can, and when we cannot, drop the one ambiguous hour rather than
+    guess at it. Losing a single hour is invisible after resampling and interpolation;
+    losing six weeks of forecasts is not.
+
+    Callers must drop the resulting NaT rows.
+    """
+    naive = timestamps.sort_values()
+    try:
+        return naive.dt.tz_localize(timezone_name, ambiguous='infer', nonexistent='shift_forward')
+    except ValueError as exc:  # pandas' AmbiguousTimeError is a ValueError subclass
+        logging.warning(
+            "Could not infer the DST fold (%s); dropping ambiguous timestamps instead.", exc,
+        )
+        return naive.dt.tz_localize(timezone_name, ambiguous='NaT', nonexistent='shift_forward')
+
+
 def prepare_data():
     end_date = datetime.now()
     start_date = end_date - timedelta(days=40)
@@ -122,13 +149,10 @@ def prepare_data():
         logging.error("Water temperature data is empty. Aborting preparation.")
         return pd.DataFrame(), pd.DataFrame()
 
-    # 2. KEY FIX: Zeitumstellung robust handhaben (Frühling & Herbst)
-    # 'nonexistent' fängt den 29.03.2026 02:00 Uhr ab, 'ambiguous' den Herbst.
-    df_wt['timestamp'] = df_wt['timestamp'].dt.tz_localize(
-        'Europe/Berlin',
-        ambiguous='infer',
-        nonexistent='shift_forward'
-    )
+    # 2. Localize to local time, surviving both DST transitions.
+    df_wt = df_wt.sort_values('timestamp').reset_index(drop=True)
+    df_wt['timestamp'] = localize_local_time(df_wt['timestamp'])
+    df_wt = df_wt.dropna(subset=['timestamp'])
 
     # 3. Resampling erst NACH der Lokalisierung
     df_wt = df_wt.set_index('timestamp').resample('1h').first().reset_index()
