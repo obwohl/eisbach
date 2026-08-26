@@ -1,7 +1,7 @@
 # Eisbach Forecast
 
 A 96-hour probabilistic forecast of the water temperature of the Eisbach in Munich,
-regenerated twice a day.
+regenerated three times a day.
 
 **→ [obwohl.github.io/eisbach](https://obwohl.github.io/eisbach/)**
 
