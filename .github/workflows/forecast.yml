@@ -3,10 +3,13 @@ name: Eisbach Forecast
 on:
   # Primary trigger. Self-contained: no external service, no token that can quietly
   # expire. GitHub's scheduler is often late and occasionally skips, which is an
-  # acceptable trade for a twice-daily forecast that depends on nothing outside GitHub.
+  # acceptable trade for a thrice-daily forecast that depends on nothing outside GitHub.
+  # Times are UTC: 04 (morning), 12 (midday), 20 (evening) — in Munich roughly 05/06,
+  # 13/14 and 21/22 depending on daylight saving.
   schedule:
-    - cron: '0 5 * * *'
-    - cron: '0 17 * * *'
+    - cron: '0 4 * * *'
+    - cron: '0 12 * * *'
+    - cron: '0 20 * * *'
 
   # Manual runs, for testing a change or catching up after a missed one. Its real value
   # is simply existing: the previous workflow had no way to be started by hand at all.

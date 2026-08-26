@@ -1,7 +1,8 @@
 # How the forecast gets scheduled
 
-The pipeline runs twice a day from `.github/workflows/forecast.yml`. There are three
-ways to start it, and the order matters.
+The pipeline runs three times a day from `.github/workflows/forecast.yml`, at 04:00,
+12:00 and 20:00 UTC (in Munich roughly 05/06, 13/14 and 21/22, depending on daylight
+saving). There are three ways to start it, and the order matters.
 
 ## 1. `schedule:` — the default
 
@@ -10,7 +11,7 @@ on nothing outside GitHub: no third-party service, no token, no account that can
 expire.
 
 GitHub's scheduled triggers are known to be late under load, sometimes by tens of
-minutes, and can be skipped entirely when the platform is busy. For a twice-daily water
+minutes, and can be skipped entirely when the platform is busy. For a thrice-daily water
 temperature forecast that is an acceptable trade for having no external dependency.
 
 Note that GitHub disables scheduled workflows in repositories with no activity for 60

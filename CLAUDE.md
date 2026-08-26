@@ -2,7 +2,7 @@
 
 ## What this is
 
-A twice-daily probabilistic forecast of the Eisbach's water temperature. `main.py`
+A thrice-daily probabilistic forecast of the Eisbach's water temperature. `main.py`
 fetches, forecasts, validates and plots; everything else supports that.
 
 ```
