@@ -89,9 +89,9 @@ def run(tmp_path, stub_model, monkeypatch):
     monkeypatch.chdir(tmp_path)
     root = tmp_path / "archive"
 
-    def _run():
+    def _run(last=LAST_OBSERVATION):
         return inference.run_inference(
-            make_long_frame(), make_weather(), make_water(), archive_root=root,
+            make_long_frame(last), make_weather(last), make_water(last), archive_root=root,
         )
 
     _run.root = root
@@ -269,8 +269,17 @@ def test_a_runs_own_snapshot_can_replay_its_own_anchor(run):
     hit = archive.load_weather_snapshot(LAST_OBSERVATION, root=run.root)
 
     assert hit is not None, "a run cannot replay its own anchor"
-    _rows, anchor = hit
+    rows, anchor = hit
     assert anchor == LAST_OBSERVATION
+
+    # Snapshots are trimmed to the rows a replay can read. The splice takes everything
+    # after the anchor from the snapshot, so a trim that reached even one hour too far
+    # would leave the replay a covariate short at its very first forecast hour.
+    spliced = inference._replay_weather(make_weather(), rows, LAST_OBSERVATION)
+    assert spliced.index.max() >= LAST_OBSERVATION + pd.Timedelta(hours=96), (
+        "the trimmed snapshot no longer covers the model's horizon"
+    )
+    assert not spliced.loc[LAST_OBSERVATION:].isna().any().any()
 
 
 def test_the_second_run_replays_the_first(run):
@@ -288,6 +297,100 @@ def test_the_second_run_replays_the_first(run):
     assert backtests[96].kind == archive.KIND_ORACLE, "no snapshot that far back yet"
     replayable = archive.load_weather_snapshot(LAST_OBSERVATION, root=run.root)
     assert replayable is not None
+
+    # Snapshots are trimmed, so check the edge of what that trim promises: this snapshot
+    # stays eligible for anchors up to SNAPSHOT_MAX_AGE_HOURS after its own, and the
+    # splice then reads only the rows past *that* anchor. It must still hold a full
+    # horizon of them.
+    rows, _ = replayable
+    edge = LAST_OBSERVATION + pd.Timedelta(hours=inference.SNAPSHOT_MAX_AGE_HOURS)
+    assert (pd.to_datetime(rows["timestamp"], utc=True) > edge).sum() >= 96, (
+        "a replay a full age window later would run out of weather"
+    )
+
+
+def test_a_trimmed_snapshot_replays_an_anchor_a_full_age_window_later(run):
+    """End to end at the far edge of `SNAPSHOT_MAX_AGE_HOURS`.
+
+    A snapshot stays eligible for anchors up to a full window after its own, and only the
+    rows past *that* anchor are read. This is the case a too-tight trim breaks first, so
+    it is asserted against a real fetch shape — 40 days back, 8 days on — rather than the
+    few rows the other snapshot tests use.
+    """
+    anchor = LAST_OBSERVATION - pd.Timedelta(hours=96 + inference.SNAPSHOT_MAX_AGE_HOURS)
+    fetched = make_weather(anchor, history_hours=40 * 24, ahead_hours=8 * 24)
+    fetched.index.name = "timestamp"
+    archive.write_weather_snapshot(
+        fetched.reset_index(),
+        # A run reads the gauge, then fetches the weather a moment later.
+        archived_at=anchor + pd.Timedelta(minutes=17),
+        reference_time=anchor,
+        root=run.root,
+    )
+
+    _, backtests = run()
+
+    assert backtests[96].kind == archive.KIND_REPLAY, (
+        "the -96h anchor sits exactly SNAPSHOT_MAX_AGE_HOURS after the snapshot's own"
+    )
+    assert backtests[96].covariate_source == archive.COVARIATE_DWD_ARCHIVED
+    assert backtests[96].is_honest
+
+
+def test_the_run_archives_the_observed_covariates(run):
+    """Trimming snapshots drops the archived *observed* weather, so it is recorded here.
+
+    Without it a forecast error cannot be split into "the model was wrong about the
+    river" and "DWD was wrong about the air".
+    """
+    run()
+
+    partitions = sorted((run.root / "observations").glob("*.csv"))
+    stored = pd.concat([pd.read_csv(p) for p in partitions], ignore_index=True)
+
+    assert {"wassertemp", "lufttemperatur_c", "pressure"} <= set(stored.columns)
+    assert stored["lufttemperatur_c"].notna().all()
+    assert stored["pressure"].notna().all()
+
+
+def test_only_the_observed_part_of_the_weather_frame_is_archived_as_observation(run):
+    """Past the anchor the frame holds DWD's forecast, which is not an observation."""
+    run()
+
+    stored = pd.concat(
+        [pd.read_csv(p) for p in sorted((run.root / "observations").glob("*.csv"))],
+        ignore_index=True,
+    )
+    stamps = pd.to_datetime(stored["timestamp"], utc=True)
+
+    assert stamps.max() <= LAST_OBSERVATION
+
+
+def test_a_snapshot_declaring_the_current_schema_is_taken_at_its_word():
+    """`v2` promises the canonical names, so their absence is corruption, not a hint to
+    go looking for Bright Sky's raw ones — a normalised frame never had those."""
+    frame = pd.DataFrame({
+        "timestamp": pd.date_range("2026-05-10", periods=3, freq="1h", tz="UTC"),
+        "pressure": [1000.0, 1001.0, 1002.0],
+        "schema_version": archive.WEATHER_SCHEMA_VERSION,
+    })
+
+    with pytest.raises(ValueError, match="declares schema"):
+        inference._canonical_weather(frame)
+
+
+def test_an_unlabelled_snapshot_is_still_sniffed():
+    """Absence of `schema_version` means "written before the column existed", not
+    "wrong shape". Those partitions are irreplaceable and are never rewritten."""
+    frame = pd.DataFrame({
+        "timestamp": pd.date_range("2026-05-10", periods=3, freq="1h", tz="UTC"),
+        "temperature": [18.0, 19.0, 20.0],
+        "pressure_msl": [1000.0, 1001.0, 1002.0],
+    })
+
+    result = inference._canonical_weather(frame)
+
+    assert result["lufttemperatur_c"].tolist() == [18.0, 19.0, 20.0]
 
 
 def test_replay_accepts_both_snapshot_schemas(run):

@@ -383,3 +383,286 @@ def test_legacy_snapshots_without_an_anchor_still_load(root):
     assert hit is not None
     _rows, anchor = hit
     assert anchor == issued
+
+
+def test_a_blank_issued_at_is_rejected(root):
+    """`_resolve_precedence` breaks same-kind ties on `issued_at` with
+    `na_position="first"`, so a blank does not merely lose information — it loses every
+    tie it enters, silently."""
+    with pytest.raises(ValueError, match="issued_at"):
+        write(root, pd.Timestamp("2026-05-10 12:00", tz="UTC"),
+              archive.KIND_LIVE, issued_at=pd.NaT)
+
+
+def test_an_omitted_issued_at_still_defaults_to_now(root):
+    """Refusing a blank must not turn the field into a required argument."""
+    ref = pd.Timestamp("2026-05-10 12:00", tz="UTC")
+    write(root, ref, archive.KIND_LIVE)
+
+    _, meta = archive.load_forecast(ref, root=root)
+    assert pd.notna(meta["issued_at"])
+
+
+def test_archived_rows_with_a_blank_issued_at_are_left_alone(root):
+    """The guard is at the door, not a migration.
+
+    1 824 rows already carry a blank, and appending to their partition rewrites the whole
+    file — which must preserve them rather than fail on, or repair, irreplaceable data.
+    """
+    ref = pd.Timestamp("2026-05-10 12:00", tz="UTC")
+    write(root, ref, archive.KIND_LIVE)
+
+    path = root / "forecasts" / "2026-05.csv"
+    damaged = pd.read_csv(path)
+    damaged["issued_at"] = ""
+    damaged.to_csv(path, index=False)
+
+    write(root, pd.Timestamp("2026-05-11 12:00", tz="UTC"), archive.KIND_LIVE)
+
+    stored = pd.read_csv(path)
+    assert len(stored) == 8
+    assert stored["issued_at"].isna().sum() == 4
+
+
+def test_migration_records_an_explicit_unknown_model(tmp_path, root):
+    """`model_id=""` reads as "no model", which is a different and false claim."""
+    legacy_path = tmp_path / "legacy.csv"
+    ref = pd.Timestamp("2026-05-10 12:00", tz="UTC")
+    forecast = make_forecast(ref).reset_index(names="target_time")
+    forecast.insert(0, "reference_time", ref)
+    forecast.to_csv(legacy_path, index=False)
+
+    archive.migrate_legacy_forecasts(legacy_path, root=root)
+
+    stored = archive.read_forecasts(root=root)
+    assert (stored["model_id"] == archive.LEGACY_MODEL_ID).all()
+
+
+def full_fetch(anchor, history_days=40, forecast_days=8):
+    """A weather frame shaped like a real fetch: 40 days back, 8 days on."""
+    index = pd.date_range(
+        anchor - pd.Timedelta(days=history_days),
+        anchor + pd.Timedelta(days=forecast_days),
+        freq="1h",
+    )
+    return pd.DataFrame({
+        "timestamp": index,
+        "lufttemperatur_c": range(len(index)),
+        "niederschlag_mm": 0.0,
+        "pressure": 1013.0,
+    })
+
+
+def stored_timestamps(root, anchor):
+    rows, _ = archive.load_weather_snapshot(anchor, root=root)
+    return pd.to_datetime(rows["timestamp"], utc=True).sort_values().reset_index(drop=True)
+
+
+def test_trimming_keeps_every_row_an_eligible_anchor_could_read(root):
+    """The trim's whole contract, stated as an assertion.
+
+    A snapshot anchored at R can be selected for any backtest anchor in
+    ``[R, R + SNAPSHOT_MAX_AGE_HOURS]``, and the splice then reads only the rows strictly
+    after that anchor. So for every anchor in that window, what was stored must match
+    what was fetched exactly. Anything tighter silently shortens a replay's weather.
+    """
+    anchor = pd.Timestamp("2026-05-10 10:00", tz="UTC")
+    fetched = full_fetch(anchor)
+    archive.write_weather_snapshot(
+        fetched, archived_at=anchor + pd.Timedelta(minutes=17),
+        reference_time=anchor, root=root,
+    )
+
+    stored = stored_timestamps(root, anchor)
+    original = pd.to_datetime(fetched["timestamp"], utc=True)
+
+    for hours in range(archive.SNAPSHOT_MAX_AGE_HOURS + 1):
+        cut = anchor + pd.Timedelta(hours=hours)
+        assert (
+            stored[stored > cut].tolist() == original[original > cut].tolist()
+        ), f"a replay anchored {hours}h after the snapshot would see a shortened forecast"
+
+
+def test_a_snapshot_keeps_exactly_one_age_window_of_run_up(root):
+    """The margin before the anchor is defensive — nothing reads those rows today.
+
+    It is tied to SNAPSHOT_MAX_AGE_HOURS rather than picked so it stays one eligibility
+    window wide if that window ever moves, instead of decaying into a magic number.
+    """
+    anchor = pd.Timestamp("2026-05-10 10:00", tz="UTC")
+    archive.write_weather_snapshot(
+        full_fetch(anchor), archived_at=anchor + pd.Timedelta(minutes=17),
+        reference_time=anchor, root=root,
+    )
+
+    stored = stored_timestamps(root, anchor)
+    margin = pd.Timedelta(hours=archive.SNAPSHOT_HISTORY_MARGIN_HOURS)
+
+    assert stored.min() == anchor - margin + pd.Timedelta(hours=1)
+    assert stored.max() == anchor + pd.Timedelta(days=8)
+
+
+def test_trimming_drops_the_unreadable_history(root):
+    """83 % of a full fetch was 40 days of past weather, re-archived three times a day."""
+    anchor = pd.Timestamp("2026-05-10 10:00", tz="UTC")
+    fetched = full_fetch(anchor)
+    archive.write_weather_snapshot(
+        fetched, archived_at=anchor, reference_time=anchor, root=root,
+    )
+
+    stored = pd.read_csv(root / "weather" / "2026-05.csv")
+    assert len(stored) < len(fetched) / 4
+
+
+def test_a_snapshot_with_nothing_a_replay_could_use_is_rejected(root):
+    """Entirely-past weather is not worth a partition, and reaching here means the
+    fetch or the anchor is wrong."""
+    anchor = pd.Timestamp("2026-05-10 10:00", tz="UTC")
+    stale = pd.DataFrame({
+        "timestamp": pd.date_range(anchor - pd.Timedelta(days=5), periods=3, freq="1h"),
+        "lufttemperatur_c": [18.0, 19.0, 20.0],
+    })
+
+    with pytest.raises(ValueError, match="no rows after"):
+        archive.write_weather_snapshot(stale, archived_at=anchor,
+                                       reference_time=anchor, root=root)
+
+
+def test_a_snapshot_without_a_timestamp_column_is_rejected(root):
+    """Seven pre-August snapshots reached the archive with no usable index. The values
+    were there, the timestamps were gone, and they are unreplayable and unrecoverable."""
+    with pytest.raises(ValueError, match="timestamp"):
+        archive.write_weather_snapshot(
+            pd.DataFrame({"lufttemperatur_c": [18.0, 19.0]}),
+            archived_at=pd.Timestamp("2026-05-10 10:00", tz="UTC"), root=root,
+        )
+
+
+def test_a_snapshot_with_empty_timestamps_is_rejected(root):
+    """The same failure in its historical shape: the column is there, the values are not."""
+    anchor = pd.Timestamp("2026-05-10 10:00", tz="UTC")
+    blank = pd.DataFrame({"timestamp": [None, None], "lufttemperatur_c": [18.0, 19.0]})
+
+    with pytest.raises(ValueError, match="no rows after"):
+        archive.write_weather_snapshot(blank, archived_at=anchor,
+                                       reference_time=anchor, root=root)
+
+
+def test_a_normalised_snapshot_declares_its_schema(root):
+    """`data/archive/weather/` holds two incompatible schemas; new rows say which."""
+    anchor = pd.Timestamp("2026-05-10 10:00", tz="UTC")
+    archive.write_weather_snapshot(
+        full_fetch(anchor), archived_at=anchor, reference_time=anchor, root=root,
+    )
+
+    stored = pd.read_csv(root / "weather" / "2026-05.csv")
+    assert (stored["schema_version"] == archive.WEATHER_SCHEMA_VERSION).all()
+
+
+def test_a_snapshot_in_another_shape_is_stored_without_a_schema_claim(root):
+    """The stamp is earned, not asserted, so a reader may trust it."""
+    anchor = pd.Timestamp("2026-05-10 10:00", tz="UTC")
+    raw = pd.DataFrame({
+        "timestamp": pd.date_range(anchor, periods=3, freq="1h"),
+        "temperature": [18.0, 19.0, 20.0],
+        "pressure_msl": [1013.0, 1013.5, 1014.0],
+    })
+    archive.write_weather_snapshot(raw, archived_at=anchor, reference_time=anchor, root=root)
+
+    stored = pd.read_csv(root / "weather" / "2026-05.csv")
+    assert "schema_version" not in stored.columns
+
+
+def test_both_weather_schemas_coexist_in_one_partition(root):
+    """Old rows keep their silence; only the new ones are labelled."""
+    anchor = pd.Timestamp("2026-05-10 10:00", tz="UTC")
+    legacy = pd.DataFrame({
+        "timestamp": pd.date_range(anchor, periods=3, freq="1h"),
+        "temperature": [18.0, 19.0, 20.0],
+    })
+    legacy["archive_timestamp"] = anchor.isoformat()
+    (root / "weather").mkdir(parents=True, exist_ok=True)
+    legacy.to_csv(root / "weather" / "2026-05.csv", index=False)
+
+    later = anchor + pd.Timedelta(hours=6)
+    archive.write_weather_snapshot(
+        full_fetch(later), archived_at=later, reference_time=later, root=root,
+    )
+
+    stored = pd.read_csv(root / "weather" / "2026-05.csv")
+    assert stored["schema_version"].isna().sum() == 3
+    assert (stored["schema_version"].dropna() == archive.WEATHER_SCHEMA_VERSION).all()
+
+
+def test_observations_carry_the_measured_covariates(root):
+    """Without observed air temperature and pressure there is no way to tell "the model
+    was wrong about the river" from "DWD was wrong about the air"."""
+    index = pd.date_range("2026-05-10 12:00", periods=2, freq="1h", tz="UTC")
+    archive.write_observations(pd.DataFrame({
+        "wassertemp": [15.0, 15.1],
+        "lufttemperatur_c": [18.0, 18.5],
+        "pressure": [1013.0, 1013.5],
+    }, index=index), root=root)
+
+    stored = pd.read_csv(root / "observations" / "2026-05.csv")
+    assert list(stored.columns) == ["timestamp", "wassertemp", "lufttemperatur_c", "pressure"]
+    assert stored["pressure"].tolist() == pytest.approx([1013.0, 1013.5])
+
+
+def test_an_old_shape_observations_partition_still_appends(root):
+    """Every partition written so far holds only `timestamp,wassertemp`.
+
+    Appending must neither rewrite that history nor invent weather for it.
+    """
+    index = pd.date_range("2026-05-10 12:00", periods=3, freq="1h", tz="UTC")
+    (root / "observations").mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({"timestamp": index, "wassertemp": [15.0, 15.1, 15.2]}).to_csv(
+        root / "observations" / "2026-05.csv", index=False,
+    )
+
+    archive.write_observations(pd.DataFrame({
+        "wassertemp": [15.3], "lufttemperatur_c": [18.0], "pressure": [1013.0],
+    }, index=index[-1:] + pd.Timedelta(hours=1)), root=root)
+
+    stored = pd.read_csv(root / "observations" / "2026-05.csv")
+    assert len(stored) == 4, "the old rows must survive"
+    assert stored["wassertemp"].tolist() == pytest.approx([15.0, 15.1, 15.2, 15.3])
+    assert stored["lufttemperatur_c"].isna().tolist() == [True, True, True, False]
+
+
+def test_an_old_shape_partition_gains_covariates_for_hours_rewritten(root):
+    """A run archives 40 days of observations, so old-shape rows do get revisited."""
+    index = pd.date_range("2026-05-10 12:00", periods=2, freq="1h", tz="UTC")
+    (root / "observations").mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({"timestamp": index, "wassertemp": [15.0, 15.1]}).to_csv(
+        root / "observations" / "2026-05.csv", index=False,
+    )
+
+    archive.write_observations(pd.DataFrame({
+        "wassertemp": [15.0, 15.1],
+        "lufttemperatur_c": [18.0, 18.5],
+        "pressure": [1013.0, 1013.5],
+    }, index=index), root=root)
+
+    stored = pd.read_csv(root / "observations" / "2026-05.csv")
+    assert len(stored) == 2
+    assert stored["lufttemperatur_c"].tolist() == pytest.approx([18.0, 18.5])
+
+
+def test_a_narrow_write_does_not_blank_the_columns_it_omits(root):
+    """`drop_duplicates(keep="last")` would let a water-only correction erase the
+    archived weather for that hour; merging column by column does not."""
+    index = pd.date_range("2026-05-10 12:00", periods=2, freq="1h", tz="UTC")
+    archive.write_observations(pd.DataFrame({
+        "wassertemp": [15.0, 15.1],
+        "lufttemperatur_c": [18.0, 18.5],
+        "pressure": [1013.0, 1013.5],
+    }, index=index), root=root)
+
+    archive.write_observations(
+        pd.DataFrame({"wassertemp": [99.0]}, index=index[:1]), root=root,
+    )
+
+    stored = pd.read_csv(root / "observations" / "2026-05.csv")
+    assert stored["wassertemp"].iloc[0] == pytest.approx(99.0), "the correction must land"
+    assert stored["lufttemperatur_c"].iloc[0] == pytest.approx(18.0), "and take nothing with it"
