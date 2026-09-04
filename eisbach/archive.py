@@ -80,9 +80,11 @@ SNAPSHOT_HISTORY_MARGIN_HOURS = SNAPSHOT_MAX_AGE_HOURS
 #: it is in rather than making a reader sniff the header.
 #:
 #: ``v2``
-#:     The normalised frame: a ``timestamp`` index, the canonical ``lufttemperatur_c`` /
-#:     ``niederschlag_mm`` / ``pressure`` names, an anchor in ``reference_time``, the
-#:     archival-only DWD extras, and only the rows a replay can read.
+#:     The normalised frame: ``timestamp`` plus the canonical ``lufttemperatur_c`` and
+#:     ``pressure`` names — never Bright Sky's raw ones — an anchor in ``reference_time``,
+#:     and only the rows a replay can read. It may carry further archival-only DWD fields;
+#:     which ones depends on what Bright Sky returned, so the version does not promise
+#:     them.
 #: *absent*
 #:     Written before this column existed, and ambiguous: either the raw Bright Sky
 #:     payload (20 columns, no ``reference_time``) or the first normalised frame. Tell

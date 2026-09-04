@@ -152,8 +152,9 @@ def _replay_weather(df_weather: pd.DataFrame, snapshot: pd.DataFrame,
     return spliced[~spliced.index.duplicated(keep="first")].sort_index()
 
 
-#: Measured weather archived alongside the water temperature. Same names as the live
-#: frame — these are the trained column names and must not be translated.
+#: Measured weather archived alongside the water temperature, under the same names the
+#: live frame uses — a German domain name that must not be translated, and a column an
+#: analyst will join against the weather store.
 OBSERVED_WEATHER_COLUMNS = ["lufttemperatur_c", "pressure"]
 
 
