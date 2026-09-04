@@ -19,12 +19,6 @@ on:
   repository_dispatch:
     types: [trigger_forecast]
 
-permissions:
-  contents: write
-  issues: write  # the failure notification below opens one
-  pages: write        # publishing the plots
-  id-token: write     # required by actions/deploy-pages
-
 concurrency:
   group: forecast
   cancel-in-progress: false
@@ -33,6 +27,12 @@ jobs:
   forecast:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+
+    # Scoped to this job: `publish` needs neither of these, and the plots reach it
+    # through the artifact rather than through the repository.
+    permissions:
+      contents: write   # committing the archive
+      issues: write     # the failure notification below
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -67,7 +67,17 @@ jobs:
           git add data/archive
           git diff --cached --quiet && echo "archive unchanged" && exit 0
           git commit -m "chore: archive forecast $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push origin HEAD:${{ github.ref_name }}
+          # A human push to the branch during the run would otherwise reject this one,
+          # fail the job and open a failure issue for what is only a stale base. The
+          # commit touches nothing but data/archive, so rebasing it is safe.
+          for attempt in 1 2 3; do
+            git pull --rebase origin ${{ github.ref_name }} && \
+              git push origin HEAD:${{ github.ref_name }} && exit 0
+            echo "push attempt $attempt failed, retrying"
+            sleep $((attempt * 5))
+          done
+          echo "could not push the archive after 3 attempts" >&2
+          exit 1
 
       # Plots and the CSV are regenerated from scratch every run, so keeping their
       # history is pointless — committing them is what grew .git to 175 MB. GitHub Pages
@@ -88,13 +98,36 @@ jobs:
         with:
           script: |
             // A silent failure is how this pipeline went unnoticed for three days.
-            await github.rest.issues.create({
+            // But a persistent one — GKD changing its table markup, say — would open
+            // three issues a day forever, so comment on the open one where there is
+            // one and only open a new issue when there is not.
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = `The scheduled forecast failed.\n\n[Run log](${runUrl})\n\nLogs expire, so capture anything useful before they do.`;
+
+            const open = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `Forecast run failed (${new Date().toISOString().slice(0, 10)})`,
-              body: `The scheduled forecast failed.\n\n[Run log](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n\nLogs expire, so capture anything useful before they do.`,
-              labels: ['forecast-failure'],
+              state: 'open',
+              labels: 'forecast-failure',
+              per_page: 1,
             });
+
+            if (open.data.length > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: open.data[0].number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `Forecast run failed (${new Date().toISOString().slice(0, 10)})`,
+                body,
+                labels: ['forecast-failure'],
+              });
+            }
 
   # Deployment has to be its own job: actions/deploy-pages requires the github-pages
   # environment, which cannot be attached to a job that does anything else.
@@ -102,6 +135,10 @@ jobs:
     needs: forecast
     runs-on: ubuntu-latest
     timeout-minutes: 10
+
+    permissions:
+      pages: write      # publishing the plots
+      id-token: write   # required by actions/deploy-pages
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
