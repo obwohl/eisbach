@@ -7,7 +7,8 @@ code are inert. Written against checkpoint `1c7a531768d8`
 
 For *where the code came from* and what was stripped, see
 [`eisbach/model/PROVENANCE.md`](../eisbach/model/PROVENANCE.md). This document is about
-what it *does*.
+what it *does*. For what to change about it and why, see [`docs/PRD.md`](PRD.md) — the
+measurements in "Traps" and "What is inert" below are the evidence behind its R6.
 
 Everything below was verified by instrumenting a real forward pass, not read off the
 source alone. Where a claim rests on measurement, the measurement is quoted.

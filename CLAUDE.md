@@ -17,6 +17,8 @@ tests/                the whole suite; must not touch the network
 data/archive/         every forecast ever made — tracked, irreplaceable, append-only
 data/model/           checkpoint cache, fetched on demand and gitignored
 research/             unmaintained research code, never imported or run
+docs/PRD.md           what this is for, what it guarantees, what is still open
+docs/model.md         how the model works, and what is inert in the vendored tree
 docs/page/            template for the published site
 .github/workflows/    the thrice-daily forecast run and the CI check
 ```
