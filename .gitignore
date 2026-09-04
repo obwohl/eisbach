@@ -17,16 +17,22 @@ data/*
 !data/archive/
 !data/archive/**
 
+# ...but not the half-written partitions. _write_partition writes <partition>.csv.tmp
+# and then os.replace()s it; an interrupted run leaves one behind, and CI's blanket
+# `git add data/archive` would commit it into the one store we cannot rebuild.
+data/archive/**/*.tmp
+
 # The model checkpoint is fetched on demand and verified against a pinned SHA256,
 # so it never belongs in git.
 data/model/
 
-# Generated outputs. These are published to the `outputs` branch by CI rather than
-# committed to main — see .github/workflows/forecast.yml. Committing them here is what
-# grew .git to 175 MB.
+# Generated outputs. CI copies these into public/ and deploys them to GitHub Pages with
+# actions/upload-pages-artifact, which bypasses git entirely — see
+# .github/workflows/forecast.yml. Committing them here is what grew .git to 175 MB.
 Prediction.png
 Prediction_Backtest.png
 Prediction.csv
+public/
 
 *.log
 *.pid

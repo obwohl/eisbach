@@ -56,6 +56,52 @@ COVARIATE_DWD_FORECAST = "dwd_forecast"  # available at run time — honest
 COVARIATE_DWD_ARCHIVED = "dwd_forecast_archived"  # snapshot replayed — honest
 COVARIATE_DWD_OBSERVED = "dwd_observed"  # what actually happened — oracle
 
+#: How stale a weather snapshot may be when a replay looks one up. One-sided by
+#: construction — see :func:`load_weather_snapshot`. It lives here rather than in
+#: ``inference`` because the write path has to know it too: it is what bounds which rows
+#: of a snapshot can ever be read back.
+SNAPSHOT_MAX_AGE_HOURS = 12
+
+#: How far *before* its own anchor a snapshot keeps rows.
+#:
+#: A snapshot anchored at R is only ever selected for a backtest anchored somewhere in
+#: ``[R, R + SNAPSHOT_MAX_AGE_HOURS]``, and the replay splice then takes only the rows
+#: *strictly after* that anchor from the snapshot — everything at or before it comes from
+#: observed weather instead. So no row at or before R can ever be read back, and storing
+#: 40 days of already-past weather three times a day was 83 % of the weather store.
+#:
+#: The margin is therefore pure defence, not correctness, which is why it is tied to
+#: ``SNAPSHOT_MAX_AGE_HOURS`` rather than picked: it stays exactly one eligibility window
+#: wide if that window ever moves, instead of decaying into a magic number, and it leaves
+#: a hand-readable run-up to the forecast in each snapshot.
+SNAPSHOT_HISTORY_MARGIN_HOURS = SNAPSHOT_MAX_AGE_HOURS
+
+#: Stamped on every weather snapshot written from here on, so the store says what shape
+#: it is in rather than making a reader sniff the header.
+#:
+#: ``v2``
+#:     The normalised frame: ``timestamp`` plus the canonical ``lufttemperatur_c`` and
+#:     ``pressure`` names — never Bright Sky's raw ones — an anchor in ``reference_time``,
+#:     and only the rows a replay can read. It may carry further archival-only DWD fields;
+#:     which ones depends on what Bright Sky returned, so the version does not promise
+#:     them.
+#: *absent*
+#:     Written before this column existed, and ambiguous: either the raw Bright Sky
+#:     payload (20 columns, no ``reference_time``) or the first normalised frame. Tell
+#:     them apart by whether ``reference_time`` is present. Readers must tolerate this —
+#:     those partitions are irreplaceable and are never rewritten.
+#:
+#: The stamp is earned, not asserted: a frame that is not in the normalised shape is
+#: stored unlabelled rather than mislabelled, so a reader may trust the column.
+WEATHER_SCHEMA_VERSION = "v2"
+
+#: What a snapshot must carry to be stamped :data:`WEATHER_SCHEMA_VERSION`.
+_NORMALISED_WEATHER_COLUMNS = ("timestamp", "lufttemperatur_c", "pressure")
+
+#: What ``migrate_legacy_forecasts`` records for rows whose checkpoint was never noted.
+#: An empty string reads as "no model"; this reads as what it is.
+LEGACY_MODEL_ID = "unknown-pre-20260724"
+
 #: Written ahead of the quantile columns, in this order.
 METADATA_COLUMNS = [
     "reference_time",
@@ -174,6 +220,13 @@ def write_forecast(
 
     reference_time = _as_utc(reference_time)
     issued_at = _as_utc(issued_at if issued_at is not None else pd.Timestamp.now(tz="UTC"))
+    if pd.isna(issued_at):
+        # `_resolve_precedence` breaks same-kind ties on `issued_at` with
+        # `na_position="first"`, so a blank does not merely lose information — it loses
+        # every tie it enters, silently, in favour of whatever it was tied with. Refuse
+        # at the door rather than write a row that cannot defend itself. Rows already in
+        # the archive with a blank keep it: they are irreplaceable and never rewritten.
+        raise ValueError(f"issued_at must be a real timestamp, got {issued_at!r}")
 
     incoming = df_forecast.copy()
     incoming.index = pd.to_datetime(incoming.index, utc=True)
@@ -301,16 +354,45 @@ def write_weather_snapshot(df_weather: pd.DataFrame, *, archived_at=None,
     They are never equal: the gauge reading is always a little older than the run that
     consumes it. Keying by fetch time alone would mean a run's own snapshot could never
     replay that run's anchor, which silently turns every replay into an oracle backtest.
+
+    Only the rows a replay can ever read are stored — see
+    ``SNAPSHOT_HISTORY_MARGIN_HOURS``. The 40 days of already-past weather that a fetch
+    also returns are re-derivable from Bright Sky's observation archive for free and
+    indefinitely; what the forecast *said* is not, and that is what this store is for.
     """
     if df_weather.empty:
         raise ValueError("refusing to archive an empty weather snapshot")
+    if "timestamp" not in df_weather.columns:
+        # Seven pre-August snapshots reached the archive with an empty timestamp column.
+        # The values were there, the index was gone, and they are unreplayable and
+        # unrecoverable. Fail the write instead of storing another one.
+        raise ValueError("weather snapshot has no 'timestamp' column and could never be replayed")
 
     archived_at = _as_utc(archived_at if archived_at is not None else pd.Timestamp.now(tz="UTC"))
     reference_time = _as_utc(reference_time) if reference_time is not None else archived_at
 
     snapshot = df_weather.copy()
+
+    keep_from = reference_time - pd.Timedelta(hours=SNAPSHOT_HISTORY_MARGIN_HOURS)
+    stamps = pd.to_datetime(snapshot["timestamp"], utc=True, errors="coerce")
+    snapshot = snapshot[stamps > keep_from]
+    if snapshot.empty:
+        raise ValueError(
+            f"weather snapshot anchored at {reference_time} has no rows after {keep_from}; "
+            "either its timestamps are unparseable or it holds nothing a replay could use"
+        )
+
     snapshot["archive_timestamp"] = archived_at.isoformat()
     snapshot["reference_time"] = reference_time
+    if all(column in snapshot.columns for column in _NORMALISED_WEATHER_COLUMNS):
+        snapshot["schema_version"] = WEATHER_SCHEMA_VERSION
+    else:
+        logger.warning(
+            "Weather snapshot for %s is not in the normalised shape (%s); storing it "
+            "without a schema_version rather than labelling it wrongly",
+            reference_time, ", ".join(_NORMALISED_WEATHER_COLUMNS),
+        )
+    kept = len(snapshot)
 
     # Partition by reference time, so a snapshot sits with the run it belongs to.
     path = _partition_path(root, "weather", reference_time)
@@ -327,13 +409,14 @@ def write_weather_snapshot(df_weather: pd.DataFrame, *, archived_at=None,
     _write_partition(path, snapshot)
 
     logger.info(
-        "Archived %d weather rows for reference %s (fetched %s) to %s",
-        len(df_weather), reference_time, archived_at, path,
+        "Archived %d of %d weather rows for reference %s (fetched %s) to %s; "
+        "dropped everything at or before %s as unreadable by any replay",
+        kept, len(df_weather), reference_time, archived_at, path, keep_from,
     )
     return path
 
 
-def load_weather_snapshot(reference_time, *, max_age_hours: float = 12,
+def load_weather_snapshot(reference_time, *, max_age_hours: float = SNAPSHOT_MAX_AGE_HOURS,
                           root: Path = DEFAULT_ROOT):
     """Return the DWD forecast that was current at ``reference_time``, or ``None``.
 
@@ -402,6 +485,16 @@ def write_observations(df_observations: pd.DataFrame, root: Path = DEFAULT_ROOT)
 
     GKD only serves a rolling window, so anything not captured here is eventually
     unrecoverable. Existing timestamps are updated in place rather than duplicated.
+
+    The frame is indexed by timestamp and carries one column per measured quantity —
+    ``wassertemp``, and since the weather snapshots stopped archiving observed weather,
+    the observed ``lufttemperatur_c`` and ``pressure`` too. Without the latter two there
+    is no way to tell "the model was wrong about the river" from "DWD was wrong about the
+    air", which is the whole point of separating ``live`` from ``oracle``.
+
+    Columns are merged, not replaced: partitions written before a column existed hold
+    only ``timestamp,wassertemp``, and appending to one must neither rewrite its history
+    nor blank the columns added later.
     """
     if df_observations.empty:
         return []
@@ -417,10 +510,14 @@ def write_observations(df_observations: pd.DataFrame, root: Path = DEFAULT_ROOT)
         path = _partition_path(root, "observations", period.to_timestamp())
         existing = _read_partition(path)
         combined = pd.concat([existing, group], ignore_index=True) if not existing.empty else group
+        # Newest value wins per column, but a value the newest write does not carry keeps
+        # whatever was stored before — `GroupBy.last` skips nulls, which is exactly that
+        # rule. `drop_duplicates(keep="last")` would instead let a narrow write blank
+        # every column it happens not to mention.
         combined = (
             combined.sort_values("timestamp")
-            .drop_duplicates(subset="timestamp", keep="last")
-            .reset_index(drop=True)
+            .groupby("timestamp", as_index=False, sort=True)
+            .last()
         )
         _write_partition(path, combined)
         written.append(path)
@@ -460,7 +557,9 @@ def migrate_legacy_forecasts(
             # The run's wall clock was never recorded; the reference time is the closest
             # honest approximation, and is at most a couple of hours early.
             issued_at=reference_time,
-            model_id="",
+            # The checkpoint these ran on was never recorded. An empty string reads as
+            # "no model", which is a different and false claim.
+            model_id=LEGACY_MODEL_ID,
             version="legacy",
             root=root,
         )

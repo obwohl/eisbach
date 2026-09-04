@@ -6,6 +6,12 @@ on:
   # cancels the other.
   push:
     branches: [main]
+    # The forecast run commits to main three times a day and touches nothing but CSVs.
+    # Those commits use the default GITHUB_TOKEN, which GitHub already suppresses
+    # workflow triggering for — but that guard is implicit and would vanish the moment
+    # the push switched to a PAT or deploy key, as docs/scheduling.md contemplates.
+    paths-ignore:
+      - 'data/archive/**'
   pull_request:
 
 permissions:
@@ -20,12 +26,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    # pyproject declares requires-python >= 3.11, so test both ends of that claim
+    # rather than only the version the runner happens to default to.
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
-          python-version: '3.12'
+          python-version: ${{ matrix.python-version }}
           cache: pip
 
       - name: Install

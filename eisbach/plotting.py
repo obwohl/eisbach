@@ -16,8 +16,10 @@ distinction is carried by :class:`eisbach.inference.Backtest` and must survive i
 picture, so oracle backtests are drawn dashed and the plot carries a note whenever one
 is present.
 
-``Backtest`` is duck-typed here rather than imported: ``inference`` imports ``data`` and
-would, on a module-scope import, close a cycle back through this module.
+``Backtest`` is duck-typed here rather than imported. There is no import cycle to avoid —
+``inference`` reaches ``archive``, ``data`` and ``model``, and none of them come back
+here. The cost is ``torch``: importing ``inference`` at module scope would pull it in
+via ``eisbach.model``, for a type annotation, in a module that only draws pictures.
 """
 
 from __future__ import annotations

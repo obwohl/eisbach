@@ -2,7 +2,7 @@
 
 These are not unit tests — they need a real forecast — but they are the difference
 between publishing a plausible plot and publishing a broken one. The pipeline runs
-unattended twice a day, so a forecast that comes out at 300 °C, or one that quietly
+unattended three times a day, so a forecast that comes out at 300 °C, or one that quietly
 contains no water temperature at all, needs to fail the run rather than get committed.
 
 Called from ``main.py`` after inference and before plotting.

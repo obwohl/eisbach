@@ -49,8 +49,8 @@ filterwarnings = ["error::DeprecationWarning:eisbach.*"]
 [tool.ruff]
 line-length = 110
 # `eisbach/model/duet/` is vendored upstream code, kept byte-identical so it stays
-# diffable against its source. `archive/` is unmaintained research code.
-extend-exclude = ["archive", "eisbach/model/duet"]
+# diffable against its source. `research/` is unmaintained research code.
+extend-exclude = ["research", "eisbach/model/duet"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B"]
