@@ -27,6 +27,28 @@ FORECAST_DAYS = 8
 #: The model's channels, in the order it was trained on. Must not be reordered.
 CHANNELS = ("wassertemp", "airtemp_96", "pressure_96")
 
+#: Bright Sky fields carried through and archived but deliberately *not* model channels,
+#: mapped to how each is aggregated onto the hourly grid.
+#:
+#: A covariate that was never archived cannot be trained on later: Bright Sky serves
+#: observations indefinitely, but a forecast is gone the moment it is superseded, and the
+#: pre-August payload carried all of these before the normalisation dropped them. Solar
+#: radiation in particular is the obvious physical driver of a shallow urban channel that
+#: air temperature alone cannot explain, whereas pressure — the only covariate the
+#: model's channel mask lets water attend to — moves the forecast by at most 0.018 °C
+#: (see docs/model.md). So capture them now, and decide at the next training run.
+#:
+#: Adding one here archives it. Making it a *channel* would mean touching ``CHANNELS``,
+#: which is the trained order and is load-bearing.
+ARCHIVED_WEATHER_FIELDS = {
+    "sunshine": "sum",           # minutes of sunshine within the hour
+    "solar": "sum",              # kWh/m² within the hour
+    "cloud_cover": "mean",       # percent
+    "relative_humidity": "mean", # percent
+    "wind_speed": "mean",        # km/h
+    "dew_point": "mean",         # °C
+}
+
 
 def fetch_brightsky_data(start_date: datetime, end_date: datetime,
                          station_id: str) -> pd.DataFrame | None:
@@ -61,10 +83,15 @@ def fetch_brightsky_data(start_date: datetime, end_date: datetime,
 
 
 def get_prepared_weather_data() -> pd.DataFrame:
-    """Return hourly air temperature, precipitation and pressure in local time.
+    """Return the hourly DWD weather in local time.
 
-    Precipitation is carried through and archived even though the model does not
-    currently use it as a channel.
+    Air temperature and pressure are the model's covariates. Precipitation and everything
+    in :data:`ARCHIVED_WEATHER_FIELDS` are carried through so they reach the archive; the
+    model never sees them, and adding a column here cannot change its input frame, which
+    is built from :data:`CHANNELS` alone.
+
+    A field Bright Sky did not return for this range is simply absent rather than fatal —
+    the forecast must not fail over a covariate nothing reads yet.
     """
     now_local = datetime.now().astimezone()
     df_raw = fetch_brightsky_data(
@@ -75,9 +102,19 @@ def get_prepared_weather_data() -> pd.DataFrame:
     if df_raw is None or df_raw.empty:
         raise RuntimeError("Could not fetch weather data; refusing to forecast without it")
 
-    weather = df_raw[["timestamp", "temperature", "precipitation", "pressure_msl"]].copy()
+    archived = [field for field in ARCHIVED_WEATHER_FIELDS if field in df_raw.columns]
+    missing = [field for field in ARCHIVED_WEATHER_FIELDS if field not in df_raw.columns]
+    if missing:
+        logger.warning("Bright Sky returned no %s; archiving without them", ", ".join(missing))
+
+    weather = df_raw[
+        ["timestamp", "temperature", "precipitation", "pressure_msl", *archived]
+    ].copy()
     weather["timestamp"] = pd.to_datetime(weather["timestamp"])
     weather = weather.set_index("timestamp")
+    for field in archived:
+        # An all-null field arrives as an object column, which would break the aggregation.
+        weather[field] = pd.to_numeric(weather[field], errors="coerce")
 
     # Bright Sky delivers UTC.
     weather.index = weather.index.tz_convert(LOCAL_TIMEZONE)
@@ -93,11 +130,21 @@ def get_prepared_weather_data() -> pd.DataFrame:
     weather["lufttemperatur_c"] = weather["lufttemperatur_c"].interpolate(method="time")
     weather["pressure"] = weather["pressure"].interpolate(method="time")
 
-    return weather.resample("1h").agg({
+    aggregation = {
         "lufttemperatur_c": "mean",
         "niederschlag_mm": "sum",
         "pressure": "mean",
-    }).round(2)
+    }
+    for field in archived:
+        # A sum over an hour DWD reported nothing for must stay missing: "no sunshine
+        # value" is not "no sunshine", and this frame is archived as evidence.
+        aggregation[field] = (
+            (lambda values: values.sum(min_count=1))
+            if ARCHIVED_WEATHER_FIELDS[field] == "sum"
+            else ARCHIVED_WEATHER_FIELDS[field]
+        )
+
+    return weather.resample("1h").agg(aggregation).round(2)
 
 
 def fetch_data_from_url(url: str, column_name: str) -> pd.DataFrame:
@@ -250,7 +297,9 @@ def assemble_long_frame(df_wt: pd.DataFrame, df_weather: pd.DataFrame) -> pd.Dat
 
     ``df_wt`` has a ``timestamp`` column and a ``wassertemp`` column; ``df_weather`` is
     indexed by timestamp with ``lufttemperatur_c`` and ``pressure`` columns. Both must be
-    timezone-aware.
+    timezone-aware. Any further weather column is carried along and then dropped by the
+    melt, which takes :data:`CHANNELS` and nothing else — so archiving more weather can
+    never change what the model is fed.
     """
     weather = df_weather.copy()
     weather.index.name = 'timestamp'

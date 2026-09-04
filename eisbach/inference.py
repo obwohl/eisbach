@@ -45,8 +45,10 @@ BACKTEST_OFFSETS_HOURS = (96, 192, 288)
 ARCHIVE_TOLERANCE_HOURS = 2
 
 #: How stale a weather snapshot may be for a replay. One-sided by construction — see
-#: :func:`eisbach.archive.load_weather_snapshot`.
-SNAPSHOT_MAX_AGE_HOURS = 12
+#: :func:`eisbach.archive.load_weather_snapshot`. Defined in ``archive`` because the
+#: write path derives its row-trimming margin from it; re-exported here so the read and
+#: write sides cannot drift apart.
+SNAPSHOT_MAX_AGE_HOURS = archive.SNAPSHOT_MAX_AGE_HOURS
 
 MODEL_ID = CHECKPOINT_SHA256[:12]
 
@@ -84,6 +86,20 @@ def _predict(model, config, df_long: pd.DataFrame, cutoff: pd.Timestamp) -> pd.D
 _RAW_WEATHER_NAMES = {"temperature": "lufttemperatur_c", "pressure_msl": "pressure"}
 
 
+def _declares_current_schema(snapshot: pd.DataFrame) -> bool:
+    """True when every row of a snapshot states it is the current weather schema.
+
+    Rows written before ``schema_version`` existed carry nothing, so absence is not a
+    denial — it means "sniff the columns". A partition can hold both, but a snapshot
+    handed here is always one anchor's worth of rows, so it is homogeneous in practice;
+    requiring *every* row to agree keeps that assumption honest rather than assumed.
+    """
+    if "schema_version" not in snapshot.columns:
+        return False
+    declared = snapshot["schema_version"].dropna().astype(str)
+    return len(declared) == len(snapshot) and set(declared) == {archive.WEATHER_SCHEMA_VERSION}
+
+
 def _canonical_weather(snapshot: pd.DataFrame) -> pd.DataFrame:
     """Reduce an archived weather snapshot to a timestamp index and the two covariates.
 
@@ -91,15 +107,27 @@ def _canonical_weather(snapshot: pd.DataFrame) -> pd.DataFrame:
     original five-daily archive stored, and the processed frame the pipeline works with.
     Accept both, and take the processed names where a row carries both — renaming blindly
     would produce two columns of the same name and fail on lookup.
+
+    A snapshot that declares the current schema is taken at its word, so a missing
+    canonical column raises instead of quietly falling back to a Bright Sky name that a
+    normalised frame never had. Older snapshots say nothing about their shape and are
+    sniffed as before; those partitions are irreplaceable and are never rewritten.
     """
     frame = snapshot.copy()
     frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True)
     frame = frame.set_index("timestamp").sort_index()
 
+    self_describing = _declares_current_schema(snapshot)
+
     columns = {}
     for raw, canonical in _RAW_WEATHER_NAMES.items():
         if canonical in frame.columns and frame[canonical].notna().any():
             columns[canonical] = frame[canonical]
+        elif self_describing:
+            raise ValueError(
+                f"weather snapshot declares schema {archive.WEATHER_SCHEMA_VERSION!r} "
+                f"but has no usable {canonical!r} column"
+            )
         elif raw in frame.columns:
             columns[canonical] = frame[raw]
         else:
@@ -122,6 +150,34 @@ def _replay_weather(df_weather: pd.DataFrame, snapshot: pd.DataFrame,
 
     spliced = pd.concat([observed, predicted])
     return spliced[~spliced.index.duplicated(keep="first")].sort_index()
+
+
+#: Measured weather archived alongside the water temperature. Same names as the live
+#: frame — these are the trained column names and must not be translated.
+OBSERVED_WEATHER_COLUMNS = ["lufttemperatur_c", "pressure"]
+
+
+def _observed_frame(observed: pd.DataFrame, df_weather: pd.DataFrame,
+                    reference_time: pd.Timestamp) -> pd.DataFrame:
+    """Assemble what was *measured* up to the run's anchor, for later verification.
+
+    Weather snapshots keep only what the DWD forecast said, so the observed air
+    temperature and pressure are recorded here instead. Bright Sky serves DWD's
+    observation archive for free and indefinitely, so this is a convenience rather than a
+    last copy — but without it a forecast error cannot be split into "the model was wrong
+    about the river" and "DWD was wrong about the air", which is the question the
+    live/replay/oracle distinction exists to answer.
+
+    The observed part of the weather frame is everything at or before the anchor; past it
+    the frame holds DWD's forecast, which is not an observation of anything. Joined onto
+    the water observations rather than unioned with them, so the store keeps exactly one
+    row per measured hour, as it always has.
+    """
+    water = observed.set_index("date")[["data"]].rename(columns={"data": "wassertemp"})
+    water.index.name = "timestamp"
+
+    measured = df_weather.loc[df_weather.index <= reference_time, OBSERVED_WEATHER_COLUMNS]
+    return water.join(measured, how="left")
 
 
 def _resolve_backtest(
@@ -230,12 +286,16 @@ def run_inference(
     # Snapshot the weather forecast as issued, so this moment can be replayed later even
     # if the model output is ever lost. Keyed to the run's anchor rather than to the
     # fetch time — see archive.write_weather_snapshot.
+    snapshot = df_weather.copy()
+    # Name it here rather than trusting the caller's index name: the archive keys and
+    # trims on `timestamp`, and a frame arriving with an unnamed index would otherwise
+    # reach it as a column called `index`.
+    snapshot.index.name = "timestamp"
     archive.write_weather_snapshot(
-        df_weather.reset_index(), reference_time=last_timestamp, root=archive_root,
+        snapshot.reset_index(), reference_time=last_timestamp, root=archive_root,
     )
     archive.write_observations(
-        observed.set_index("date")[["data"]].rename(columns={"data": "wassertemp"}),
-        root=archive_root,
+        _observed_frame(observed, df_weather, last_timestamp), root=archive_root,
     )
 
     backtests = {
