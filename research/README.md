@@ -1,8 +1,8 @@
-# archive/
+# research/
 
 **Nothing in this directory is maintained, imported, run, or tested.**
 
-No production code depends on anything here. Nothing under `archive/` is imported by
+No production code depends on anything here. Nothing under `research/` is imported by
 `main.py` or `eisbach/`, exercised by `tests/`, or invoked by any CI workflow. The
 dependencies these files need are not in the root `pyproject.toml`, and several of
 the scripts will not run at all without edits (see the traps below).
@@ -42,7 +42,7 @@ backtesting comparison against the custom baseline model.
 | `diff_*.png`, `plots/` | Result plots. |
 | `requirements.txt` | The extra deps (`chronos`, `seaborn`) these scripts need. |
 
-Deleted during the archive pass: `compare_models.py` (superseded by
+Deleted when this tree was set aside: `compare_models.py` (superseded by
 `volatile_showdown.py`), `compare_finetuned.py` and `finetune_chronos.py` (see below),
 `scatter.png` and `diff_dist.png` (no generator anywhere in the repo).
 
@@ -88,13 +88,13 @@ reproduced from this repo. The same caveat applies in weaker form to
 It does `from metrics import mean_absolute_error, crps, mean_interval_score` — a bare
 module import, not a package-relative one. It therefore only resolves when the script's
 own directory is on `sys.path`, i.e. when it is invoked as a **path**
-(`python archive/isar_eisbach_comparison/volatile_showdown.py`) and **not** via `-m`.
+(`python research/isar_eisbach_comparison/volatile_showdown.py`) and **not** via `-m`.
 Conversely `analyze_combinations.py` uses the package-style
 `from isar_eisbach_comparison.metrics import ...`, which wants the opposite invocation.
 The two are mutually inconsistent, and neither import style survived the move into
-`archive/` unchanged.
+`research/` unchanged.
 
 Related: every data path inside these scripts is hardcoded relative to the repo root as
-`isar_eisbach_comparison/...`, which is now `archive/isar_eisbach_comparison/...`. Those
+`isar_eisbach_comparison/...`, which is now `research/isar_eisbach_comparison/...`. Those
 paths are stale. They have deliberately **not** been fixed — fixing them would imply the
 scripts are expected to run, and they are not.

@@ -48,8 +48,9 @@ the archive records which is which:
 | `replay` | an archived forecast, as issued | yes |
 | `oracle` | the weather that actually occurred | **no** — flatters the model |
 
-`live` is preferred and free: it is a forecast we really made, retrieved rather than
-recomputed. `oracle` is the last resort and is drawn dashed and labelled, so a
+An already-archived backtest is preferred and free: `live` and `replay` alike are
+retrieved rather than recomputed, and only a reference time with neither on file is
+worked out again. `oracle` is the last resort and is drawn dashed and labelled, so a
 too-good-looking backtest is never mistaken for real-world skill.
 
 ## Data
@@ -66,7 +67,7 @@ weather four days ahead — the known-future information a forecast provides.
 
 ```bash
 pip install --index-url https://download.pytorch.org/whl/cpu torch   # CPU-only; skip if you want CUDA
-pip install -e ".[dev]"
+pip install -e .
 python main.py
 ```
 
@@ -82,7 +83,7 @@ eisbach/model/     the forecasting model
 eisbach/archive.py forecast storage, with provenance
 eisbach/validate.py plausibility gate — a bad forecast fails the run
 eisbach/plotting.py output
-archive/           earlier research, unmaintained
+research/          earlier research, unmaintained
 docs/              operational notes
 ```
 

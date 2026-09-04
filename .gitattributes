@@ -4,4 +4,4 @@ data/archive/** text eol=lf
 # Generated data and vendored model code should not skew the repository's language stats.
 data/archive/** linguist-generated=true
 eisbach/model/duet/** linguist-vendored=true
-archive/** linguist-documentation=true
+research/** linguist-documentation=true

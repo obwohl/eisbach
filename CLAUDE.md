@@ -13,8 +13,12 @@ eisbach/archive.py    provenance-tracked storage
 eisbach/validate.py   post-run plausibility gate
 eisbach/plotting.py   matplotlib output
 eisbach/model/        vendored inference code — see below
-archive/              unmaintained research code, never imported or run
+tests/                the whole suite; must not touch the network
+data/archive/         every forecast ever made — tracked, irreplaceable, append-only
+data/model/           checkpoint cache, fetched on demand and gitignored
+research/             unmaintained research code, never imported or run
 docs/page/            template for the published site
+.github/workflows/    the thrice-daily forecast run and the CI check
 ```
 
 ## Things that will bite you
@@ -45,9 +49,17 @@ a leak, just a smaller one.
 of the DWD forecasts as they were issued. GKD serves only a rolling window, so anything
 not captured is eventually unrecoverable. Treat it as append-only.
 
+**Seven weather snapshots are already lost.** In these seven, the `timestamp` column is
+completely empty — 840 of 1560 rows, values present but index gone, so they can never be
+replayed and, historical DWD forecasts being a paid product, never refetched. By
+`archive_timestamp`: `2026-06-06T10:02:52`, `2026-06-18T22:03:10`, `2026-06-23T22:03:14`,
+`2026-07-08T22:03:22`, `2026-07-13T22:03:31`, `2026-07-18T22:02:52`, `2026-07-23T22:03:05`.
+Do not spend time trying to recover them, and do not read a replay gap in that window as a
+bug in the lookup.
+
 **Generated outputs do not belong in git.** The PNGs and CSV are deployed to GitHub Pages
 via `actions/upload-pages-artifact`, which bypasses git entirely, so republishing them
-twice a day costs no history. Committing them is what grew `.git` to 175 MB.
+three times a day costs no history. Committing them is what grew `.git` to 175 MB.
 
 ## Conventions
 
