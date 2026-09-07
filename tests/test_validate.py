@@ -360,6 +360,50 @@ def test_a_backtest_without_the_covariate_quantiles_is_fine():
     assert validate.validate_run(make_full_forecast(), backtests, df_long) is None
 
 
+def test_a_backtest_with_empty_covariate_columns_is_fine():
+    """The shape a mixed-schema partition really returns: present, and blank throughout.
+
+    `archive.write_forecast` concatenates onto the month it is writing into, so once R4
+    writes water-only rows beside full ones, `load_forecast` hands back covariate columns
+    that exist for every row and hold nothing. Dropped columns are the easy case; this is
+    the one that would actually reach the gate.
+    """
+    index = observed_index(periods=4)
+    df_long = make_long(index)
+    backtest = make_backtest(index[0], periods=4)
+    blank = backtest.forecast.copy()
+    for column in [c for c in blank.columns if not c.startswith("wassertemp_q")]:
+        blank[column] = float("nan")
+    backtests = {96: dataclasses.replace(backtest, forecast=blank)}
+
+    assert validate.validate_run(make_full_forecast(), backtests, df_long) is None
+
+
+def test_a_backtest_with_a_partly_empty_covariate_column_still_raises():
+    """Absent is not the same as patchy: a gap in data that *was* written is a failure."""
+    index = observed_index(periods=4)
+    df_long = make_long(index)
+    backtest = make_backtest(index[0], periods=4)
+    patchy = backtest.forecast.copy()
+    patchy.loc[patchy.index[2], "airtemp_96_q0.5"] = float("nan")
+    backtests = {96: dataclasses.replace(backtest, forecast=patchy)}
+
+    with pytest.raises(validate.ImplausibleForecast,
+                       match=r"backtest -96h: airtemp_96_q0\.5 contains NaN"):
+        validate.validate_run(make_full_forecast(), backtests, df_long)
+
+
+def test_an_empty_water_column_is_never_forgiven():
+    """The exemption is for optional channels only — a blank water column is the bug."""
+    df = make_forecast()
+    df["wassertemp_q0.5"] = float("nan")
+
+    with pytest.raises(validate.ImplausibleForecast,
+                       match=r"backtest -96h: wassertemp_q0\.5 contains NaN"):
+        validate._check_ranges(df, "backtest -96h",
+                               required=validate.REQUIRED_BACKTEST_COLUMNS)
+
+
 def test_a_badly_covered_backtest_raises_naming_kind_and_percentage():
     index = observed_index(periods=4)
     # Two of four observations sit far outside the band: 50 %, well under the threshold.

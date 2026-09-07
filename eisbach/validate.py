@@ -78,10 +78,25 @@ def _check_columns(df: pd.DataFrame, required, what: str) -> None:
         )
 
 
-def _check_ranges(df: pd.DataFrame, what: str) -> None:
+def _check_ranges(df: pd.DataFrame, what: str, required=REQUIRED_FORECAST_COLUMNS) -> None:
+    """Range-check every quantile column present, and refuse any NaN in a required one.
+
+    A column *outside* ``required`` that is empty from end to end counts as absent rather
+    than as a column full of NaN. That is the shape a mixed-schema archive partition
+    hands back: `write_forecast` concatenates onto what the month already holds, so once
+    R4 writes water-only rows into a month that also holds full ones, the covariate
+    columns exist for every row and are blank for the new ones — and `load_forecast`
+    returns them that way. Refusing that would block production on exactly the backtests
+    this gate says it accepts.
+
+    A *partly* empty optional column still raises. That is a real gap in data that was
+    written, not a column that was never written at all.
+    """
     for channel, (low, high) in PLAUSIBLE_RANGES.items():
         for column in [c for c in df.columns if c.startswith(f"{channel}_q")]:
             series = df[column]
+            if column not in required and series.isna().all():
+                continue
             if series.isna().any():
                 raise ImplausibleForecast(f"{what}: {column} contains NaN")
             if series.min() < low or series.max() > high:
@@ -158,7 +173,7 @@ def validate_run(df_inference: pd.DataFrame, backtests: dict, df_long: pd.DataFr
         if backtest.forecast.empty:
             raise ImplausibleForecast(f"{what} is empty")
         _check_columns(backtest.forecast, REQUIRED_BACKTEST_COLUMNS, what)
-        _check_ranges(backtest.forecast, what)
+        _check_ranges(backtest.forecast, what, required=REQUIRED_BACKTEST_COLUMNS)
 
         coverage = _coverage(backtest.forecast, actuals, what)
         if coverage is None:

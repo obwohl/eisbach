@@ -103,15 +103,18 @@ requirement rather than inferred from whatever arrived:
   coverage check below would pass vacuously;
 - every backtest is non-empty and carries all seven `wassertemp_q*` columns — water only,
   because a backtest may have been read back out of the archive and R4 will take the
-  covariate quantiles out of that store; covariate columns are still range-checked where
-  present;
+  covariate quantiles out of that store. A covariate column that is *empty from end to
+  end* counts as absent, which is the shape a mixed-schema partition really returns:
+  `write_forecast` concatenates onto the month it writes into, so water-only rows beside
+  full ones leave the covariate columns present and blank. A **partly** empty one still
+  fails — that is a gap in data that was written, not a column that was never written;
 - at least one backtest overlaps the observations. A single backtest anchored outside the
   measured window is still only a warning — there is genuinely nothing to compare it
   against — but if that holds for all of them, the run has checked its own arithmetic and
   nothing else.
 
 `_coverage` raises `ImplausibleForecast` before it looks for an overlap, so a broken
-backtest that happens to miss the observations cannot report `None` and pass. 44 tests.
+backtest that happens to miss the observations cannot report `None` and pass. 47 tests.
 
 **Backtest honesty (P2).** Precedence `live > replay > oracle` is enforced on write, so a
 regenerable row can never overwrite a genuine one. Oracle backtests are drawn dashed and
