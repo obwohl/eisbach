@@ -82,7 +82,36 @@ Stated as guarantees, so a future change knows what it must not break.
 **Validation (P1).** `eisbach/validate.py` fails the run on an implausible range, a NaN
 quantile, a forecast index that overlaps real measurements (which would mean the input
 was not truncated and the model saw its own answer), or a backtest whose 1–99 % band
-covers less than 80 % of observations. 28 tests.
+covers less than 80 % of observations.
+
+It also fails the run on data that is *absent*, which is the harder half and was open as
+R1. The gate degraded to a no-op whenever the frame it was handed was empty: a forecast
+carrying no `wassertemp_q*` columns at all passed cleanly, an empty backtest was
+indistinguishable from one predating the observations, missing observations disabled the
+leak check and every coverage check at once, and a backtest without `q0.01`/`q0.99`
+escaped as `KeyError` rather than `ImplausibleForecast`. The contract is now stated as a
+requirement rather than inferred from whatever arrived:
+
+- the forecast carries all three channels × all seven quantiles — 21 columns, named from
+  `CHANNELS` × `QUANTILES` so it cannot drift from what the model emits;
+- the forecast is exactly `COVARIATE_SHIFT_HOURS` rows long. Horizon and shift must be
+  equal, so this is where that constraint stops being a comment: a drift between them
+  fails a run instead of silently removing the weather the last hours depend on. The
+  checkpoint's real output is asserted against the same two constants in
+  `tests/test_model_vendored.py`, so the gate cannot start refusing good forecasts;
+- there is at least one water-temperature observation, or the leak check and every
+  coverage check below would pass vacuously;
+- every backtest is non-empty and carries all seven `wassertemp_q*` columns — water only,
+  because a backtest may have been read back out of the archive and R4 will take the
+  covariate quantiles out of that store; covariate columns are still range-checked where
+  present;
+- at least one backtest overlaps the observations. A single backtest anchored outside the
+  measured window is still only a warning — there is genuinely nothing to compare it
+  against — but if that holds for all of them, the run has checked its own arithmetic and
+  nothing else.
+
+`_coverage` raises `ImplausibleForecast` before it looks for an overlap, so a broken
+backtest that happens to miss the observations cannot report `None` and pass. 44 tests.
 
 **Backtest honesty (P2).** Precedence `live > replay > oracle` is enforced on write, so a
 regenerable row can never overwrite a genuine one. Oracle backtests are drawn dashed and
@@ -118,27 +147,9 @@ Existing archive partitions were never rewritten, recompacted or migrated — in
 
 ## Open requirements
 
-Ordered by what unblocks the most. Each states why it is not already done.
-
-### R1 — The validation gate must require data to be present, not merely correct
-
-`_check_ranges` iterates the columns that *exist*, so a forecast carrying no
-`wassertemp_q*` columns at all passes cleanly — the precise case the module's own
-docstring names as its reason to exist. Three siblings: an empty backtest frame passes
-and is indistinguishable from one predating the observations; missing observations
-disable the leak check and every coverage check at once; and a backtest lacking
-`q0.01`/`q0.99` escapes as `KeyError` rather than `ImplausibleForecast`.
-
-All four have one shape: **the gate degrades to a no-op when data is missing, and only
-fires when data is present-and-wrong.** Found while writing the tests, left unfixed
-because the fix needs a decision this document should make: what exactly must be present?
-Proposed answer — all three channels × all seven quantiles × `config.horizon` rows, and
-at least one backtest with real overlap. That is a contract, and contracts belong in a
-PRD rather than in a test written after the fact.
-
-*Acceptance:* a forecast missing any required column or row count fails the run;
-`_coverage` raises `ImplausibleForecast`, never `KeyError`; a run with no usable
-observations fails rather than reporting success.
+Ordered by what unblocks the most. Each states why it is not already done. The numbers
+are stable identifiers, not positions — R1 is delivered and its heading is gone, and the
+rest keep the numbers other sections refer to them by.
 
 ### R2 — Persist a verification table
 

@@ -131,6 +131,20 @@ def test_output_contract(in_process_forecast: pd.DataFrame, df_long: pd.DataFram
     assert np.isfinite(df.to_numpy()).all()
 
 
+def test_the_real_output_satisfies_the_plausibility_gate(in_process_forecast: pd.DataFrame):
+    """What the gate demands and what the checkpoint emits must be the same shape.
+
+    ``validate.REQUIRED_FORECAST_ROWS`` is ``COVARIATE_SHIFT_HOURS``, which the model's
+    horizon has to equal — so this is where that constraint stops being a comment. If the
+    two ever disagree, the gate refuses a perfectly good forecast three times a day.
+    """
+    from eisbach import validate
+
+    df = in_process_forecast
+    assert len(df) == validate.REQUIRED_FORECAST_ROWS
+    assert set(validate.REQUIRED_FORECAST_COLUMNS) <= set(df.columns)
+
+
 def test_quantiles_are_monotonic(in_process_forecast: pd.DataFrame):
     for var in SERIES_ORDER:
         block = in_process_forecast[[f"{var}_q{q}" for q in QUANTILES]].to_numpy()
