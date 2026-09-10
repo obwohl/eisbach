@@ -387,6 +387,13 @@ _MEAN_COLUMNS = (
 )
 
 
+#: What :func:`pool` groups by when not told otherwise. Era and kind are in it because
+#: the module's own warnings say they must be: a default that pools a legacy run with a
+#: current one, or a replay with a live, hands back a number describing no system that
+#: has ever run. Collapsing them has to be asked for.
+DEFAULT_POOL_KEYS = ["model_id", "kind", "lead_lo"]
+
+
 def pool(df: pd.DataFrame, by: list[str] | None = None) -> pd.DataFrame:
     """Aggregate scored rows correctly, weighting each by the hours it covers.
 
@@ -395,12 +402,13 @@ def pool(df: pd.DataFrame, by: list[str] | None = None) -> pd.DataFrame:
     it is a root of. This does both properly, and re-derives interval coverage from the
     pooled PIT knots.
 
-    ``by`` defaults to the lead bucket. Pass ``[]`` to collapse to a single row, or e.g.
-    ``["model_id", "lead_lo"]`` to keep the eras apart.
+    ``by`` defaults to :data:`DEFAULT_POOL_KEYS`, which keeps the eras and the backtest
+    kinds apart. Pass ``[]`` to collapse to a single row, or any other list of columns —
+    but if that list drops ``model_id`` or ``kind``, know what you are mixing.
     """
     if df.empty:
         return df
-    by = ["lead_lo"] if by is None else by
+    by = list(DEFAULT_POOL_KEYS) if by is None else by
 
     columns = [c for c in _MEAN_COLUMNS if c in df.columns]
     weights = df["n"].to_numpy(dtype=float)
@@ -442,7 +450,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--root", type=Path, default=archive.DEFAULT_ROOT,
                         help="archive root (default: %(default)s)")
     parser.add_argument("--report", action="store_true",
-                        help="print the pooled table for the honest kinds and exit")
+                        help="print the scores for the honest kinds, by era, kind and "
+                             "lead bucket, and exit")
     args = parser.parse_args(argv)
 
     if args.report:

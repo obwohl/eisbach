@@ -237,6 +237,32 @@ def test_the_run_snapshots_weather_and_observations(run):
     assert list((run.root / "observations").glob("*.csv")), "no observations written"
 
 
+def test_an_hour_the_gauge_never_sampled_is_not_archived_as_a_measurement(
+    tmp_path, stub_model, monkeypatch,
+):
+    """Regression: only real readings may reach the observation store.
+
+    `assemble_long_frame` interpolates `wassertemp` across the hourly grid so the model
+    never sees a hole. Archiving that filled series put invented values in beside real
+    ones, indistinguishable from measurements — so verification scored the forecast
+    against numbers nobody read off an instrument, and every run reported a complete
+    gauge because the holes were filled before anything counted them.
+    """
+    monkeypatch.chdir(tmp_path)
+    root = tmp_path / "archive"
+
+    gauge = make_water()
+    never_sampled = gauge["timestamp"].iloc[-5]
+    gauge.loc[gauge["timestamp"] == never_sampled, "wassertemp"] = np.nan
+
+    # The model's frame still carries that hour: it is filled, which is the whole point.
+    inference.run_inference(make_long_frame(), make_weather(), gauge, archive_root=root)
+
+    stored = archive.read_observations(root=root)
+    assert never_sampled not in stored.index
+    assert len(stored) == len(gauge) - 1
+
+
 def test_readable_csv_is_written_in_local_time(run, tmp_path):
     run()
 

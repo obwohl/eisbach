@@ -173,6 +173,13 @@ number out of a right table:
 - **`kind` travels with every row**, and `read_scores` returns the honest kinds unless
   asked otherwise (P2). Blank `model_id`s survive a `groupby` rather than being dropped
   as NaN keys, which would answer for one era while looking like it answered for both;
+- **only real readings are scored.** The observation store was written from the model's
+  input frame, where `wassertemp` has already been interpolated onto the hourly grid so
+  the model never sees a hole — so it held invented values beside real ones, and the
+  store has no hourly gap anywhere in its span, which is the symptom rather than a clean
+  bill of health. `_observed_frame` now takes the raw gauge frame, and an hour the gauge
+  never sampled is absent rather than filled. Existing rows keep what they hold;
+  `docs/verification.md` says which scores that touches and how much;
 - scoring runs **before** the forecast in the workflow, not after. It only ever touches
   runs whose window has closed, so it never wants the current one — and a scorer raising
   after `run_inference` has written the live forecast and the weather snapshot to disk
@@ -206,10 +213,16 @@ The archive contains one non-causal row and a maximum issue lag of 1.6 h, which 
 do sometimes limp — and there is currently no way to exclude a degraded run from
 verification rather than silently averaging it in.
 
-R2's table already carries the one completeness signal that could be recovered after the
-fact: `n` against `n_forecast` says how many of the hours a run predicted were ever
-measured. That catches a gap in the *gauge*, which is the output side. Nothing yet
-records a gap in the *input*, which is the side that would explain a bad score.
+R2's table carries `n` against `n_forecast` — how many of the hours a run predicted were
+ever measured. That signal only became true with R2 itself: the observation store used to
+be written from the model's input frame, in which `assemble_long_frame` has already
+interpolated `wassertemp` so the model never sees a hole, so every hour looked measured
+and at least 0.5 % of stored rows are values nobody read off an instrument. Runs are now
+archived from the raw gauge frame, so a missing hour is absent rather than invented — but
+only from 2026-09-10, and the archive is never rewritten.
+
+That covers a gap in the *gauge*, which is the output side. Nothing yet records a gap in
+the *input*, which is the side that would explain a bad score.
 
 *Acceptance:* `n_missing_input_hours`, `anchor_age_hours` and `weather_rows_fetched` on
 every archived forecast, carried onto R2's rows so a degraded run can be excluded rather
