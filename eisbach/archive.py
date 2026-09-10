@@ -115,6 +115,19 @@ METADATA_COLUMNS = [
 
 _UNIQUE_KEY = ["reference_time", "target_time"]
 
+#: What identifies one scored row: a run, and one lead bucket of it. The buckets do not
+#: overlap and the columns they carry are named by ``eisbach.verification``, which owns
+#: the arithmetic; this module only stores what it is handed.
+VERIFICATION_KEY = ["reference_time", "kind", "lead_lo"]
+
+#: Stamped on every scored row.
+#:
+#: ``v1``
+#:     One row per (run, kind, lead bucket): counts, MAE, RMSE, bias, CRPS, the
+#:     persistence baseline, mean PIT, and the seven ``pit_le_q*`` knots that every
+#:     interval coverage is a difference of.
+VERIFICATION_SCHEMA_VERSION = "v1"
+
 logger = logging.getLogger(__name__)
 
 
@@ -165,7 +178,7 @@ def _read_partition(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path)
     # `archive_timestamp` is deliberately left as text: it is an identity key for a
     # weather snapshot, not a value to do arithmetic on.
-    for col in ("reference_time", "target_time", "issued_at", "timestamp"):
+    for col in ("reference_time", "target_time", "issued_at", "timestamp", "scored_at"):
         if col in df.columns:
             df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
     return df
@@ -522,6 +535,88 @@ def write_observations(df_observations: pd.DataFrame, root: Path = DEFAULT_ROOT)
         _write_partition(path, combined)
         written.append(path)
     return written
+
+
+def read_observations(root: Path = DEFAULT_ROOT) -> pd.DataFrame:
+    """Load every measured value, indexed by timestamp.
+
+    The mirror of :func:`write_observations`. Partitions written before a column existed
+    hold only ``timestamp,wassertemp``, so the frame a caller gets back is as wide as the
+    widest month and blank where a month predates a column — which is the truth about
+    what was measured, and better than refusing to load it.
+    """
+    partitions = sorted(Path(root).glob("observations/*.csv"))
+    frames = [df for df in (_read_partition(p) for p in partitions) if not df.empty]
+    if not frames:
+        return pd.DataFrame(columns=["timestamp"]).set_index("timestamp")
+    df = pd.concat(frames, ignore_index=True)
+    # A month boundary is the only place a timestamp could appear twice, and only if a
+    # partition was written by hand; keep the newest either way.
+    df = df.sort_values("timestamp").drop_duplicates(subset="timestamp", keep="last")
+    return df.set_index("timestamp").sort_index()
+
+
+def write_verification(df_scores: pd.DataFrame, root: Path = DEFAULT_ROOT) -> list[Path]:
+    """Store scored runs, and never restate one that is already stored.
+
+    A run is only scored once the last hour it forecast has been measured, so its score
+    is final when it is written — which is what lets this store keep the append-only rule
+    the rest of ``data/archive/`` lives by. A row whose
+    :data:`VERIFICATION_KEY` is already present is therefore dropped rather than
+    overwritten: re-running the scorer over the whole archive costs time and changes
+    nothing, and a change in the scoring code cannot quietly rewrite history it disagrees
+    with. Deleting a partition is the deliberate way to ask for a recomputation.
+
+    Unlike the other stores this one is *derived* — forecasts and observations can
+    rebuild it exactly — so a lost partition is a rerun, not a hole in the record.
+    """
+    if df_scores.empty:
+        return []
+    missing = [c for c in VERIFICATION_KEY if c not in df_scores.columns]
+    if missing:
+        raise ValueError(f"scored rows are missing {', '.join(missing)}")
+
+    incoming = df_scores.copy()
+    incoming["reference_time"] = _as_utc_series(incoming["reference_time"])
+    if incoming["reference_time"].isna().any():
+        raise ValueError("scored rows must all carry a reference_time")
+    incoming["schema_version"] = VERIFICATION_SCHEMA_VERSION
+
+    written = []
+    months = incoming["reference_time"].dt.tz_convert(None).dt.to_period("M")
+    for period, group in incoming.groupby(months):
+        path = _partition_path(root, "verification", period.to_timestamp())
+        existing = _read_partition(path)
+        fresh = group
+        if not existing.empty:
+            stored = set(map(tuple, existing[VERIFICATION_KEY].itertuples(index=False)))
+            keep = [tuple(row) not in stored
+                    for row in group[VERIFICATION_KEY].itertuples(index=False)]
+            fresh = group[keep]
+            if len(fresh) < len(group):
+                logger.info("%d of %d scored rows for %s were already stored, leaving them alone",
+                            len(group) - len(fresh), len(group), period)
+            if fresh.empty:
+                continue
+            fresh = pd.concat([existing, fresh], ignore_index=True)
+        _write_partition(path, fresh.sort_values(VERIFICATION_KEY).reset_index(drop=True))
+        written.append(path)
+    return written
+
+
+def read_verification(root: Path = DEFAULT_ROOT) -> pd.DataFrame:
+    """Load every scored row, oldest first.
+
+    Returns them exactly as stored, including oracle rows. Read them through
+    ``eisbach.verification.read_scores`` unless you have a reason not to: it drops the
+    kinds that flatter the model and materialises interval coverage.
+    """
+    partitions = sorted(Path(root).glob("verification/*.csv"))
+    frames = [df for df in (_read_partition(p) for p in partitions) if not df.empty]
+    if not frames:
+        return pd.DataFrame(columns=VERIFICATION_KEY)
+    df = pd.concat(frames, ignore_index=True)
+    return df.sort_values(VERIFICATION_KEY).reset_index(drop=True)
 
 
 def migrate_legacy_forecasts(

@@ -54,6 +54,15 @@ jobs:
           path: data/model
           key: checkpoint-${{ hashFiles('eisbach/model/checkpoint.py') }}
 
+      # Retrospective, and deliberately ahead of the forecast rather than after it.
+      # Scoring only ever touches runs whose 96-hour window has already closed, so it
+      # never wants this run's output; and `run_inference` writes the live forecast and
+      # the weather snapshot to disk before anything downstream can fail. A scorer that
+      # raised after that point would skip the commit below and take an irreplaceable
+      # snapshot with it. Failing here costs one forecast cycle instead.
+      - name: Score the runs whose window has closed
+        run: python -m eisbach.verification
+
       - name: Forecast
         run: python main.py
 

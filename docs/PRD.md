@@ -42,10 +42,22 @@ would be roughly ten times too narrow.
 
 95 % CI over all leads: MAE [0.376, 0.448], CRPS [0.269, 0.310], bias [−0.109, +0.074].
 
-Against persistence (the observation at the anchor, held flat): **+32 % on MAE**, roughly
-uniform across leads — +39 % at 0–24 h, +32 % at 72–96 h. This is the project's only
-defensible skill claim, and it is an honest one: live forecasts, scored against what
-actually happened.
+**Against a baseline — two of them, because the obvious one is a strawman.** Flat
+persistence, the observation at the anchor held flat for four days, is beaten by **+53 %**
+on MAE and by about that at every lead. It is a weak test: the river's largest signal at
+these leads is the daily cycle, and a flat line is wrong by most of that cycle's amplitude
+before the forecast has done anything. Repeating the last whole day the run had already
+seen — causal, and it reproduces the swing — is the baseline worth quoting, and the
+forecast beats it by **+40 %** on MAE, rising from +31 % at 0–24 h to +44 % at 72–96 h.
+That second number is the project's defensible skill claim, and it is an honest one: live
+forecasts, scored against what actually happened.
+
+An earlier revision of this document claimed +32 % against persistence, *falling* to
++32 % at 72–96 h from +39 % at 0–24 h. It does not reproduce from the definition it gave,
+and the shape is the tell: skill against a decaying baseline rises with lead, because the
+baseline decays faster than the model does. Both figures above now come out of the
+verification store below, so the next person can check them in one command rather than
+trust this paragraph.
 
 **Two numbers that must not be quoted.** Pooled all-era figures (MAE 0.627) blend two
 different systems. And the apparent improvement from MAE 0.786 (legacy) to 0.411
@@ -73,7 +85,8 @@ The optimal width factor is 1.03 on the early half and 0.70 on the late half; ap
 across, both degrade. The cold bias is a **seasonal regime effect** — the model lags the
 water through the June/July warming and loses that lag once the season plateaus — not a
 fixable offset. Revisit after a full seasonal cycle, and fit conditionally on regime
-rather than on lead alone.
+rather than on lead alone. The prerequisite for revisiting it at all — a stored series to
+fit against, rather than one recomputed from scratch each time — now exists.
 
 ## Delivered
 
@@ -137,6 +150,44 @@ seven irrecoverable snapshots. 31 tests.
 trained order and is untouched. Sums use `min_count=1`: "DWD reported no sunshine value"
 must not become "zero sunshine" in a store kept as evidence.
 
+**Verification (R2).** `data/archive/verification/` holds one row per (run, kind, lead
+bucket): counts, MAE, RMSE, bias, CRPS, both baselines, mean PIT and the seven `pit_le_q*`
+knots every interval coverage is a difference of. 844 rows over 214 runs, backfilled from
+the archive that was already there, and the numbers in this document reproduce out of it —
+legacy MAE 0.786 and current 0.430 both fall out of `pool(read_scores(), by=["model_id"])`.
+
+The design decisions are the interesting part, and each closes a way of getting a wrong
+number out of a right table:
+
+- a run is scored **once its window closes** — once observations reach the last hour it
+  forecast. Before that there is nothing to score; after it the answer cannot change, so
+  a row is written once and never restated. That is what lets a derived store keep the
+  append-only rule, and it makes re-running the scorer a no-op rather than a rewrite;
+- **the lead buckets are disjoint and there is no pooled row beside them.** With one
+  there, the obvious `scores["mae"].mean()` would count every observation twice. `pool`
+  aggregates properly — weighting by the hours each row covers, and averaging RMSE in
+  squares;
+- **what is stored is the sufficient statistic, not the conclusion.** Calibration is kept
+  as the PIT knots, so every interval coverage is an exact subtraction and, unlike a
+  stored `cov_50`, the knots pool correctly across runs;
+- **`kind` travels with every row**, and `read_scores` returns the honest kinds unless
+  asked otherwise (P2). Blank `model_id`s survive a `groupby` rather than being dropped
+  as NaN keys, which would answer for one era while looking like it answered for both;
+- **only real readings are scored.** The observation store was written from the model's
+  input frame, where `wassertemp` has already been interpolated onto the hourly grid so
+  the model never sees a hole — so it held invented values beside real ones, and the
+  store has no hourly gap anywhere in its span, which is the symptom rather than a clean
+  bill of health. `_observed_frame` now takes the raw gauge frame, and an hour the gauge
+  never sampled is absent rather than filled. Existing rows keep what they hold;
+  `docs/verification.md` says which scores that touches and how much;
+- scoring runs **before** the forecast in the workflow, not after. It only ever touches
+  runs whose window has closed, so it never wants the current one — and a scorer raising
+  after `run_inference` has written the live forecast and the weather snapshot to disk
+  would skip the archive commit and take an irreplaceable snapshot with it.
+
+`docs/verification.md` is the reader's guide: the schema, `read_scores`/`pool`, and the
+four ways to get a wrong number out of it. 33 tests.
+
 **Operational.** Workflow permissions are per job; the archive push rebases and retries;
 a persistent failure comments on the open issue instead of opening three a day; CI skips
 archive-only commits and tests both Python versions the project claims to support.
@@ -154,20 +205,6 @@ Ordered by what unblocks the most. Each states why it is not already done. The n
 are stable identifiers, not positions — R1 is delivered and its heading is gone, and the
 rest keep the numbers other sections refer to them by.
 
-### R2 — Persist a verification table
-
-Every number in this document was recomputed from scratch. Nothing accumulates, so model
-drift is invisible and there is no series to fit a calibration against. `validate.py`
-already computes an interval coverage per run; the cheap version is to extend it to
-per-lead MAE, CRPS and PIT and store it as observations close.
-
-This is the prerequisite for ever revisiting the calibration decision above, and for
-noticing a regression that is not large enough to trip the plausibility gate.
-
-*Acceptance:* a store under `data/archive/` with one row per (run, lead bucket) carrying
-MAE, CRPS, PIT and coverage; populated retroactively from the existing archive; a
-documented way to read it.
-
 ### R3 — Record input completeness per run
 
 Nothing records how many gauge readings were missing, how stale the anchor was against
@@ -176,8 +213,20 @@ The archive contains one non-causal row and a maximum issue lag of 1.6 h, which 
 do sometimes limp — and there is currently no way to exclude a degraded run from
 verification rather than silently averaging it in.
 
+R2's table carries `n` against `n_forecast` — how many of the hours a run predicted were
+ever measured. That signal only became true with R2 itself: the observation store used to
+be written from the model's input frame, in which `assemble_long_frame` has already
+interpolated `wassertemp` so the model never sees a hole, so every hour looked measured
+and at least 0.5 % of stored rows are values nobody read off an instrument. Runs are now
+archived from the raw gauge frame, so a missing hour is absent rather than invented — but
+only from 2026-09-10, and the archive is never rewritten.
+
+That covers a gap in the *gauge*, which is the output side. Nothing yet records a gap in
+the *input*, which is the side that would explain a bad score.
+
 *Acceptance:* `n_missing_input_hours`, `anchor_age_hours` and `weather_rows_fetched` on
-every archived forecast; R2's table can filter on them.
+every archived forecast, carried onto R2's rows so a degraded run can be excluded rather
+than silently averaged in.
 
 ### R4 — Stop storing covariate quantiles nothing reads
 
@@ -222,8 +271,9 @@ Proposed changes at the next training run, in expected value order: normalise co
 against a climatological location and scale so absolute level survives; give the water
 head an unmasked or prior-forced path to `airtemp_96` — the checkpoint already carries
 `channel_adjacency_prior` whose first row says "water may see everything", with
-`use_channel_adjacency_prior: False`; and drop or replace `pressure_96`. R2 and R3 should
-land first, so the result can be measured rather than asserted.
+`use_channel_adjacency_prior: False`; and drop or replace `pressure_96`. R2 has landed, so
+there is now a stored series to measure the result against instead of asserting it; R3
+should follow before the training run, so a bad score can be told from a bad input.
 
 Four latent bugs will bite that run and are documented with evidence in
 [`docs/model.md`](model.md): `input_scaling_uni` is silently ignored (Optuna tuned a
@@ -243,7 +293,10 @@ to channel slots with no name check.
 - **`COVARIATE_SHIFT_HOURS` must equal the model horizon.** Changing one without the
   other silently removes the weather forecast the horizon depends on.
 - **`data/archive/` is append-only.** Never rewrite, recompact or migrate a partition —
-  not even to make a schema uniform.
+  not even to make a schema uniform. `verification/` keeps the same rule for a different
+  reason: it is derived and could be rebuilt, but a row is only written once its window
+  has closed, so a scorer that disagreed with an older one must not be able to restate
+  history it disagrees with. Delete a partition to ask for a recomputation.
 - **Errors raise.** The predecessor caught everything, printed a message and exited 0, so
   failures were invisible to the caller.
 - **Tests must not touch the network**, the model checkpoint excepted.
@@ -254,3 +307,11 @@ For anything touching the pipeline: `pytest -q`, `ruff check .`, then `python ma
 twice against a scratch archive root, confirming the second run's −96 h backtest resolves
 as `live` or `replay` and not `oracle`. That one assertion exercises the archive write
 path, the precedence rule, the snapshot lookup and the replay splice together.
+
+For anything touching the scorer, add `python -m eisbach.verification --root <scratch>`
+against a copy of the real archive, then `--report`. Copy rather than point at
+`data/archive/`: the store refuses to restate a row it already holds, so a scorer that
+has changed its mind will silently write nothing where it matters most. The numbers in
+this document are the regression test — legacy MAE 0.786 and the calibration figures both
+fall out of `pool(read_scores(), by=["model_id"])`, and a change that moves them has
+either fixed something or broken something.

@@ -158,7 +158,7 @@ def _replay_weather(df_weather: pd.DataFrame, snapshot: pd.DataFrame,
 OBSERVED_WEATHER_COLUMNS = ["lufttemperatur_c", "pressure"]
 
 
-def _observed_frame(observed: pd.DataFrame, df_weather: pd.DataFrame,
+def _observed_frame(df_wt: pd.DataFrame, df_weather: pd.DataFrame,
                     reference_time: pd.Timestamp) -> pd.DataFrame:
     """Assemble what was *measured* up to the run's anchor, for later verification.
 
@@ -169,12 +169,23 @@ def _observed_frame(observed: pd.DataFrame, df_weather: pd.DataFrame,
     about the river" and "DWD was wrong about the air", which is the question the
     live/replay/oracle distinction exists to answer.
 
+    The water column is taken from the **gauge frame, not from the model's input**.
+    ``assemble_long_frame`` interpolates ``wassertemp`` across the hourly grid so the
+    model never sees a hole, and a filled value stored beside real ones is
+    indistinguishable from a measurement: verification would score the forecast against a
+    number nobody read off an instrument, and every run would report a complete gauge
+    because the holes were filled before anyone counted them. An hour the gauge never
+    sampled is dropped here instead, so downstream it stays the gap it is.
+
     The observed part of the weather frame is everything at or before the anchor; past it
     the frame holds DWD's forecast, which is not an observation of anything. Joined onto
     the water observations rather than unioned with them, so the store keeps exactly one
     row per measured hour, as it always has.
     """
-    water = observed.set_index("date")[["data"]].rename(columns={"data": "wassertemp"})
+    water = df_wt.set_index("timestamp")[["wassertemp"]].dropna()
+    water = water[water.index <= reference_time]
+    # The gauge frame is in local time; everything downstream of here is UTC.
+    water.index = pd.to_datetime(water.index, utc=True)
     water.index.name = "timestamp"
 
     measured = df_weather.loc[df_weather.index <= reference_time, OBSERVED_WEATHER_COLUMNS]
@@ -296,7 +307,7 @@ def run_inference(
         snapshot.reset_index(), reference_time=last_timestamp, root=archive_root,
     )
     archive.write_observations(
-        _observed_frame(observed, df_weather, last_timestamp), root=archive_root,
+        _observed_frame(df_wt, df_weather, last_timestamp), root=archive_root,
     )
 
     backtests = {
