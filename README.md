@@ -37,6 +37,17 @@ The gap widens on volatile windows, where Chronos-2 answers uncertainty by widen
 intervals until they stop saying anything. A model that has learned one river's
 thermodynamics can commit to a narrow band; a zero-shot model cannot.
 
+## How well it does
+
+Scored against what actually happened, 66 live runs over five weeks: **MAE 0.42 °C** over
+the whole 96-hour horizon, 0.33 °C in the first day. That beats repeating the previous
+day — a baseline that already has the daily cycle right — by **40 %**.
+
+Every run is scored once its window closes and the result is kept, so the claim is a
+stored series rather than an assertion: `python -m eisbach.verification --report`. See
+[`docs/verification.md`](docs/verification.md), which also lists the four ways to get a
+wrong number out of a right table.
+
 ## Backtests you can trust
 
 Every plot shows backtests at −96 h, −192 h and −288 h. They are not equally honest, and
@@ -82,6 +93,7 @@ eisbach/data.py    data sources and feature assembly
 eisbach/model/     the forecasting model
 eisbach/archive.py forecast storage, with provenance
 eisbach/validate.py plausibility gate — a bad forecast fails the run
+eisbach/verification.py  how well past runs actually did
 eisbach/plotting.py output
 research/          earlier research, unmaintained
 docs/              operational notes
