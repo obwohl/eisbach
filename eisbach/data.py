@@ -240,10 +240,130 @@ def localize_local_time(timestamps: pd.Series, timezone_name: str = LOCAL_TIMEZO
 
 
 HISTORY_DAYS = 40
+
+
+class ImplausibleGaugeData(RuntimeError):
+    """Raised when the gauge series is broken rather than merely spiky."""
+
+
+#: Water temperatures outside this are an instrument fault, not weather. Sixteen years of
+#: this gauge span 0.3 to 24.1 °C, so these bounds cannot reject a real reading; they
+#: exist to catch a *sustained* fault, which the neighbourhood test below cannot see
+#: because a sustained fault corrupts the neighbours too.
+PLAUSIBLE_RANGE_C = (-5.0, 40.0)
+
+#: How many hours either side form the neighbourhood a reading is judged against. The
+#: statistic is their median, so with three on each side it survives two bad neighbours —
+#: a spike up to three hours wide is still caught.
+SPIKE_NEIGHBOURHOOD_HOURS = 3
+
+#: How many robust standard deviations of the neighbourhood residual count as a spike.
+SPIKE_SIGMAS = 12.0
+
+#: The floor under that threshold, and it is load-bearing rather than defensive. The
+#: gauge reports in steps of 0.1 °C and the river can sit still for days, so the residual
+#: MAD of a calm winter window is exactly zero — in 11 % of 40-day windows across the
+#: sixteen-year record. Without a floor the threshold would collapse to zero there and
+#: reject most of the window.
+#:
+#: Calibrated against the whole record: across 124 303 hourly readings the largest
+#: residual that was real is 1.33 °C, and the one instrument fault is 46.7 °C. At 2.0 °C
+#: the gate sits 1.5x above anything genuine ever seen and 23x below the fault, and
+#: flags exactly one reading in sixteen years.
+SPIKE_FLOOR_C = 2.0
+
+#: Above this share of rejected readings the gauge is not spiking, it is broken, and
+#: interpolating over it would be inventing the input rather than repairing it.
+MAX_REJECTED_FRACTION = 0.01
+
 GAUGE_URL = (
     "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/bayern/"
     "muenchen-himmelreichbruecke-16515005/messwerte/tabelle"
 )
+
+
+def _spikes(values: pd.Series, measured: pd.Series,
+            *, exclude: pd.Series) -> tuple[pd.Series, float]:
+    """Readings that disagree with the hours around them, and the threshold used.
+
+    ``exclude`` names readings already known to be bad; they are kept out of every
+    neighbourhood so they cannot condemn their neighbours, but they are still judged.
+    """
+    clean = values.mask(exclude)
+    half = SPIKE_NEIGHBOURHOOD_HOURS
+    neighbours = pd.concat(
+        [clean.shift(k) for k in range(-half, half + 1) if k != 0], axis=1,
+    ).median(axis=1)
+    residual = values - neighbours
+    mad = (residual - residual.median()).abs().median()
+    threshold = max(SPIKE_SIGMAS * 1.4826 * float(mad), SPIKE_FLOOR_C)
+    return measured & (residual.abs() > threshold), threshold
+
+
+def reject_implausible_readings(df_wt: pd.DataFrame) -> pd.DataFrame:
+    """Blank out gauge readings that no river produced, in place of the frame given.
+
+    On 2026-09-09 the gauge reported 154.4 °C for one hour. Nothing stopped it: the
+    plausibility gate in :mod:`eisbach.validate` judges the *forecast*, so the reading
+    reached the model's input window, the observation archive, and from there 52 rows of
+    the append-only verification store, where pooled live RMSE reads 2.903 with it and
+    0.863 without.
+
+    Two independent tests, because each covers the other's blind spot:
+
+    * an absolute range, which catches a fault that lasts long enough to corrupt its own
+      neighbourhood;
+    * a **neighbourhood** test — the reading against the median of the hours around it,
+      scaled by the robust spread of that same residual over the whole window. A river's
+      temperature is smooth at hourly resolution, so this is sensitive to a single wrong
+      hour without being fooled by the daily cycle, which moves the neighbourhood along
+      with the reading.
+
+    A rejected reading becomes ``NaN``, which is the whole repair: ``assemble_long_frame``
+    already interpolates ``wassertemp`` onto the hourly grid for the model, and
+    ``inference._observed_frame`` already drops NaN before archiving. So the model sees a
+    repaired series and the archive records the hour as *never measured* rather than as an
+    invented value — which is what it is, and which keeps the verification store's promise
+    that only real readings are scored.
+
+    Raises :class:`ImplausibleGaugeData` when too much of the window fails. At that point
+    the series is not a good signal with a spike in it, and a run that interpolated over
+    it would publish a forecast built mostly from guesses.
+    """
+    df = df_wt.copy()
+    values = pd.to_numeric(df["wassertemp"], errors="coerce")
+    measured = values.notna()
+    if not measured.any():
+        return df
+
+    out_of_range = measured & ~values.between(*PLAUSIBLE_RANGE_C)
+
+    # Two passes, because one is not enough. A spike several hours wide fills half of its
+    # own neighbours' neighbourhoods, which drags their median far enough to condemn
+    # perfectly good readings on either side of it — a three-hour fault takes five hours
+    # down with it. The second pass rebuilds each neighbourhood without whatever the
+    # first pass rejected, so the survivors are judged against real values only.
+    spike, threshold = _spikes(values, measured, exclude=out_of_range)
+    spike, threshold = _spikes(values, measured, exclude=out_of_range | spike)
+
+    rejected = out_of_range | spike
+    if not rejected.any():
+        return df
+
+    share = rejected.sum() / measured.sum()
+    if share > MAX_REJECTED_FRACTION:
+        raise ImplausibleGaugeData(
+            f"{rejected.sum()} of {measured.sum()} gauge readings are implausible "
+            f"({share:.1%} > {MAX_REJECTED_FRACTION:.1%}); the gauge is broken, not spiky"
+        )
+
+    for ts, value in zip(df.loc[rejected, "timestamp"], values[rejected], strict=True):
+        logger.warning(
+            "Rejecting implausible gauge reading %.1f °C at %s (threshold %.2f °C)",
+            value, ts, threshold,
+        )
+    df.loc[rejected, "wassertemp"] = float("nan")
+    return df
 
 
 def prepare_data():
@@ -273,6 +393,10 @@ def prepare_data():
 
     # Resample only after localizing, or the DST hour lands in the wrong bucket.
     df_wt = df_wt.set_index('timestamp').resample('1h').first().reset_index()
+
+    # Before anything reads it: the model's input window, the observation archive and
+    # every backtest replay all come off this one frame.
+    df_wt = reject_implausible_readings(df_wt)
 
     df_weather = get_prepared_weather_data()
     df_long = assemble_long_frame(df_wt, df_weather)
