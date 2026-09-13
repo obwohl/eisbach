@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 #: The two gauges whose gaps cost the most windows. Dropped here, measured in exp6.
 EXCLUDED = {"isar_muenchen", "rissbach_klamm"}
 
-N_WINDOWS = 200
+N_WINDOWS = 150
 
 
 def main() -> None:
