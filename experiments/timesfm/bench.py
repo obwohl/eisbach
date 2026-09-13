@@ -32,6 +32,11 @@ ARCHIVE = REPO / "data" / "archive"
 HORIZON = 96
 LEAD_BUCKETS = ((0, 24), (24, 48), (48, 72), (72, 96))
 
+#: Six-hour resolution over the first day, because that is where an upstream gauge can
+#: still be ahead of the river: Beuerberg is hours away, not half a day. Coarse after
+#: that, where the travel time has been outrun and nothing changes within a bucket.
+FINE_BUCKETS = ((0, 6), (6, 12), (12, 18), (18, 24), (24, 48), (48, 72), (72, 96))
+
 #: The shared grid. TimesFM emits exactly these; DUET is interpolated onto them.
 DECILES = np.round(np.arange(0.1, 0.91, 0.1), 2)
 
@@ -126,11 +131,15 @@ class Run:
 
 
 def score(run: Run, *, diurnal: np.ndarray | None = None,
-          persistence: float | None = None) -> list[dict]:
-    """One row per lead bucket, mirroring the production verification schema."""
+          persistence: float | None = None, buckets=LEAD_BUCKETS) -> list[dict]:
+    """One row per lead bucket, mirroring the production verification schema.
+
+    ``buckets`` must be disjoint and cover the horizon, or :func:`pool` will count some
+    hours twice — the same trap the production verification store documents.
+    """
     leads = np.arange(1, len(run.truth) + 1)
     rows = []
-    for lo, hi in LEAD_BUCKETS:
+    for lo, hi in buckets:
         sel = (leads > lo) & (leads <= hi) & np.isfinite(run.truth)
         if not sel.any():
             continue
@@ -188,3 +197,49 @@ def diurnal_baseline(series: pd.Series, targets: pd.DatetimeIndex) -> np.ndarray
     leads = np.arange(1, len(targets) + 1)
     lag = 24 * np.ceil(leads / 24)
     return series.reindex(targets - pd.to_timedelta(lag, unit="h")).to_numpy(dtype=float)
+
+
+def per_run(scores: pd.DataFrame, metric: str = "mae") -> pd.DataFrame:
+    """One value per (label, run), pooling the lead buckets weighted by their hours."""
+    num = scores[metric] * scores["n"]
+    grouped = scores.assign(_num=num).groupby(["label", "reference_time"])[["_num", "n"]].sum()
+    return (grouped["_num"] / grouped["n"]).unstack(0)
+
+
+def paired(scores: pd.DataFrame, reference: str, *, metric: str = "mae",
+           draws: int = 8000, seed: int = 0) -> pd.DataFrame:
+    """Every label against one reference on the windows both ran, with a bootstrap CI.
+
+    Paired, because every combination is evaluated on the same windows and the windows
+    differ from each other far more than the combinations do — an unpaired interval here
+    is about ten times too wide to see anything.
+
+    The interval is unadjusted. These sweeps test many variants against one reference, so
+    with twenty candidates roughly one will clear a 5 % bar by chance; ``n_tested`` is
+    carried on every row so a reader cannot forget how many there were.
+    """
+    values = per_run(scores, metric)
+    if reference not in values:
+        raise KeyError(f"{reference!r} is not among {sorted(values.columns)}")
+    rng = np.random.default_rng(seed)
+    base = values[reference]
+    rows = []
+    others = [c for c in values.columns if c != reference]
+    for label in others:
+        delta = (values[label] - base).dropna().to_numpy()
+        if delta.size == 0:
+            continue
+        boot = np.array([rng.choice(delta, delta.size, replace=True).mean()
+                         for _ in range(draws)])
+        lo, hi = np.percentile(boot, [2.5, 97.5])
+        rows.append({
+            "label": label, "n_runs": delta.size,
+            metric: float(values[label].mean()),
+            "delta": float(delta.mean()),
+            "pct": 100.0 * float(delta.mean()) / float(base.mean()),
+            "ci_lo": float(lo), "ci_hi": float(hi),
+            "better_in": float((delta < 0).mean()),
+            "verdict": "better" if hi < 0 else ("worse" if lo > 0 else "—"),
+            "n_tested": len(others),
+        })
+    return pd.DataFrame(rows).sort_values("delta").reset_index(drop=True)
