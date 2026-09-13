@@ -49,14 +49,19 @@ def main() -> None:
 
     chain_t = [c for c in CHAIN_T if c in candidates]
     chain_q = [c for c in CHAIN_Q if c in candidates]
+    # Experiment 6 found exactly two series that clear an unadjusted significance bar,
+    # and they are the two the travel time predicts: Lenggries and Bad Tölz, the mid-Isar
+    # temperature gauges. Neither survives a correction for having tested 21 of them, so
+    # this window set is the replication that decides it.
     sets = {
         "water only": None,
         "+ air": [],
+        "+ air + Lenggries (T)": ["isar_lenggries"],
+        "+ air + Lenggries (T+Q)": ["isar_lenggries", "q_lenggries"],
         "+ air + Tölz (T)": ["isar_toelz"],
         "+ air + Tölz (T+Q)": ["isar_toelz", "q_toelz_kw"],
+        "+ air + Lenggries + Tölz (T)": ["isar_lenggries", "isar_toelz"],
         "+ air + Eisbach Q": ["q_eisbach"],
-        "+ air + Loisach Beuerberg (T)": ["loisach_beuerberg"],
-        "+ air + Schwabinger Bach (T)": ["schwabinger_bach"],
         "+ air + whole T chain": chain_t,
         "+ air + whole T chain + their Q": chain_t + chain_q,
         "+ air + everything": candidates,
