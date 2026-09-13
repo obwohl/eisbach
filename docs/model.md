@@ -158,6 +158,15 @@ representation never receives air temperature through the channel transformer. B
 row 0's off-diagonals are ~0 and ~1, the water forecast is deterministic: 30 repeated
 calls on one window gave a run-to-run spread of exactly 0.000000.
 
+**This closes one route, not the question.** Air temperature still reaches the water
+forecast — through the router, which selects experts from the channel mean, and through
+the multivariate ESN, the one expert that mixes channels. Measured end to end by
+substituting into the input, replacing the forecast part of `airtemp_96` with a real
+heatwave moves the published water forecast by 1.46 °C, and feeding the model a *wrong*
+weather forecast doubles its MAE. PRD R6 once read this table as evidence that the
+covariates were disconnected, and was wrong to; the correction and its measurements are
+in that requirement.
+
 ### Where the positional dependency actually lives
 
 `duet_prob_model.py:134` and `:232-234`:

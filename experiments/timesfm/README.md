@@ -25,11 +25,16 @@ forecast *as it was really issued* through the production snapshot lookup:
 31 % better on MAE, 33 % on CRPS, with bands half as wide that still cover. The margin
 *grows* with lead: at 72–96 h it is 0.302 against 0.477.
 
-**The covariate pathway works.** PRD R6 established that shifting `airtemp_96` by +3 °C
-moves DUET's water forecast by 1.9e-6 °C. The same probe on TimesFM moves it by
-**+0.60 °C at 24 h and +1.09 °C at 96 h**, symmetric in sign and roughly linear in the
-offset (+10 °C gives +3.15 °C at 96 h). That single number is why the table above looks
-the way it does, and it is the thing R6 wanted a training run to fix.
+**Both models use the weather; only one of them sees its level.** Shifting `airtemp_96`
+by +3 °C moves DUET's water forecast by 1.9e-6 °C and TimesFM's by **+1.09 °C at 96 h**,
+symmetric in sign and roughly linear (+10 °C gives +3.15 °C). But that is a difference in
+*level* sensitivity only: `experiments/duet_covariates/` shows DUET responds strongly to
+the forecast's shape — replacing the forecast part of the channel with a real cold spell
+moves it 2.36 °C — and that a wrong weather forecast doubles its MAE. So the gap in the
+table above is **not** the one-line explanation "DUET ignores the weather", which is what
+PRD R6 used to claim and no longer does. What separates them here is left open: level
+blindness is a candidate, so are the twice-too-wide bands and the lag through regime
+changes.
 
 **Weather forecast error is not the bottleneck.** Replay (0.290) and oracle (0.285) are
 within noise of each other, so DWD's four-day air temperature is already good enough that

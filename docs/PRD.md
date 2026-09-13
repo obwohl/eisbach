@@ -250,30 +250,66 @@ real runner, not from a development container.
 *Acceptance:* both workflows install from the same pinned set; refreshing it is a
 deliberate, reviewable commit.
 
-### R6 — Reconnect the covariate pathway
+### R6 — Let the covariate carry its absolute level
 
-The largest available gain, and the only one that needs a training run. Three independent
-measurements say the weather covariates are barely connected to the water head:
+**This requirement previously claimed the weather covariates were "barely connected to
+the water head". That claim was wrong, and the correction matters more than the
+requirement.** The three measurements behind it are each reproducible — and each probes
+an *affine transform of a whole channel*, which is the one class of change RevIN removes
+by construction. They measured RevIN's invariance and were read as measuring the
+channel's connectivity.
 
-- The channel mask never lets air temperature reach water: `p > 0.5` in **0 of 222**
-  historical windows (max 0.0088).
-- RevIN's per-window normalisation makes every covariate affine-invariant. Shifting
-  `airtemp_96` by +3 °C changes the water forecast by **1.9e-6**. A DWD forecast of 30 °C
-  and one of 20 °C with the same diurnal shape are identical inputs.
-- Replacing `pressure_96` with a constant moves the forecast by at most **0.018 °C** —
-  and pressure is the *only* covariate the mask lets water attend to.
+What the model does with the weather, measured end to end on real windows by substituting
+into the input rather than by tracing the graph (`experiments/duet_covariates/`):
 
-Air temperature does still matter (constant air moves the h=96 median by −1.24 °C), but
-the traced route is the router selecting different experts, not the value reaching the
-head.
+| change to the input | water forecast moves (mean \|Δ\|) |
+| --- | ---: |
+| whole `airtemp_96` channel +3 °C | 2e-7 °C (max 1.9e-6 — float32 rounding) |
+| whole channel +10 °C | 2e-7 °C |
+| daily swing doubled, mean kept | 2e-7 °C |
+| whole `pressure_96` → constant | 0.12 °C |
+| whole `airtemp_96` → constant | 0.90 °C |
+| **the forecast part → a real heatwave** | **1.46 °C** |
+| **the forecast part → a real cold spell** | **2.36 °C** |
+
+The last 96 rows of `airtemp_96` are the DWD forecast — the only part of the input that
+is not already history. Replacing them moves the published forecast by 1.5 to 2.4 °C
+against a between-window spread of 2.48 °C. That is a first-order effect, not a
+disconnected pathway.
+
+And it is *useful*, not merely disruptive. Scored against what happened, on 59 windows:
+
+| what the model was told about the weather | MAE | CRPS |
+| --- | ---: | ---: |
+| the real DWD forecast | **0.513** | **0.339** |
+| air held at the window mean | 1.012 | 0.685 |
+| the same hours from a week earlier | 1.123 | 0.753 |
+
+The forecast is worth a factor of two in MAE, and a *wrong* forecast is worse than none —
+which is only possible for an input the model genuinely relies on.
+
+**The real defect is narrower and still worth fixing.** RevIN normalises each covariate
+per window, so the model sees the weather's shape *within* the window and never its
+absolute level or amplitude. A DWD forecast of 30 °C and one of 20 °C are identical
+inputs when the fortnight behind them differed to match — which is exactly the seasonal
+regime effect the calibration section above ties the cold bias to. It is a real
+limitation, not a severed connection.
 
 Proposed changes at the next training run, in expected value order: normalise covariates
-against a climatological location and scale so absolute level survives; give the water
-head an unmasked or prior-forced path to `airtemp_96` — the checkpoint already carries
-`channel_adjacency_prior` whose first row says "water may see everything", with
-`use_channel_adjacency_prior: False`; and drop or replace `pressure_96`. R2 has landed, so
-there is now a stored series to measure the result against instead of asserting it; R3
-should follow before the training run, so a bad score can be told from a bad input.
+against a climatological location and scale, so absolute level survives the window. Drop
+or replace `pressure_96` — it moves the forecast by 0.12 °C against air's 0.90 °C. The
+mask remedy this requirement used to propose — forcing `channel_adjacency_prior` so the
+water head may attend to air — is aimed at a problem the substitution test says is not
+there, and should not be attempted without first measuring what it changes end to end.
+R2 has landed, so there is a stored series to measure the result against instead of
+asserting it; R3 should follow before the training run, so a bad score can be told from a
+bad input.
+
+**How the old claim survived.** It was assembled from three probes that a single
+end-to-end substitution would have contradicted in a minute. Any future claim that a
+component does not matter belongs in this document only with a measurement of what the
+*output* does when that component changes — not with a trace of what the graph appears to
+allow.
 
 Four latent bugs will bite that run and are documented with evidence in
 [`docs/model.md`](model.md): `input_scaling_uni` is silently ignored (Optuna tuned a
