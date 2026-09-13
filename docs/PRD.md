@@ -295,9 +295,38 @@ inputs when the fortnight behind them differed to match — which is exactly the
 regime effect the calibration section above ties the cold bias to. It is a real
 limitation, not a severed connection.
 
+**It cannot be fixed at inference time, and that has been tried rather than assumed.**
+RevIN takes the per-channel median over the window and the RMS about it, both detached,
+before any weight sees the input — so the blindness is arithmetic, not something the
+weights learned. Two consequences, one of which rules out a whole family of shortcuts:
+
+- **No transform that is constant within the window can put the level back**, because
+  RevIN removes it again by construction. A climatological anomaly is very nearly
+  constant across sixteen days, so feeding one does not restore the level; it only
+  destroys the daily shape the model does use, and costs 20 % MAE.
+- Overriding RevIN's covariate statistics with climatological ones *does* restore it. A
+  +3 °C air forecast moves the water forecast by 0.267 °C where it moved by 2e-7 before,
+  and the cold bias walks monotonically from −0.053 to +0.012 as the override is blended
+  in — so the level is real signal and it corrects the right thing.
+
+  It still makes the forecast worse: MAE 0.511 → 0.558 at full override. Blending the
+  window median a quarter of the way towards the climatological one looks like a small
+  gain (0.5073 against 0.5110) and is not one — paired over 120 runs the difference is
+  −0.40 % with a 95 % interval of [−2.9 %, +2.2 %], and 47 % of runs improve, which is a
+  coin toss.
+
+  The reason is specific: the model was trained on a covariate whose median is zero by
+  construction, so an off-centre covariate is an input it has never seen — and the router
+  selects its experts from the *channel mean*, which is exactly the quantity the override
+  moves. The level arrives as a perturbation of the expert mixture rather than as "it is
+  warm". Consistent with that, the response has no coherent sign: mean |Δ| is 0.267 °C
+  while the mean Δ at h=96 is −0.002 °C.
+
 Proposed changes at the next training run, in expected value order: normalise covariates
-against a climatological location and scale, so absolute level survives the window. Drop
-or replace `pressure_96` — it moves the forecast by 0.12 °C against air's 0.90 °C. The
+against a climatological location and scale, so absolute level survives the window — the
+inference-time result above says the signal is there and that only training can teach the
+router to read it. Drop or replace `pressure_96` — it moves the forecast by 0.12 °C
+against air's 0.90 °C. The
 mask remedy this requirement used to propose — forcing `channel_adjacency_prior` so the
 water head may attend to air — is aimed at a problem the substitution test says is not
 there, and should not be attempted without first measuring what it changes end to end.

@@ -75,6 +75,11 @@ nothing can know a cold snap is coming.
 | `exp5_regimes.py` | Splits any score table by how far the river moved. |
 | `plot_*.py`, `viz.py` | Plots in `plots/`. |
 
+`../duet_covariates/` holds the companion investigation into the live model: `probe.py`
+(what it sees in its weather covariate), `usefulness.py` (whether the weather forecast
+improves its score), and `deblind.py` (whether its level blindness can be removed without
+retraining — it can, and it does not help).
+
 ## Traps
 
 * **The CRPS grid is not free.** The production CRPS integrates the pinball loss over
