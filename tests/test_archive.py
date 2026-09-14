@@ -731,3 +731,61 @@ def test_appending_to_a_partition_without_reference_times_keeps_the_old_rows(roo
 
     stored = pd.read_csv(root / "weather" / "2026-05.csv")
     assert (stored["archive_timestamp"] == fetched.isoformat()).sum() == 3
+
+
+def test_a_false_measurement_can_be_retracted(root):
+    """``GroupBy.last`` skips nulls, so a wrong reading cannot be written over.
+
+    Without a deliberate retraction the 154.4 °C the gauge reported on 2026-09-09 would
+    stay in the archive for ever and keep scoring real forecasts against it.
+    """
+    index = pd.date_range("2026-09-09 07:00", periods=3, freq="1h", tz="UTC")
+    archive.write_observations(
+        pd.DataFrame({"wassertemp": [19.1, 154.4, 19.1]}, index=index), root=root,
+    )
+
+    written = archive.retract_observation(
+        index[1], "wassertemp", reason="gauge fault", root=root,
+    )
+    assert written is not None
+
+    stored = archive.read_observations(root=root)["wassertemp"]
+    assert stored.loc[index[0]] == 19.1
+    assert pd.isna(stored.loc[index[1]])
+    assert stored.loc[index[2]] == 19.1
+
+
+def test_retracting_leaves_the_other_columns_alone(root):
+    index = pd.date_range("2026-09-09 07:00", periods=2, freq="1h", tz="UTC")
+    archive.write_observations(
+        pd.DataFrame({"wassertemp": [19.1, 154.4], "lufttemperatur_c": [18.8, 19.5]},
+                     index=index), root=root,
+    )
+    archive.retract_observation(index[1], "wassertemp", reason="gauge fault", root=root)
+
+    stored = archive.read_observations(root=root)
+    assert pd.isna(stored.loc[index[1], "wassertemp"])
+    assert stored.loc[index[1], "lufttemperatur_c"] == 19.5
+
+
+def test_a_later_write_does_not_resurrect_a_retracted_reading(root):
+    """The merge keeps the stored value when a new write carries NaN for it."""
+    index = pd.date_range("2026-09-09 07:00", periods=2, freq="1h", tz="UTC")
+    archive.write_observations(
+        pd.DataFrame({"wassertemp": [19.1, 154.4]}, index=index), root=root,
+    )
+    archive.retract_observation(index[1], "wassertemp", reason="gauge fault", root=root)
+
+    # What the pipeline now writes for that hour: the gate turned it into NaN.
+    archive.write_observations(
+        pd.DataFrame({"wassertemp": [19.1, float("nan")]}, index=index), root=root,
+    )
+    assert pd.isna(archive.read_observations(root=root).loc[index[1], "wassertemp"])
+
+
+def test_retracting_a_timestamp_that_holds_nothing_is_a_no_op(root):
+    index = pd.date_range("2026-09-09 07:00", periods=1, freq="1h", tz="UTC")
+    archive.write_observations(pd.DataFrame({"wassertemp": [19.1]}, index=index), root=root)
+    assert archive.retract_observation(
+        pd.Timestamp("2026-09-09 12:00", tz="UTC"), "wassertemp",
+        reason="nothing there", root=root) is None

@@ -549,6 +549,54 @@ def write_observations(df_observations: pd.DataFrame, root: Path = DEFAULT_ROOT)
     return written
 
 
+def retract_observation(timestamp, column: str, *, reason: str,
+                        root: Path = DEFAULT_ROOT) -> Path | None:
+    """Blank one stored measurement that the instrument never really made.
+
+    ``write_observations`` merges with ``GroupBy.last``, which skips nulls so that a
+    narrow write cannot blank the columns it does not mention. The cost of that rule is
+    that a *wrong* reading, once stored, can never be corrected through the normal path:
+    writing NaN over it leaves the old value standing. This is the deliberate exception.
+
+    It is not a licence to revise history. A forecast we published stays exactly as
+    published, however bad — that record is what the verification store's honesty rests
+    on. This touches only a measurement, and only one that provably did not happen: on
+    2026-09-09 the Eisbach gauge reported **154.4 °C** for a single hour, between
+    neighbours of 19.1 °C. Leaving it in would mean scoring real forecasts against a
+    number no river produced.
+
+    The hour becomes *never measured* rather than something else — the same state
+    :func:`eisbach.data.reject_implausible_readings` now produces before the value can
+    reach the archive at all. Verification rows already scored against it do not update
+    themselves: that store is derived, and deleting its partition is how a recomputation
+    is asked for.
+
+    Returns the partition written, or ``None`` when the timestamp holds nothing.
+    """
+    when = pd.Timestamp(timestamp)
+    if when.tzinfo is None:
+        when = when.tz_localize("UTC")
+    else:
+        when = when.tz_convert("UTC")
+
+    path = _partition_path(root, "observations", when)
+    existing = _read_partition(path)
+    if existing.empty or column not in existing.columns:
+        return None
+
+    stored = _as_utc_series(existing["timestamp"], index=existing.index)
+    hit = stored == when
+    if not hit.any():
+        return None
+
+    was = existing.loc[hit, column].tolist()
+    existing.loc[hit, column] = pd.NA
+    _write_partition(path, existing)
+    logger.warning("Retracted %s=%s at %s from %s: %s",
+                   column, ", ".join(str(v) for v in was), when, path, reason)
+    return path
+
+
 def read_observations(root: Path = DEFAULT_ROOT) -> pd.DataFrame:
     """Load every measured value, indexed by timestamp.
 
