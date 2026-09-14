@@ -57,7 +57,7 @@ def main():
     gallery.LABELS = ['DUET vor Umstellung · Orakel', 'TimesFM final · Orakel',
                       'DUET damals live', 'TimesFM Luft · Replay']
     gallery.COLORS = ['#1771F1', '#E35B38', '#777777', '#27806B']
-    gallery.render()
+    gallery.render(report_name='REPORT_exp20.md')
     logging.info('Old vs current oracle decoder: max absolute difference %s over %s windows',
                  max(diffs), len(origins))
 

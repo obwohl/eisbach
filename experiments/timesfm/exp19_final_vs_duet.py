@@ -147,7 +147,11 @@ def local(times):
     return pd.DatetimeIndex(times).tz_convert('Europe/Berlin').tz_localize(None)
 
 
-def render():
+def render(report_name='REPORT_exp19.md'):
+    report_dir = Path(__file__).resolve().parent
+    reports = {name: (report_dir / name).read_text(encoding='utf-8')
+               for name in ('REPORT_exp19.md', 'REPORT_exp20.md')}
+    report = reports[report_name]
     plt.rcParams.update({'font.family': 'DejaVu Sans', 'font.size': 10,
                          'axes.spines.top': False, 'axes.spines.right': False,
                          'axes.grid': True, 'grid.alpha': .2, 'figure.facecolor': 'white'})
@@ -262,6 +266,10 @@ document.getElementById('detail').src='window_'+e.target.value+'.png';});</scrip
     html = html.replace('window_00.png', f'window_{len(windows) - 1:02d}.png')
     html = html.replace('</select>', '</select><script>document.getElementById("window").selectedIndex='
                         f'{len(windows) - 1};</script>')
+    # Keep the report link and cross-references usable when serving OUT alone.
+    for name, contents in reports.items():
+        (OUT / name).write_text(contents, encoding='utf-8')
+    (OUT / 'REPORT.md').write_text(report, encoding='utf-8')
     (OUT / 'index.html').write_text(html)
     LOG.info('Summary:\n%s', pooled.to_string())
     LOG.info('Before sensor fault:\n%s', sensitivity.to_string())
