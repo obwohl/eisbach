@@ -5,3 +5,6 @@ data/archive/** text eol=lf
 data/archive/** linguist-generated=true
 eisbach/model/duet/** linguist-vendored=true
 research/** linguist-documentation=true
+
+# Compressed source evidence must remain byte-exact; text normalization corrupts gzip.
+data/archive/covariates/**/*.gz binary

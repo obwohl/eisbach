@@ -1,0 +1,18 @@
+[
+  {
+    "local_timestamp": "30.10.2022 02:45",
+    "value": 12.5
+  },
+  {
+    "local_timestamp": "30.10.2022 02:30",
+    "value": 12.5
+  },
+  {
+    "local_timestamp": "30.10.2022 02:15",
+    "value": 12.5
+  },
+  {
+    "local_timestamp": "30.10.2022 02:00",
+    "value": 12.5
+  }
+]

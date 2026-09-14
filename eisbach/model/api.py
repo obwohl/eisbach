@@ -24,6 +24,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import torch
 
@@ -102,8 +103,8 @@ def long_to_wide(df_long: pd.DataFrame) -> pd.DataFrame:
     """Pivot the repo's long-format frame into the wide input the model expects.
 
     Mirrors ``run_single_forecast.py``: pivot on ``date``/``cols``/``data``,
-    select :data:`SERIES_ORDER`, parse the index as datetimes, then forward-
-    and back-fill gaps.
+    select :data:`SERIES_ORDER` and parse the index as datetimes. Gap policy
+    belongs to data preparation; missing values must not be silently filled here.
     """
     missing = set(SERIES_ORDER) - set(df_long["cols"].unique())
     if missing:
@@ -111,7 +112,6 @@ def long_to_wide(df_long: pd.DataFrame) -> pd.DataFrame:
 
     df_wide = df_long.pivot(index="date", columns="cols", values="data")[list(SERIES_ORDER)]
     df_wide.index = pd.to_datetime(df_wide.index)
-    df_wide = df_wide.ffill().bfill()
     return df_wide
 
 
@@ -162,6 +162,10 @@ def forecast(
         )
 
     input_df = df_wide.iloc[-config.seq_len:]
+    if not np.isfinite(input_df.to_numpy(dtype=float)).all():
+        raise ValueError("Model input contains unfillable gaps; refusing to invent observations")
+    if not input_df.index.to_series().diff().dropna().eq(pd.Timedelta(hours=1)).all():
+        raise ValueError("Model input is not a contiguous hourly window")
     device = next(model.parameters()).device
     input_tensor = torch.tensor(input_df.values, dtype=torch.float32).unsqueeze(0).to(device)
 

@@ -1,0 +1,3754 @@
+[
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2010,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2010-01-01T00:00:00+00:00",
+      "last_date": "2010-12-31T23:00:00+00:00"
+    },
+    "sha256": "0a6abc429cec5ed28598f3c2e3e54975220da83c92bad2f1c73eb8787cd282af",
+    "raw_path": "data/archive/covariates/raw/01550/2010.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.847825289+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2010,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2010-01-01T00:00:00+00:00",
+      "last_date": "2010-12-31T23:00:00+00:00"
+    },
+    "sha256": "0a6abc429cec5ed28598f3c2e3e54975220da83c92bad2f1c73eb8787cd282af",
+    "raw_path": "data/archive/covariates/raw/01550/2010.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.847825289+00:00"
+  },
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2011,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2011-01-01T00:00:00+00:00",
+      "last_date": "2011-12-31T23:00:00+00:00"
+    },
+    "sha256": "808dbb45b713bee3ea46a346c33561c9b3cdd59a8552ebed733d7ec94071c18e",
+    "raw_path": "data/archive/covariates/raw/01550/2011.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.851091623+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2011,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2011-01-01T00:00:00+00:00",
+      "last_date": "2011-12-31T23:00:00+00:00"
+    },
+    "sha256": "808dbb45b713bee3ea46a346c33561c9b3cdd59a8552ebed733d7ec94071c18e",
+    "raw_path": "data/archive/covariates/raw/01550/2011.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.851091623+00:00"
+  },
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2012,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2012-01-01T00:00:00+00:00",
+      "last_date": "2012-12-31T23:00:00+00:00"
+    },
+    "sha256": "9b574d8f763b8f98d735a725aeb8a2ce2c6184cd291b9750f830f1ca4acaab7f",
+    "raw_path": "data/archive/covariates/raw/01550/2012.gz",
+    "hours": 8784,
+    "present": 8784,
+    "retrieved_at": "2026-09-14T20:41:42.853325844+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2012,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2012-01-01T00:00:00+00:00",
+      "last_date": "2012-12-31T23:00:00+00:00"
+    },
+    "sha256": "9b574d8f763b8f98d735a725aeb8a2ce2c6184cd291b9750f830f1ca4acaab7f",
+    "raw_path": "data/archive/covariates/raw/01550/2012.gz",
+    "hours": 8784,
+    "present": 8784,
+    "retrieved_at": "2026-09-14T20:41:42.853325844+00:00"
+  },
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2013,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2013-01-01T00:00:00+00:00",
+      "last_date": "2013-12-31T23:00:00+00:00"
+    },
+    "sha256": "93fdff67656de9ec4a700ee9e4722aa8bf5eae4a42009fcf681a4c9cedb83c00",
+    "raw_path": "data/archive/covariates/raw/01550/2013.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.854352951+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2013,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2013-01-01T00:00:00+00:00",
+      "last_date": "2013-12-31T23:00:00+00:00"
+    },
+    "sha256": "93fdff67656de9ec4a700ee9e4722aa8bf5eae4a42009fcf681a4c9cedb83c00",
+    "raw_path": "data/archive/covariates/raw/01550/2013.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.854352951+00:00"
+  },
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2014,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2014-01-01T00:00:00+00:00",
+      "last_date": "2014-12-31T23:00:00+00:00"
+    },
+    "sha256": "5ada06303058b8f3ad9e77d59545277561bacc36f9d5282837e4377c2a938f38",
+    "raw_path": "data/archive/covariates/raw/01550/2014.gz",
+    "hours": 8760,
+    "present": 8744,
+    "retrieved_at": "2026-09-14T20:41:42.857389688+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2014,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2014-01-01T00:00:00+00:00",
+      "last_date": "2014-12-31T23:00:00+00:00"
+    },
+    "sha256": "5ada06303058b8f3ad9e77d59545277561bacc36f9d5282837e4377c2a938f38",
+    "raw_path": "data/archive/covariates/raw/01550/2014.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.857389688+00:00"
+  },
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2015,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2015-01-01T00:00:00+00:00",
+      "last_date": "2015-12-31T23:00:00+00:00"
+    },
+    "sha256": "56d3df179102c770b4a9cb9eb600eaf446731370a666bd7ea3af20d349353c8b",
+    "raw_path": "data/archive/covariates/raw/01550/2015.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.858229399+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2015,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2015-01-01T00:00:00+00:00",
+      "last_date": "2015-12-31T23:00:00+00:00"
+    },
+    "sha256": "56d3df179102c770b4a9cb9eb600eaf446731370a666bd7ea3af20d349353c8b",
+    "raw_path": "data/archive/covariates/raw/01550/2015.gz",
+    "hours": 8760,
+    "present": 8759,
+    "retrieved_at": "2026-09-14T20:41:42.858229399+00:00"
+  },
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2016,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2016-01-01T00:00:00+00:00",
+      "last_date": "2016-12-31T23:00:00+00:00"
+    },
+    "sha256": "84cb450dd511fe03a31a8990ed23c6e1b3deba9c4006867a6b1257315a1116f8",
+    "raw_path": "data/archive/covariates/raw/01550/2016.gz",
+    "hours": 8784,
+    "present": 8784,
+    "retrieved_at": "2026-09-14T20:41:42.858353138+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2016,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2016-01-01T00:00:00+00:00",
+      "last_date": "2016-12-31T23:00:00+00:00"
+    },
+    "sha256": "84cb450dd511fe03a31a8990ed23c6e1b3deba9c4006867a6b1257315a1116f8",
+    "raw_path": "data/archive/covariates/raw/01550/2016.gz",
+    "hours": 8784,
+    "present": 8784,
+    "retrieved_at": "2026-09-14T20:41:42.858353138+00:00"
+  },
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2017,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2017-01-01T00:00:00+00:00",
+      "last_date": "2017-12-31T23:00:00+00:00"
+    },
+    "sha256": "b8f566c48387b3fd5bcfb74d451ed895adaf1dac4035e4ff888ed8361593162b",
+    "raw_path": "data/archive/covariates/raw/01550/2017.gz",
+    "hours": 8760,
+    "present": 8753,
+    "retrieved_at": "2026-09-14T20:41:42.861971378+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2017,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2017-01-01T00:00:00+00:00",
+      "last_date": "2017-12-31T23:00:00+00:00"
+    },
+    "sha256": "b8f566c48387b3fd5bcfb74d451ed895adaf1dac4035e4ff888ed8361593162b",
+    "raw_path": "data/archive/covariates/raw/01550/2017.gz",
+    "hours": 8760,
+    "present": 8741,
+    "retrieved_at": "2026-09-14T20:41:42.861971378+00:00"
+  },
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2018,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2018-01-01T00:00:00+00:00",
+      "last_date": "2018-12-31T23:00:00+00:00"
+    },
+    "sha256": "ea0bd3bd22fd4f37a1286934084da4e92a1cf9c9fd11b5c1cb6836b72e4a6374",
+    "raw_path": "data/archive/covariates/raw/01550/2018.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.862483263+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2018,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2018-01-01T00:00:00+00:00",
+      "last_date": "2018-12-31T23:00:00+00:00"
+    },
+    "sha256": "ea0bd3bd22fd4f37a1286934084da4e92a1cf9c9fd11b5c1cb6836b72e4a6374",
+    "raw_path": "data/archive/covariates/raw/01550/2018.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.862483263+00:00"
+  },
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2019,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2019-01-01T00:00:00+00:00",
+      "last_date": "2019-12-31T23:00:00+00:00"
+    },
+    "sha256": "8ddc64fa483f0ced1b52787e17f8e2e097072244580e93a060988ba2adeb2ab0",
+    "raw_path": "data/archive/covariates/raw/01550/2019.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.866237640+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2019,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2019-01-01T00:00:00+00:00",
+      "last_date": "2019-12-31T23:00:00+00:00"
+    },
+    "sha256": "8ddc64fa483f0ced1b52787e17f8e2e097072244580e93a060988ba2adeb2ab0",
+    "raw_path": "data/archive/covariates/raw/01550/2019.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.866237640+00:00"
+  },
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2020,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2020-01-01T00:00:00+00:00",
+      "last_date": "2020-12-31T23:00:00+00:00"
+    },
+    "sha256": "db2f91a96cd6acea80c07c5d4116cae07d05497c49d3148813a639495d121684",
+    "raw_path": "data/archive/covariates/raw/01550/2020.gz",
+    "hours": 8784,
+    "present": 8744,
+    "retrieved_at": "2026-09-14T20:41:42.866821766+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2020,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2020-01-01T00:00:00+00:00",
+      "last_date": "2020-12-31T23:00:00+00:00"
+    },
+    "sha256": "db2f91a96cd6acea80c07c5d4116cae07d05497c49d3148813a639495d121684",
+    "raw_path": "data/archive/covariates/raw/01550/2020.gz",
+    "hours": 8784,
+    "present": 8766,
+    "retrieved_at": "2026-09-14T20:41:42.866821766+00:00"
+  },
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2021,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2021-01-01T00:00:00+00:00",
+      "last_date": "2021-12-31T23:00:00+00:00"
+    },
+    "sha256": "5fcfc392eca4d6ea59abf2112172c5094d37eafca92a7567ded1cbe3d8e974d2",
+    "raw_path": "data/archive/covariates/raw/01550/2021.gz",
+    "hours": 8760,
+    "present": 8758,
+    "retrieved_at": "2026-09-14T20:41:42.868795633+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2021,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2021-01-01T00:00:00+00:00",
+      "last_date": "2021-12-31T23:00:00+00:00"
+    },
+    "sha256": "5fcfc392eca4d6ea59abf2112172c5094d37eafca92a7567ded1cbe3d8e974d2",
+    "raw_path": "data/archive/covariates/raw/01550/2021.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.868795633+00:00"
+  },
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2022,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2022-01-01T00:00:00+00:00",
+      "last_date": "2022-12-31T23:00:00+00:00"
+    },
+    "sha256": "cb9bd1bfbace8b7e8f7203db90b13c874ef47d17b499c3e5cc901d7614a711f2",
+    "raw_path": "data/archive/covariates/raw/01550/2022.gz",
+    "hours": 8760,
+    "present": 8732,
+    "retrieved_at": "2026-09-14T20:41:42.872750998+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2022,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2022-01-01T00:00:00+00:00",
+      "last_date": "2022-12-31T23:00:00+00:00"
+    },
+    "sha256": "cb9bd1bfbace8b7e8f7203db90b13c874ef47d17b499c3e5cc901d7614a711f2",
+    "raw_path": "data/archive/covariates/raw/01550/2022.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.872750998+00:00"
+  },
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2023,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2023-01-01T00:00:00+00:00",
+      "last_date": "2023-12-31T23:00:00+00:00"
+    },
+    "sha256": "65c56180ebd2f087260223cb0a8da654ed260953779830017a22fb434219c058",
+    "raw_path": "data/archive/covariates/raw/01550/2023.gz",
+    "hours": 8760,
+    "present": 8754,
+    "retrieved_at": "2026-09-14T20:41:42.875117779+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2023,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2023-01-01T00:00:00+00:00",
+      "last_date": "2023-12-31T23:00:00+00:00"
+    },
+    "sha256": "65c56180ebd2f087260223cb0a8da654ed260953779830017a22fb434219c058",
+    "raw_path": "data/archive/covariates/raw/01550/2023.gz",
+    "hours": 8760,
+    "present": 8748,
+    "retrieved_at": "2026-09-14T20:41:42.875117779+00:00"
+  },
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2024,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2024-01-01T00:00:00+00:00",
+      "last_date": "2024-12-31T23:00:00+00:00"
+    },
+    "sha256": "64b40e9999ed0af8cdb0938864ac8404770d35a0cace8eb418b2123821c70379",
+    "raw_path": "data/archive/covariates/raw/01550/2024.gz",
+    "hours": 8724,
+    "present": 8713,
+    "retrieved_at": "2026-09-14T20:41:42.875117779+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2024,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2024-01-01T00:00:00+00:00",
+      "last_date": "2024-12-31T23:00:00+00:00"
+    },
+    "sha256": "64b40e9999ed0af8cdb0938864ac8404770d35a0cace8eb418b2123821c70379",
+    "raw_path": "data/archive/covariates/raw/01550/2024.gz",
+    "hours": 8724,
+    "present": 8671,
+    "retrieved_at": "2026-09-14T20:41:42.875117779+00:00"
+  },
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2025,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2025-01-01T00:00:00+00:00",
+      "last_date": "2025-12-31T23:00:00+00:00"
+    },
+    "sha256": "55e221d3003c2ee17f2527e40939d28594f87dcb9a07912c39228582909e06e7",
+    "raw_path": "data/archive/covariates/raw/01550/2025.gz",
+    "hours": 8760,
+    "present": 8749,
+    "retrieved_at": "2026-09-14T20:41:42.878706217+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2025,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2025-01-01T00:00:00+00:00",
+      "last_date": "2025-12-31T23:00:00+00:00"
+    },
+    "sha256": "55e221d3003c2ee17f2527e40939d28594f87dcb9a07912c39228582909e06e7",
+    "raw_path": "data/archive/covariates/raw/01550/2025.gz",
+    "hours": 8760,
+    "present": 8744,
+    "retrieved_at": "2026-09-14T20:41:42.878706217+00:00"
+  },
+  {
+    "series": "t_catchment",
+    "station": "01550",
+    "year": 2026,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2026-01-01T00:00:00+00:00",
+      "last_date": "2026-09-14T21:00:00+00:00"
+    },
+    "sha256": "41f113f14ee2c63ef3a47f2525fff2d0fcaecbc78cdb96f32b712c07f99d5db0",
+    "raw_path": "data/archive/covariates/raw/01550/2026-through-20260914T21.gz",
+    "hours": 6165,
+    "present": 6165,
+    "retrieved_at": "2026-09-14T21:03:46.358798504+00:00"
+  },
+  {
+    "series": "rain_garmisch",
+    "station": "01550",
+    "year": 2026,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "01550",
+      "date": "2026-01-01T00:00:00+00:00",
+      "last_date": "2026-09-14T21:00:00+00:00"
+    },
+    "sha256": "41f113f14ee2c63ef3a47f2525fff2d0fcaecbc78cdb96f32b712c07f99d5db0",
+    "raw_path": "data/archive/covariates/raw/01550/2026-through-20260914T21.gz",
+    "hours": 6165,
+    "present": 6113,
+    "retrieved_at": "2026-09-14T21:03:46.358798504+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2010,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2010-01-01T00:00:00+00:00",
+      "last_date": "2010-12-31T23:00:00+00:00"
+    },
+    "sha256": "b236001ee85d97ba772277d985d6290f073892fc1ddd1eca67241894fdb15cd8",
+    "raw_path": "data/archive/covariates/raw/02290/2010.gz",
+    "hours": 8760,
+    "present": 6119,
+    "retrieved_at": "2026-09-14T20:41:42.882353067+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2011,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2011-01-01T00:00:00+00:00",
+      "last_date": "2011-12-31T23:00:00+00:00"
+    },
+    "sha256": "1b99866c3108cda18f5c6077b6ea08fc87d1efeec82df16f9cf283b0d13dd2e1",
+    "raw_path": "data/archive/covariates/raw/02290/2011.gz",
+    "hours": 8760,
+    "present": 8267,
+    "retrieved_at": "2026-09-14T20:41:42.885263920+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2012,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2012-01-01T00:00:00+00:00",
+      "last_date": "2012-12-31T23:00:00+00:00"
+    },
+    "sha256": "adcfb29d0082b0fcd5312426297541132f1b5b0a0c7890dd163832b0103f1e1d",
+    "raw_path": "data/archive/covariates/raw/02290/2012.gz",
+    "hours": 8784,
+    "present": 8762,
+    "retrieved_at": "2026-09-14T20:41:42.887504816+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2013,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2013-01-01T00:00:00+00:00",
+      "last_date": "2013-12-31T23:00:00+00:00"
+    },
+    "sha256": "b185be247f2d1d32b644ac8ba18d4d5dac350ade5c10035e9a48bb90fd89e624",
+    "raw_path": "data/archive/covariates/raw/02290/2013.gz",
+    "hours": 8760,
+    "present": 8731,
+    "retrieved_at": "2026-09-14T20:41:42.887504816+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2014,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2014-01-01T00:00:00+00:00",
+      "last_date": "2014-12-31T23:00:00+00:00"
+    },
+    "sha256": "8caf1c414337a57f0d72401b6cadf92be720e7dfaedb399cde0f40b7afe9c3d7",
+    "raw_path": "data/archive/covariates/raw/02290/2014.gz",
+    "hours": 8760,
+    "present": 8683,
+    "retrieved_at": "2026-09-14T20:41:42.890352964+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2015,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2015-01-01T00:00:00+00:00",
+      "last_date": "2015-12-31T23:00:00+00:00"
+    },
+    "sha256": "75868f2dc004c9820829641ec6852b05cf43c72ad55a621f3798fb7560feac9d",
+    "raw_path": "data/archive/covariates/raw/02290/2015.gz",
+    "hours": 8760,
+    "present": 8758,
+    "retrieved_at": "2026-09-14T20:41:42.891530275+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2016,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2016-01-01T00:00:00+00:00",
+      "last_date": "2016-12-31T23:00:00+00:00"
+    },
+    "sha256": "05ce2e3eeb290de141f50b87dbfe9483a509afaabe61591b03002c3aa68ef65c",
+    "raw_path": "data/archive/covariates/raw/02290/2016.gz",
+    "hours": 8784,
+    "present": 8784,
+    "retrieved_at": "2026-09-14T20:41:42.892818928+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2017,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2017-01-01T00:00:00+00:00",
+      "last_date": "2017-12-31T23:00:00+00:00"
+    },
+    "sha256": "fadd528bce036c62b60c60d7ed880ebe737510c18a69038e33c3a9338df3612d",
+    "raw_path": "data/archive/covariates/raw/02290/2017.gz",
+    "hours": 8760,
+    "present": 8759,
+    "retrieved_at": "2026-09-14T20:41:42.894582510+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2018,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2018-01-01T00:00:00+00:00",
+      "last_date": "2018-12-31T23:00:00+00:00"
+    },
+    "sha256": "d50b5848ecd9c6011c50d911bea34ff2e143bc0620c7fb8114b6b84f47aba22f",
+    "raw_path": "data/archive/covariates/raw/02290/2018.gz",
+    "hours": 8760,
+    "present": 8747,
+    "retrieved_at": "2026-09-14T20:41:42.894582510+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2019,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2019-01-01T00:00:00+00:00",
+      "last_date": "2019-12-31T23:00:00+00:00"
+    },
+    "sha256": "242b6a1c98cfb02a7db0a4330d61c970130c19126333187ac22a23cbd2ecd4c8",
+    "raw_path": "data/archive/covariates/raw/02290/2019.gz",
+    "hours": 8760,
+    "present": 8750,
+    "retrieved_at": "2026-09-14T20:41:42.894582510+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2020,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2020-01-01T00:00:00+00:00",
+      "last_date": "2020-12-31T23:00:00+00:00"
+    },
+    "sha256": "a4bfb6482b418a4b1c43c8dd6cb80772b3c9922a144ebd81832b8d82c0506961",
+    "raw_path": "data/archive/covariates/raw/02290/2020.gz",
+    "hours": 8784,
+    "present": 8780,
+    "retrieved_at": "2026-09-14T20:41:42.899673462+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2021,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2021-01-01T00:00:00+00:00",
+      "last_date": "2021-12-31T23:00:00+00:00"
+    },
+    "sha256": "04b982457b596afb6ff58e79111dbc83ec7143bde08ca9fe51fe57a4445383a8",
+    "raw_path": "data/archive/covariates/raw/02290/2021.gz",
+    "hours": 8760,
+    "present": 8755,
+    "retrieved_at": "2026-09-14T20:41:42.900929928+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2022,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2022-01-01T00:00:00+00:00",
+      "last_date": "2022-12-31T23:00:00+00:00"
+    },
+    "sha256": "97e9688739f14853d85bd6455c66ce3dffb5dda70933a3ade3083070ade3e413",
+    "raw_path": "data/archive/covariates/raw/02290/2022.gz",
+    "hours": 8760,
+    "present": 8758,
+    "retrieved_at": "2026-09-14T20:41:42.902537823+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2023,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2023-01-01T00:00:00+00:00",
+      "last_date": "2023-12-31T23:00:00+00:00"
+    },
+    "sha256": "08edd60fb86af7fea91fc2b98e6399dd5514004dbeabaa7c0af4342cd6de562b",
+    "raw_path": "data/archive/covariates/raw/02290/2023.gz",
+    "hours": 8760,
+    "present": 8755,
+    "retrieved_at": "2026-09-14T20:41:42.904001951+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2024,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2024-01-01T00:00:00+00:00",
+      "last_date": "2024-12-31T23:00:00+00:00"
+    },
+    "sha256": "f3ede22944f773e6993f2181f18438c4e106050e042f496c51ddeac89f7ca6de",
+    "raw_path": "data/archive/covariates/raw/02290/2024.gz",
+    "hours": 8784,
+    "present": 8779,
+    "retrieved_at": "2026-09-14T20:41:42.906352997+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2025,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2025-01-01T00:00:00+00:00",
+      "last_date": "2025-12-31T23:00:00+00:00"
+    },
+    "sha256": "3fd8c11260acc2123abe95137d2de0fd7c20b02da046ebfbc68db95a0576dfcc",
+    "raw_path": "data/archive/covariates/raw/02290/2025.gz",
+    "hours": 8760,
+    "present": 8750,
+    "retrieved_at": "2026-09-14T20:41:42.907537699+00:00"
+  },
+  {
+    "series": "solar_hohenpeissenberg",
+    "station": "02290",
+    "year": 2026,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "02290",
+      "date": "2026-01-01T00:00:00+00:00",
+      "last_date": "2026-09-14T21:00:00+00:00"
+    },
+    "sha256": "52eb970afaaedd133ab4dff676189bf48e25e11ecd49ff3566738506810845a7",
+    "raw_path": "data/archive/covariates/raw/02290/2026-through-20260914T21.gz",
+    "hours": 6165,
+    "present": 6164,
+    "retrieved_at": "2026-09-14T21:03:57.418757915+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2010,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2010-01-01T00:00:00+00:00",
+      "last_date": "2010-12-31T23:00:00+00:00"
+    },
+    "sha256": "15ecae125fb6ef676898ba43e0c760fd772f7e45ce54936ab1c9048c5692a6ae",
+    "raw_path": "data/archive/covariates/raw/03379/2010.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.910796881+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2010,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2010-01-01T00:00:00+00:00",
+      "last_date": "2010-12-31T23:00:00+00:00"
+    },
+    "sha256": "15ecae125fb6ef676898ba43e0c760fd772f7e45ce54936ab1c9048c5692a6ae",
+    "raw_path": "data/archive/covariates/raw/03379/2010.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.910796881+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2011,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2011-01-01T00:00:00+00:00",
+      "last_date": "2011-12-31T23:00:00+00:00"
+    },
+    "sha256": "91d83ace82793ece8b26f1c72e6007ced071218e68d922cef2fe27024f27dedc",
+    "raw_path": "data/archive/covariates/raw/03379/2011.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.913036108+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2011,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2011-01-01T00:00:00+00:00",
+      "last_date": "2011-12-31T23:00:00+00:00"
+    },
+    "sha256": "91d83ace82793ece8b26f1c72e6007ced071218e68d922cef2fe27024f27dedc",
+    "raw_path": "data/archive/covariates/raw/03379/2011.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.913036108+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2012,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2012-01-01T00:00:00+00:00",
+      "last_date": "2012-12-31T23:00:00+00:00"
+    },
+    "sha256": "00a36f121e2a39485e8dc6c6b029d39bfb2f820c02693ce813c5928f5b76a633",
+    "raw_path": "data/archive/covariates/raw/03379/2012.gz",
+    "hours": 8784,
+    "present": 8784,
+    "retrieved_at": "2026-09-14T20:41:42.914918423+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2012,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2012-01-01T00:00:00+00:00",
+      "last_date": "2012-12-31T23:00:00+00:00"
+    },
+    "sha256": "00a36f121e2a39485e8dc6c6b029d39bfb2f820c02693ce813c5928f5b76a633",
+    "raw_path": "data/archive/covariates/raw/03379/2012.gz",
+    "hours": 8784,
+    "present": 8784,
+    "retrieved_at": "2026-09-14T20:41:42.914918423+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2013,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2013-01-01T00:00:00+00:00",
+      "last_date": "2013-12-31T23:00:00+00:00"
+    },
+    "sha256": "63e8590d0018b152edd8dd7a49dfa27ff94403b6f59fb6839fa2f51b11df002a",
+    "raw_path": "data/archive/covariates/raw/03379/2013.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.916225433+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2013,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2013-01-01T00:00:00+00:00",
+      "last_date": "2013-12-31T23:00:00+00:00"
+    },
+    "sha256": "63e8590d0018b152edd8dd7a49dfa27ff94403b6f59fb6839fa2f51b11df002a",
+    "raw_path": "data/archive/covariates/raw/03379/2013.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.916225433+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2014,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2014-01-01T00:00:00+00:00",
+      "last_date": "2014-12-31T23:00:00+00:00"
+    },
+    "sha256": "50dffaf006699e94aacc48e3fec8400f94e14dfb8e16eb8c8d9de7583c01941b",
+    "raw_path": "data/archive/covariates/raw/03379/2014.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.918353081+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2014,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2014-01-01T00:00:00+00:00",
+      "last_date": "2014-12-31T23:00:00+00:00"
+    },
+    "sha256": "50dffaf006699e94aacc48e3fec8400f94e14dfb8e16eb8c8d9de7583c01941b",
+    "raw_path": "data/archive/covariates/raw/03379/2014.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.918353081+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2015,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2015-01-01T00:00:00+00:00",
+      "last_date": "2015-12-31T23:00:00+00:00"
+    },
+    "sha256": "d70d992752933ec537e3760c2f864bad70836ed123a8679d9dc6ce31f95c7686",
+    "raw_path": "data/archive/covariates/raw/03379/2015.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.919306993+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2015,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2015-01-01T00:00:00+00:00",
+      "last_date": "2015-12-31T23:00:00+00:00"
+    },
+    "sha256": "d70d992752933ec537e3760c2f864bad70836ed123a8679d9dc6ce31f95c7686",
+    "raw_path": "data/archive/covariates/raw/03379/2015.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.919306993+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2016,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2016-01-01T00:00:00+00:00",
+      "last_date": "2016-12-31T23:00:00+00:00"
+    },
+    "sha256": "1d1b5f8c4883ee082848966af35f7c0a48160fe97baf85b91f5f469117da99fd",
+    "raw_path": "data/archive/covariates/raw/03379/2016.gz",
+    "hours": 8784,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.921993494+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2016,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2016-01-01T00:00:00+00:00",
+      "last_date": "2016-12-31T23:00:00+00:00"
+    },
+    "sha256": "1d1b5f8c4883ee082848966af35f7c0a48160fe97baf85b91f5f469117da99fd",
+    "raw_path": "data/archive/covariates/raw/03379/2016.gz",
+    "hours": 8784,
+    "present": 8772,
+    "retrieved_at": "2026-09-14T20:41:42.921993494+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2017,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2017-01-01T00:00:00+00:00",
+      "last_date": "2017-12-31T23:00:00+00:00"
+    },
+    "sha256": "1df9d0fb7ff7d41a8555276b66d346af1bd2b2d30c9e47c0b2a7a2425fd31f15",
+    "raw_path": "data/archive/covariates/raw/03379/2017.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.923134804+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2017,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2017-01-01T00:00:00+00:00",
+      "last_date": "2017-12-31T23:00:00+00:00"
+    },
+    "sha256": "1df9d0fb7ff7d41a8555276b66d346af1bd2b2d30c9e47c0b2a7a2425fd31f15",
+    "raw_path": "data/archive/covariates/raw/03379/2017.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.923134804+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2018,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2018-01-01T00:00:00+00:00",
+      "last_date": "2018-12-31T23:00:00+00:00"
+    },
+    "sha256": "6fa603ef58a27f43cf85b2cea80bdbbc94480cfbcff3352bc207dcbdc54d297f",
+    "raw_path": "data/archive/covariates/raw/03379/2018.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.924342155+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2018,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2018-01-01T00:00:00+00:00",
+      "last_date": "2018-12-31T23:00:00+00:00"
+    },
+    "sha256": "6fa603ef58a27f43cf85b2cea80bdbbc94480cfbcff3352bc207dcbdc54d297f",
+    "raw_path": "data/archive/covariates/raw/03379/2018.gz",
+    "hours": 8760,
+    "present": 8757,
+    "retrieved_at": "2026-09-14T20:41:42.924342155+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2019,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2019-01-01T00:00:00+00:00",
+      "last_date": "2019-12-31T23:00:00+00:00"
+    },
+    "sha256": "dedbad9e8db24f7cddd98bfc5d510db8ef4fe18cef48e44b205e0c8e97a4f82e",
+    "raw_path": "data/archive/covariates/raw/03379/2019.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.926352978+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2019,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2019-01-01T00:00:00+00:00",
+      "last_date": "2019-12-31T23:00:00+00:00"
+    },
+    "sha256": "dedbad9e8db24f7cddd98bfc5d510db8ef4fe18cef48e44b205e0c8e97a4f82e",
+    "raw_path": "data/archive/covariates/raw/03379/2019.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.926352978+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2020,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2020-01-01T00:00:00+00:00",
+      "last_date": "2020-12-31T23:00:00+00:00"
+    },
+    "sha256": "8db4cf8b4b41d755e63aa7c014c838eaf806aa4f41156d9fdc402eef7d88174e",
+    "raw_path": "data/archive/covariates/raw/03379/2020.gz",
+    "hours": 8784,
+    "present": 8784,
+    "retrieved_at": "2026-09-14T20:41:42.927921057+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2020,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2020-01-01T00:00:00+00:00",
+      "last_date": "2020-12-31T23:00:00+00:00"
+    },
+    "sha256": "8db4cf8b4b41d755e63aa7c014c838eaf806aa4f41156d9fdc402eef7d88174e",
+    "raw_path": "data/archive/covariates/raw/03379/2020.gz",
+    "hours": 8784,
+    "present": 8784,
+    "retrieved_at": "2026-09-14T20:41:42.927921057+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2021,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2021-01-01T00:00:00+00:00",
+      "last_date": "2021-12-31T23:00:00+00:00"
+    },
+    "sha256": "02378f53be82e119d5acb2fe5c2f4970a40d29b7915272dfa2e06b6dec3c98a7",
+    "raw_path": "data/archive/covariates/raw/03379/2021.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.929489136+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2021,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2021-01-01T00:00:00+00:00",
+      "last_date": "2021-12-31T23:00:00+00:00"
+    },
+    "sha256": "02378f53be82e119d5acb2fe5c2f4970a40d29b7915272dfa2e06b6dec3c98a7",
+    "raw_path": "data/archive/covariates/raw/03379/2021.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.929489136+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2022,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2022-01-01T00:00:00+00:00",
+      "last_date": "2022-12-31T23:00:00+00:00"
+    },
+    "sha256": "a25fe0b71a28c8b8e66dc315ad6c54e091cf94b9902f59a13cd0470419898ee2",
+    "raw_path": "data/archive/covariates/raw/03379/2022.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.930353165+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2022,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2022-01-01T00:00:00+00:00",
+      "last_date": "2022-12-31T23:00:00+00:00"
+    },
+    "sha256": "a25fe0b71a28c8b8e66dc315ad6c54e091cf94b9902f59a13cd0470419898ee2",
+    "raw_path": "data/archive/covariates/raw/03379/2022.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.930353165+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2023,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2023-01-01T00:00:00+00:00",
+      "last_date": "2023-12-31T23:00:00+00:00"
+    },
+    "sha256": "190eab72ef81d019ad3a8fcc5dc99ccb8c96820b27113ac527a957bd6b523a1f",
+    "raw_path": "data/archive/covariates/raw/03379/2023.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.932428837+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2023,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2023-01-01T00:00:00+00:00",
+      "last_date": "2023-12-31T23:00:00+00:00"
+    },
+    "sha256": "190eab72ef81d019ad3a8fcc5dc99ccb8c96820b27113ac527a957bd6b523a1f",
+    "raw_path": "data/archive/covariates/raw/03379/2023.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.932428837+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2024,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2024-01-01T00:00:00+00:00",
+      "last_date": "2024-12-31T23:00:00+00:00"
+    },
+    "sha256": "13ae2d41d0d8feb4f2a3bad19ddbecf547f1ca5dd0ce7dde5b79fd958a3c70a9",
+    "raw_path": "data/archive/covariates/raw/03379/2024.gz",
+    "hours": 8784,
+    "present": 8780,
+    "retrieved_at": "2026-09-14T20:41:42.934353113+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2024,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2024-01-01T00:00:00+00:00",
+      "last_date": "2024-12-31T23:00:00+00:00"
+    },
+    "sha256": "13ae2d41d0d8feb4f2a3bad19ddbecf547f1ca5dd0ce7dde5b79fd958a3c70a9",
+    "raw_path": "data/archive/covariates/raw/03379/2024.gz",
+    "hours": 8784,
+    "present": 8784,
+    "retrieved_at": "2026-09-14T20:41:42.934353113+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2025,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2025-01-01T00:00:00+00:00",
+      "last_date": "2025-12-31T23:00:00+00:00"
+    },
+    "sha256": "ac9b9fcd8bcc4e4895e064a5da8543d352fce18cbb53be8ece4d3eddf451bfdf",
+    "raw_path": "data/archive/covariates/raw/03379/2025.gz",
+    "hours": 8760,
+    "present": 8688,
+    "retrieved_at": "2026-09-14T20:41:42.936135054+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2025,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2025-01-01T00:00:00+00:00",
+      "last_date": "2025-12-31T23:00:00+00:00"
+    },
+    "sha256": "ac9b9fcd8bcc4e4895e064a5da8543d352fce18cbb53be8ece4d3eddf451bfdf",
+    "raw_path": "data/archive/covariates/raw/03379/2025.gz",
+    "hours": 8760,
+    "present": 8688,
+    "retrieved_at": "2026-09-14T20:41:42.936135054+00:00"
+  },
+  {
+    "series": "airtemp",
+    "station": "03379",
+    "year": 2026,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2026-01-01T00:00:00+00:00",
+      "last_date": "2026-09-14T21:00:00+00:00"
+    },
+    "sha256": "27626446cb381fb749987fde59678df12aaf68e84febf97813dc0a028d3e7894",
+    "raw_path": "data/archive/covariates/raw/03379/2026-through-20260914T21.gz",
+    "hours": 6165,
+    "present": 6165,
+    "retrieved_at": "2026-09-14T21:04:15.524542570+00:00"
+  },
+  {
+    "series": "pressure",
+    "station": "03379",
+    "year": 2026,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "03379",
+      "date": "2026-01-01T00:00:00+00:00",
+      "last_date": "2026-09-14T21:00:00+00:00"
+    },
+    "sha256": "27626446cb381fb749987fde59678df12aaf68e84febf97813dc0a028d3e7894",
+    "raw_path": "data/archive/covariates/raw/03379/2026-through-20260914T21.gz",
+    "hours": 6165,
+    "present": 6165,
+    "retrieved_at": "2026-09-14T21:04:15.524542570+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2010,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2010-01-01T00:00:00+00:00",
+      "last_date": "2010-12-31T23:00:00+00:00"
+    },
+    "sha256": "6df2160ccd3b6c99481b4e645d2c5330c6e9c09c542054fc1382c9855336e7e5",
+    "raw_path": "data/archive/covariates/raw/05262/2010.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.938772202+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2011,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2011-01-01T00:00:00+00:00",
+      "last_date": "2011-12-31T23:00:00+00:00"
+    },
+    "sha256": "e5436e27462ba0bb5e94a2d477097fe9e41f2a4587c1a96be6dea070cbe7a6fb",
+    "raw_path": "data/archive/covariates/raw/05262/2011.gz",
+    "hours": 8760,
+    "present": 8759,
+    "retrieved_at": "2026-09-14T20:41:42.939612389+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2012,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2012-01-01T00:00:00+00:00",
+      "last_date": "2012-12-31T23:00:00+00:00"
+    },
+    "sha256": "3b8c34e03014318e335273666d0e086794fffa1ec42b1b5136711def212a395c",
+    "raw_path": "data/archive/covariates/raw/05262/2012.gz",
+    "hours": 8599,
+    "present": 8599,
+    "retrieved_at": "2026-09-14T20:41:42.940387726+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2013,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2013-01-01T00:00:00+00:00",
+      "last_date": "2013-12-31T23:00:00+00:00"
+    },
+    "sha256": "c59c9c82ffc7e289931c4f22fcb03fd69515d465c550432e5b018812910b572b",
+    "raw_path": "data/archive/covariates/raw/05262/2013.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.940947533+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2014,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2014-01-01T00:00:00+00:00",
+      "last_date": "2014-12-31T23:00:00+00:00"
+    },
+    "sha256": "0be7566b74b95af5303cc2a4ff51673073849bf41d96f26b28f9256096a596dc",
+    "raw_path": "data/archive/covariates/raw/05262/2014.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.941376209+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2015,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2015-01-01T00:00:00+00:00",
+      "last_date": "2015-12-31T23:00:00+00:00"
+    },
+    "sha256": "0e0a8022d3354049d14dbdbfa549738e880cb270cb86dd2039890499adb716fa",
+    "raw_path": "data/archive/covariates/raw/05262/2015.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.943733692+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2016,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2016-01-01T00:00:00+00:00",
+      "last_date": "2016-12-31T23:00:00+00:00"
+    },
+    "sha256": "8333dba8c93095b0dd4bb8d51e7a3d2dda237479e7361f7eda0291478fafd241",
+    "raw_path": "data/archive/covariates/raw/05262/2016.gz",
+    "hours": 8783,
+    "present": 8783,
+    "retrieved_at": "2026-09-14T20:41:42.944106579+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2017,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2017-01-01T00:00:00+00:00",
+      "last_date": "2017-12-31T23:00:00+00:00"
+    },
+    "sha256": "b6643e1ce15aa5d2a2135942a69fe939ab9561407de0d97fe27541bc51e16a16",
+    "raw_path": "data/archive/covariates/raw/05262/2017.gz",
+    "hours": 8757,
+    "present": 8752,
+    "retrieved_at": "2026-09-14T20:41:42.944513083+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2018,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2018-01-01T00:00:00+00:00",
+      "last_date": "2018-12-31T23:00:00+00:00"
+    },
+    "sha256": "ed1fd8731660a62549b2746705b4ef3ced38137b46da0db46af739de504a1b8e",
+    "raw_path": "data/archive/covariates/raw/05262/2018.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.945102453+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2019,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2019-01-01T00:00:00+00:00",
+      "last_date": "2019-12-31T23:00:00+00:00"
+    },
+    "sha256": "46de5fb2c9a3bee08fc3210cfaa30c8fa52b2b2911c88f8bcbc964ac9e89f43a",
+    "raw_path": "data/archive/covariates/raw/05262/2019.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.945673466+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2020,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2020-01-01T00:00:00+00:00",
+      "last_date": "2020-12-31T23:00:00+00:00"
+    },
+    "sha256": "f97768ff1fe5ec4bf11712337b74a54ee804b04bafe3747375b294d8e5281564",
+    "raw_path": "data/archive/covariates/raw/05262/2020.gz",
+    "hours": 8761,
+    "present": 8761,
+    "retrieved_at": "2026-09-14T20:41:42.946034908+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2021,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2021-01-01T00:00:00+00:00",
+      "last_date": "2021-12-31T23:00:00+00:00"
+    },
+    "sha256": "dd10e71cea29952ba7ebb7604b78f32c923507574d8b4e11063c3adf6f614fed",
+    "raw_path": "data/archive/covariates/raw/05262/2021.gz",
+    "hours": 8657,
+    "present": 8650,
+    "retrieved_at": "2026-09-14T20:41:42.946456909+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2022,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2022-01-01T00:00:00+00:00",
+      "last_date": "2022-12-31T23:00:00+00:00"
+    },
+    "sha256": "91343ecac6006958d1b13dd8316b21a47636637a0f399fabb7714a385d42cbdb",
+    "raw_path": "data/archive/covariates/raw/05262/2022.gz",
+    "hours": 8760,
+    "present": 8747,
+    "retrieved_at": "2026-09-14T20:41:42.946853161+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2023,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2023-01-01T00:00:00+00:00",
+      "last_date": "2023-12-31T23:00:00+00:00"
+    },
+    "sha256": "c80f351fffc9dae06fe2d376c9c6e161e673e0ceee4b7602e1115edba9435422",
+    "raw_path": "data/archive/covariates/raw/05262/2023.gz",
+    "hours": 8760,
+    "present": 8742,
+    "retrieved_at": "2026-09-14T20:41:42.947237492+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2024,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2024-01-01T00:00:00+00:00",
+      "last_date": "2024-12-31T23:00:00+00:00"
+    },
+    "sha256": "b289c8c7f840144d52ffb0ed1d9bf80cd959ae8d0c0019c3e09eea7b8cf9391b",
+    "raw_path": "data/archive/covariates/raw/05262/2024.gz",
+    "hours": 8784,
+    "present": 8784,
+    "retrieved_at": "2026-09-14T20:41:42.947954893+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2025,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2025-01-01T00:00:00+00:00",
+      "last_date": "2025-12-31T23:00:00+00:00"
+    },
+    "sha256": "d5e85b777e905298976c51cd35e3fc1894385894eff9d38054f773ea4113236d",
+    "raw_path": "data/archive/covariates/raw/05262/2025.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.947954893+00:00"
+  },
+  {
+    "series": "rain_toelz",
+    "station": "05262",
+    "year": 2026,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "05262",
+      "date": "2026-01-01T00:00:00+00:00",
+      "last_date": "2026-09-14T21:00:00+00:00"
+    },
+    "sha256": "7e8a107c098c34c270a16a582d27707d2e286b47171cb9ca0675d83e88f16c19",
+    "raw_path": "data/archive/covariates/raw/05262/2026-through-20260914T21.gz",
+    "hours": 6144,
+    "present": 6144,
+    "retrieved_at": "2026-09-14T21:04:26.063187599+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2010,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2010-01-01T00:00:00+00:00",
+      "last_date": "2010-12-31T23:00:00+00:00"
+    },
+    "sha256": "15cd1cb4cc7d1176dfae046b75bce9076ba2d1026cb372633c8f48cca680be83",
+    "raw_path": "data/archive/covariates/raw/06257/2010.gz",
+    "hours": 8759,
+    "present": 8759,
+    "retrieved_at": "2026-09-14T20:41:42.949029684+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2011,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2011-01-01T00:00:00+00:00",
+      "last_date": "2011-12-31T23:00:00+00:00"
+    },
+    "sha256": "790d3f9d4b04369a325a4c7a66a946a5caff6d39a78c70be7cd2fd24cb3156b4",
+    "raw_path": "data/archive/covariates/raw/06257/2011.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.949814558+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2012,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2012-01-01T00:00:00+00:00",
+      "last_date": "2012-12-31T23:00:00+00:00"
+    },
+    "sha256": "e77735ae237685c54a72bb5c5fc3fbf278a2ecfb468a8211099f8c53896aada2",
+    "raw_path": "data/archive/covariates/raw/06257/2012.gz",
+    "hours": 8442,
+    "present": 8442,
+    "retrieved_at": "2026-09-14T20:41:42.949814558+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2013,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2013-01-01T00:00:00+00:00",
+      "last_date": "2013-12-31T23:00:00+00:00"
+    },
+    "sha256": "c24fd24b2d6d8220251cb014749903487ded623326694ba009af47b718baa47e",
+    "raw_path": "data/archive/covariates/raw/06257/2013.gz",
+    "hours": 8748,
+    "present": 8748,
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2014,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2014-01-01T00:00:00+00:00",
+      "last_date": "2014-12-31T23:00:00+00:00"
+    },
+    "sha256": "6bae0c9bcd3f2a75b0684cebde4772badfa72068c112ceffdc818c6725a0e44d",
+    "raw_path": "data/archive/covariates/raw/06257/2014.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2015,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2015-01-01T00:00:00+00:00",
+      "last_date": "2015-12-31T23:00:00+00:00"
+    },
+    "sha256": "f887a9850b57ef9fd6ca4ad6861febee5e772b2a2df75fe38c9200558a3a9775",
+    "raw_path": "data/archive/covariates/raw/06257/2015.gz",
+    "hours": 8565,
+    "present": 8565,
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2016,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2016-01-01T00:00:00+00:00",
+      "last_date": "2016-12-31T23:00:00+00:00"
+    },
+    "sha256": "6cf5b0a6bb93f05f2d16250dcd8269c7ee9cb0fbb034985ce9312743dad5d303",
+    "raw_path": "data/archive/covariates/raw/06257/2016.gz",
+    "hours": 8784,
+    "present": 8784,
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2017,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2017-01-01T00:00:00+00:00",
+      "last_date": "2017-12-31T23:00:00+00:00"
+    },
+    "sha256": "770096e0294a010badbb2d3f9a3a5aa6942ce1f37636f1b62287c9eec543475f",
+    "raw_path": "data/archive/covariates/raw/06257/2017.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2018,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2018-01-01T00:00:00+00:00",
+      "last_date": "2018-12-31T23:00:00+00:00"
+    },
+    "sha256": "e95272a11f2a80754189d8d525a6dfda813d86e305652c25c28a2e9a34de3122",
+    "raw_path": "data/archive/covariates/raw/06257/2018.gz",
+    "hours": 8608,
+    "present": 8608,
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2019,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2019-01-01T00:00:00+00:00",
+      "last_date": "2019-12-31T23:00:00+00:00"
+    },
+    "sha256": "3ce48b51e9319abe6837fae265e298f732cf60b685095d212e1575c33389f0cf",
+    "raw_path": "data/archive/covariates/raw/06257/2019.gz",
+    "hours": 8651,
+    "present": 8651,
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2020,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2020-01-01T00:00:00+00:00",
+      "last_date": "2020-12-31T23:00:00+00:00"
+    },
+    "sha256": "89a0a64868ea236a48d55920c7d2ef96cfc15ef94b53703782ec6c8c545233d7",
+    "raw_path": "data/archive/covariates/raw/06257/2020.gz",
+    "hours": 8784,
+    "present": 8784,
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2021,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2021-01-01T00:00:00+00:00",
+      "last_date": "2021-12-31T23:00:00+00:00"
+    },
+    "sha256": "2c2915758de034e25b30c1f7bbe64518657a349e96f8464cbcbb52999a16cac4",
+    "raw_path": "data/archive/covariates/raw/06257/2021.gz",
+    "hours": 8760,
+    "present": 8667,
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2022,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2022-01-01T00:00:00+00:00",
+      "last_date": "2022-12-31T23:00:00+00:00"
+    },
+    "sha256": "cbc30a2c1030284c5ba7002f753b48ada3419443de6f6237e56d191c978e4aa6",
+    "raw_path": "data/archive/covariates/raw/06257/2022.gz",
+    "hours": 8760,
+    "present": 8648,
+    "retrieved_at": "2026-09-14T20:41:42.955230474+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2023,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2023-01-01T00:00:00+00:00",
+      "last_date": "2023-12-31T23:00:00+00:00"
+    },
+    "sha256": "55aeb598b4fae85897ed7475fda5d0c666352f2ef51c7a43d022a64723109927",
+    "raw_path": "data/archive/covariates/raw/06257/2023.gz",
+    "hours": 8185,
+    "present": 8022,
+    "retrieved_at": "2026-09-14T20:41:42.955634356+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2024,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2024-01-01T00:00:00+00:00",
+      "last_date": "2024-12-31T23:00:00+00:00"
+    },
+    "sha256": "0c6f171399d226cab42f81705dc480797cd71d2127216604ab2aa348084ef5ee",
+    "raw_path": "data/archive/covariates/raw/06257/2024.gz",
+    "hours": 8784,
+    "present": 8524,
+    "retrieved_at": "2026-09-14T20:41:42.956085205+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2025,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2025-01-01T00:00:00+00:00",
+      "last_date": "2025-12-31T23:00:00+00:00"
+    },
+    "sha256": "1dd68790baa85b83696f18cac3b3e3d16af1c7e333cc14a423fdadcab07f1fe3",
+    "raw_path": "data/archive/covariates/raw/06257/2025.gz",
+    "hours": 8760,
+    "present": 8756,
+    "retrieved_at": "2026-09-14T20:41:42.956498384+00:00"
+  },
+  {
+    "series": "rain_lenggries",
+    "station": "06257",
+    "year": 2026,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06257",
+      "date": "2026-01-01T00:00:00+00:00",
+      "last_date": "2026-09-14T21:00:00+00:00"
+    },
+    "sha256": "54201799a48cdf19ffeec3024c1a23fc80168889bcfdbae2d05c3dd9f6dad02e",
+    "raw_path": "data/archive/covariates/raw/06257/2026-through-20260914T21.gz",
+    "hours": 6144,
+    "present": 6144,
+    "retrieved_at": "2026-09-14T21:04:35.399797201+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2010,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2010-01-01T00:00:00+00:00",
+      "last_date": "2010-12-31T23:00:00+00:00"
+    },
+    "sha256": "038848d707e436e7632b166c113af73740562400fc6905ed11ffa6c75a442c22",
+    "raw_path": "data/archive/covariates/raw/06342/2010.gz",
+    "hours": 8739,
+    "present": 8739,
+    "retrieved_at": "2026-09-14T20:41:42.958729744+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2011,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2011-01-01T00:00:00+00:00",
+      "last_date": "2011-12-31T23:00:00+00:00"
+    },
+    "sha256": "74f9544ff6de22d23f5b9237b30f7706429fef860bf38142ee484cd1aa3a763f",
+    "raw_path": "data/archive/covariates/raw/06342/2011.gz",
+    "hours": 8298,
+    "present": 8298,
+    "retrieved_at": "2026-09-14T20:41:42.959211826+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2012,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2012-01-01T00:00:00+00:00",
+      "last_date": "2012-12-31T23:00:00+00:00"
+    },
+    "sha256": "062a7638155b0944ac81310d5932bb1eb8675b3610a56d82d490705c0833b8c3",
+    "raw_path": "data/archive/covariates/raw/06342/2012.gz",
+    "hours": 8487,
+    "present": 8487,
+    "retrieved_at": "2026-09-14T20:41:42.959764242+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2013,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2013-01-01T00:00:00+00:00",
+      "last_date": "2013-12-31T23:00:00+00:00"
+    },
+    "sha256": "8614fc546f77e4e3e8b37d2c9cf9da3b92a524a406413734b4bd04d695e082be",
+    "raw_path": "data/archive/covariates/raw/06342/2013.gz",
+    "hours": 8759,
+    "present": 8759,
+    "retrieved_at": "2026-09-14T20:41:42.960310221+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2014,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2014-01-01T00:00:00+00:00",
+      "last_date": "2014-12-31T23:00:00+00:00"
+    },
+    "sha256": "11335167d17a5a024a98975d69357fe5dc07118fe27209275f594f8ee2681ea0",
+    "raw_path": "data/archive/covariates/raw/06342/2014.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.960921764+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2015,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2015-01-01T00:00:00+00:00",
+      "last_date": "2015-12-31T23:00:00+00:00"
+    },
+    "sha256": "b1ef7021eab2851096decd8d9654bf9fa7d2158ceff8e8209e64e57277776deb",
+    "raw_path": "data/archive/covariates/raw/06342/2015.gz",
+    "hours": 8749,
+    "present": 8749,
+    "retrieved_at": "2026-09-14T20:41:42.960921764+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2016,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2016-01-01T00:00:00+00:00",
+      "last_date": "2016-12-31T23:00:00+00:00"
+    },
+    "sha256": "ab35081eb8bffcceb140482ea2dc419bf89020d73d8a093de4642bf73407699b",
+    "raw_path": "data/archive/covariates/raw/06342/2016.gz",
+    "hours": 7924,
+    "present": 7924,
+    "retrieved_at": "2026-09-14T20:41:42.960921764+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2017,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2017-01-01T00:00:00+00:00",
+      "last_date": "2017-12-31T23:00:00+00:00"
+    },
+    "sha256": "7b1771078514340d8cbb5c023fb95e725abcf9f596e6b45c2185a865a3167e9e",
+    "raw_path": "data/archive/covariates/raw/06342/2017.gz",
+    "hours": 7455,
+    "present": 7417,
+    "retrieved_at": "2026-09-14T20:41:42.962202549+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2018,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2018-01-01T00:00:00+00:00",
+      "last_date": "2018-12-31T23:00:00+00:00"
+    },
+    "sha256": "bb888989259a735b9f5c614961f9bb0b699e46a44dfb90ccafa529ee360ada1b",
+    "raw_path": "data/archive/covariates/raw/06342/2018.gz",
+    "hours": 6794,
+    "present": 6794,
+    "retrieved_at": "2026-09-14T20:41:42.962202549+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2019,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2019-01-01T00:00:00+00:00",
+      "last_date": "2019-12-31T23:00:00+00:00"
+    },
+    "sha256": "205a52ff31e5c30016c2b421086c6665ffa76b7c3f4990c8082b0c4fcfd67377",
+    "raw_path": "data/archive/covariates/raw/06342/2019.gz",
+    "hours": 8759,
+    "present": 8759,
+    "retrieved_at": "2026-09-14T20:41:42.962352991+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2020,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2020-01-01T00:00:00+00:00",
+      "last_date": "2020-12-31T23:00:00+00:00"
+    },
+    "sha256": "4e07c95fcf23fd56f68fe10e4b3945ec1a66e82f1ee1b3ccc03f547e784ad4fc",
+    "raw_path": "data/archive/covariates/raw/06342/2020.gz",
+    "hours": 8784,
+    "present": 8784,
+    "retrieved_at": "2026-09-14T20:41:42.962352991+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2021,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2021-01-01T00:00:00+00:00",
+      "last_date": "2021-12-31T23:00:00+00:00"
+    },
+    "sha256": "24252704517983909a8cd1ee3a7364a62470a1c971dc1c60e8e6ac26f2ae670d",
+    "raw_path": "data/archive/covariates/raw/06342/2021.gz",
+    "hours": 8760,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.964067459+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2022,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2022-01-01T00:00:00+00:00",
+      "last_date": "2022-12-31T23:00:00+00:00"
+    },
+    "sha256": "2925e89238ebfab28c52d1fc5a113a361aa368bc687fc1ba87db8da8bc5117bf",
+    "raw_path": "data/archive/covariates/raw/06342/2022.gz",
+    "hours": 8732,
+    "present": 8732,
+    "retrieved_at": "2026-09-14T20:41:42.964624643+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2023,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2023-01-01T00:00:00+00:00",
+      "last_date": "2023-12-31T23:00:00+00:00"
+    },
+    "sha256": "29cc92bc7f7ddde2cc1a87f8251b2a2daeb2db43c3beb02ed9a86b8ff7c803d5",
+    "raw_path": "data/archive/covariates/raw/06342/2023.gz",
+    "hours": 8759,
+    "present": 8719,
+    "retrieved_at": "2026-09-14T20:41:42.965067863+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2024,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2024-01-01T00:00:00+00:00",
+      "last_date": "2024-12-31T23:00:00+00:00"
+    },
+    "sha256": "ea8a5f2e33dcfc4a08b05e9a250ba3f376f90e68843be36fb21b5ff05fd1cdbc",
+    "raw_path": "data/archive/covariates/raw/06342/2024.gz",
+    "hours": 8784,
+    "present": 8782,
+    "retrieved_at": "2026-09-14T20:41:42.965464592+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2025,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2025-01-01T00:00:00+00:00",
+      "last_date": "2025-12-31T23:00:00+00:00"
+    },
+    "sha256": "db73943f4d727eccb918c5ee7eb24796074f994d40cfb5b89bf87c2d90890771",
+    "raw_path": "data/archive/covariates/raw/06342/2025.gz",
+    "hours": 8760,
+    "present": 8758,
+    "retrieved_at": "2026-09-14T20:41:42.965858459+00:00"
+  },
+  {
+    "series": "rain_kochel",
+    "station": "06342",
+    "year": 2026,
+    "source_start_year": 2010,
+    "url": "https://api.brightsky.dev/weather",
+    "params": {
+      "dwd_station_id": "06342",
+      "date": "2026-01-01T00:00:00+00:00",
+      "last_date": "2026-09-14T21:00:00+00:00"
+    },
+    "sha256": "a8ff9ac0641882739b5f3bf69b0fd49e5b4f933e1a53d15293e9d3c3f7679b44",
+    "raw_path": "data/archive/covariates/raw/06342/2026-through-20260914T21.gz",
+    "hours": 6144,
+    "present": 6144,
+    "retrieved_at": "2026-09-14T21:04:44.718066931+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2007,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2007",
+      "ende": "31.12.2007"
+    },
+    "sha256": "1b0ce8e4c6871926f66c29cccdabaed1fbb58394ccac3e941144eecdcc82ccf5",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2007-calendar.gz",
+    "hours": 1008,
+    "present": 992,
+    "retrieved_at": "2026-09-14T20:41:42.968006849+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2008,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2008",
+      "ende": "31.12.2008"
+    },
+    "sha256": "639347fb1b69da8ba2d4e42eaa9a0a5433304d0e8faafac4971e4b73a5b2ef48",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2008-calendar.gz",
+    "hours": 8784,
+    "present": 8702,
+    "retrieved_at": "2026-09-14T20:41:42.969031096+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2009,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2009",
+      "ende": "31.12.2009"
+    },
+    "sha256": "e56a6bdf56036389d533b3c2e965c51302dc25a08c007588756fb515f87393de",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2009-calendar.gz",
+    "hours": 8760,
+    "present": 8746,
+    "retrieved_at": "2026-09-14T20:41:42.969606638+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2010,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2010",
+      "ende": "31.12.2010"
+    },
+    "sha256": "7596d538ba87e94399c7162bc4ce3593863700a736ef753cc5d99ce2bef3f00f",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2010-calendar.gz",
+    "hours": 8760,
+    "present": 8746,
+    "retrieved_at": "2026-09-14T20:41:42.971050978+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2011,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2011",
+      "ende": "31.12.2011"
+    },
+    "sha256": "b306164d02bf2cb7666182ae5ea245eb995a2089f181a882cdfe8374c3456b17",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2011-calendar.gz",
+    "hours": 8760,
+    "present": 8733,
+    "retrieved_at": "2026-09-14T20:41:42.971050978+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2012,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2012",
+      "ende": "31.12.2012"
+    },
+    "sha256": "0c1c29b21d8c7826fbe17789ec647017778b1a2ed87624f113374c3b45df5b94",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2012-calendar.gz",
+    "hours": 8784,
+    "present": 8760,
+    "retrieved_at": "2026-09-14T20:41:42.973096371+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2013,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2013",
+      "ende": "31.12.2013"
+    },
+    "sha256": "f816ae0f4d5b1c866b942de87f2f9d75519c7ef5ca95ee68092f0f67834a9a96",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2013-calendar.gz",
+    "hours": 8760,
+    "present": 8738,
+    "retrieved_at": "2026-09-14T20:41:42.973096371+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2014,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2014",
+      "ende": "31.12.2014"
+    },
+    "sha256": "63c281b7ffaad15c1461d23caf7cdb518946cb99f383ec9932c2b49f82b4516c",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2014-calendar.gz",
+    "hours": 8760,
+    "present": 8756,
+    "retrieved_at": "2026-09-14T20:41:42.975787878+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2015,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2015",
+      "ende": "31.12.2015"
+    },
+    "sha256": "1eaf4fb8795e9041f4cec8579626a6f3f1c14324a0cbbb4d977b32062565fa06",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2015-calendar.gz",
+    "hours": 8760,
+    "present": 8755,
+    "retrieved_at": "2026-09-14T20:41:42.976943254+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2016,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2016",
+      "ende": "31.12.2016"
+    },
+    "sha256": "4f322ea42049b35abb08b2e3bedb1d7ba58ed50e8adaebc09dcf46c51b9e21c7",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2016-calendar.gz",
+    "hours": 8784,
+    "present": 8758,
+    "retrieved_at": "2026-09-14T20:41:42.978109598+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2017,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2017",
+      "ende": "31.12.2017"
+    },
+    "sha256": "e7d2c670de934aeb12ba062ec0df2b5e0a61cffde279acc06695d3080d71b427",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2017-calendar.gz",
+    "hours": 8760,
+    "present": 8743,
+    "retrieved_at": "2026-09-14T20:41:42.978757858+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2018,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2018",
+      "ende": "31.12.2018"
+    },
+    "sha256": "799a7f3a3fb0f1963c3928482f067fef926524aac29a6803e5f7e24982146ece",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2018-calendar.gz",
+    "hours": 8760,
+    "present": 8727,
+    "retrieved_at": "2026-09-14T20:41:42.979874372+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2019,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2019",
+      "ende": "31.12.2019"
+    },
+    "sha256": "de92baabdb806986dba43a3e6d1edc7aea3e4f9744f11625c149fbf5cbbdf4ac",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2019-calendar.gz",
+    "hours": 8760,
+    "present": 8736,
+    "retrieved_at": "2026-09-14T20:41:42.980401754+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2020,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2020",
+      "ende": "31.12.2020"
+    },
+    "sha256": "60f32440c8342c8623989031993ad373654a507a33247173e28635598912b204",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2020-calendar.gz",
+    "hours": 8784,
+    "present": 8695,
+    "retrieved_at": "2026-09-14T20:41:42.982485771+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2021,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2021",
+      "ende": "31.12.2021"
+    },
+    "sha256": "749e20ebab8cd7bbb716016e0ff35c23dcac4307a35b85a4e300625335b7f748",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2021-calendar.gz",
+    "hours": 8760,
+    "present": 8733,
+    "retrieved_at": "2026-09-14T20:41:42.983798504+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2022,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2022",
+      "ende": "31.12.2022"
+    },
+    "sha256": "efb8c5ad12dd9e9bfbafe8dcd7125e645f7520a06b32259a69989373721443ac",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2022-calendar.gz",
+    "hours": 8760,
+    "present": 8747,
+    "retrieved_at": "2026-09-14T20:41:42.985195637+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2023,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2023",
+      "ende": "31.12.2023"
+    },
+    "sha256": "bc44c3e88ace1b84036e059b544386314ddc1da76e29f8abf928c9d6b7bb0316",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2023-calendar.gz",
+    "hours": 8760,
+    "present": 8721,
+    "retrieved_at": "2026-09-14T20:41:42.986353159+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2024,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2024",
+      "ende": "31.12.2024"
+    },
+    "sha256": "cf4210e1d2bf4f3251aa31986408c4f8d2334802304e4d95187acdfd6924792d",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2024-calendar.gz",
+    "hours": 8778,
+    "present": 8717,
+    "retrieved_at": "2026-09-14T20:41:42.990353107+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2025,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2025",
+      "ende": "31.12.2025"
+    },
+    "sha256": "145bf8dda30794de0095a959c9ff16cf232ff49e57ae1b38e471830d1443c1e3",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2025-calendar.gz",
+    "hours": 8760,
+    "present": 8732,
+    "retrieved_at": "2026-09-14T20:41:42.993010759+00:00"
+  },
+  {
+    "series": "isar_toelz",
+    "station": "bad-toelz-b472-16003207",
+    "year": 2026,
+    "source_start_year": 2007,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/bad-toelz-b472-16003207/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2026",
+      "ende": "14.09.2026"
+    },
+    "sha256": "8816105b6f24cbd31c7fb7ab79681272f6c3e6ba2ad937bde7e89f76ad08cd25",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2026-calendar-through-20260914T21.gz",
+    "hours": 6167,
+    "present": 6145,
+    "retrieved_at": "2026-09-14T21:05:20.207509756+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1980,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1980",
+      "ende": "31.12.1980"
+    },
+    "sha256": "b184d3fc065359aee788be85c65e4c9f1e6e92229665c740bb7693743e587e4c",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1980-calendar.gz",
+    "hours": 1464,
+    "present": 61,
+    "retrieved_at": "2026-09-14T20:41:42.999897480+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1981,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1981",
+      "ende": "31.12.1981"
+    },
+    "sha256": "d1b8dbe66ba125471f44c257d312052ddaf53d53518d9b64db79b242a5d81be9",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1981-calendar.gz",
+    "hours": 8760,
+    "present": 365,
+    "retrieved_at": "2026-09-14T20:41:43.002352953+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1982,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1982",
+      "ende": "31.12.1982"
+    },
+    "sha256": "422675fa31a4e9339b4c2b91d84f7dc1e39b57951465aaa22f35c5b02a2b0b97",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1982-calendar.gz",
+    "hours": 8760,
+    "present": 365,
+    "retrieved_at": "2026-09-14T20:41:43.007199287+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1983,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1983",
+      "ende": "31.12.1983"
+    },
+    "sha256": "87ae9c108155edda56bf7072c5bfac8ddf3e26b58cf2f35c600b86c993a828cf",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1983-calendar.gz",
+    "hours": 8760,
+    "present": 365,
+    "retrieved_at": "2026-09-14T20:41:43.009260416+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1984,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1984",
+      "ende": "31.12.1984"
+    },
+    "sha256": "ba012632080a71eb518432f2e6111aa7f74c171c73f7ebddbc6f2f65f196c24f",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1984-calendar.gz",
+    "hours": 8784,
+    "present": 366,
+    "retrieved_at": "2026-09-14T20:41:43.010353088+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1985,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1985",
+      "ende": "31.12.1985"
+    },
+    "sha256": "207a4989c36c4f84956859d24b1ad59e53f1b22c9984925e2e3d9cde716d7c8b",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1985-calendar.gz",
+    "hours": 8760,
+    "present": 365,
+    "retrieved_at": "2026-09-14T20:41:43.010353088+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1986,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1986",
+      "ende": "31.12.1986"
+    },
+    "sha256": "5198fdf7d15c2f846ec8769e91976b514c343dbbbe1e63f906abd9aa751627fe",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1986-calendar.gz",
+    "hours": 8760,
+    "present": 365,
+    "retrieved_at": "2026-09-14T20:41:43.015490532+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1987,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1987",
+      "ende": "31.12.1987"
+    },
+    "sha256": "633c025a3448f24eff8b5bb6a43a25614c5a4f8db8d86d682606d1fa6373848d",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1987-calendar.gz",
+    "hours": 8760,
+    "present": 364,
+    "retrieved_at": "2026-09-14T20:41:43.018605947+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1988,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1988",
+      "ende": "31.12.1988"
+    },
+    "sha256": "6b0663cb16244f0f2b8bc1329bfc28a0cb5e039c184a3191b260151dbf99fc9e",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1988-calendar.gz",
+    "hours": 8784,
+    "present": 366,
+    "retrieved_at": "2026-09-14T20:41:43.021039963+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1989,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1989",
+      "ende": "31.12.1989"
+    },
+    "sha256": "a6ddc2aed57727dbea0af7d52ae7b20f37b1299644f87e3c7bb6d192e44f22c7",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1989-calendar.gz",
+    "hours": 8760,
+    "present": 365,
+    "retrieved_at": "2026-09-14T20:41:43.022755146+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1990,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1990",
+      "ende": "31.12.1990"
+    },
+    "sha256": "b058ec18ac816fea7da7878f7870650b6b91f657a148797fb50f0a21194000ed",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1990-calendar.gz",
+    "hours": 8760,
+    "present": 364,
+    "retrieved_at": "2026-09-14T20:41:43.024914980+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1991,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1991",
+      "ende": "31.12.1991"
+    },
+    "sha256": "432181bd78eb76817b094b5282ec196563552fe2c1404e795db722b055ddb8ba",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1991-calendar.gz",
+    "hours": 8760,
+    "present": 363,
+    "retrieved_at": "2026-09-14T20:41:43.028335094+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1992,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1992",
+      "ende": "31.12.1992"
+    },
+    "sha256": "7b44ab0847bd069846273643ac1449d72d38820dd869cd51f662aaad72ec8b00",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1992-calendar.gz",
+    "hours": 8784,
+    "present": 366,
+    "retrieved_at": "2026-09-14T20:41:43.030360460+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1993,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1993",
+      "ende": "31.12.1993"
+    },
+    "sha256": "61e4bc0295414f908e4afa21d4414c165964707d5e15299b0878faa91d399bd6",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1993-calendar.gz",
+    "hours": 8760,
+    "present": 365,
+    "retrieved_at": "2026-09-14T20:41:43.031126738+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1994,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1994",
+      "ende": "31.12.1994"
+    },
+    "sha256": "fd46c6bc0541d458b288524244052864c7622a2483c1126914539cc1d1c30446",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1994-calendar.gz",
+    "hours": 8760,
+    "present": 365,
+    "retrieved_at": "2026-09-14T20:41:43.032939195+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1995,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1995",
+      "ende": "31.12.1995"
+    },
+    "sha256": "3ba8b3beb64b37b50eabf1c9dd068dbf22db833a782fd03e77eaacfdd787b042",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1995-calendar.gz",
+    "hours": 8760,
+    "present": 365,
+    "retrieved_at": "2026-09-14T20:41:43.035837173+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1996,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1996",
+      "ende": "31.12.1996"
+    },
+    "sha256": "5cca29d6b67e95cc05da81ef892fecd366aef537a4765e8f73b15c32f5e4dc76",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1996-calendar.gz",
+    "hours": 8784,
+    "present": 366,
+    "retrieved_at": "2026-09-14T20:41:43.037655354+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1997,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1997",
+      "ende": "31.12.1997"
+    },
+    "sha256": "be0fff2f2c47cf40b6814d61f45889448775de7e98365678d170e690d892658b",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1997-calendar.gz",
+    "hours": 8760,
+    "present": 365,
+    "retrieved_at": "2026-09-14T20:41:43.038936377+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1998,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1998",
+      "ende": "31.12.1998"
+    },
+    "sha256": "be1de64f18f29b5964cb60f78bf85902e7012dfec0afc5c375327f2fd2458a80",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1998-calendar.gz",
+    "hours": 8760,
+    "present": 365,
+    "retrieved_at": "2026-09-14T20:41:43.040831804+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 1999,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.1999",
+      "ende": "31.12.1999"
+    },
+    "sha256": "68d9263f7ce59186e48781248b1b6cb19f287f5813834555ec61a6f193f5831f",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1999-calendar.gz",
+    "hours": 8760,
+    "present": 365,
+    "retrieved_at": "2026-09-14T20:41:43.042370796+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2000,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2000",
+      "ende": "31.12.2000"
+    },
+    "sha256": "cec29af2dfb18e69e6e3ce8714f8b0bfec491162aabf9cfaf08c28ebe350aab0",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2000-calendar.gz",
+    "hours": 8784,
+    "present": 366,
+    "retrieved_at": "2026-09-14T20:41:43.044121027+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2001,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2001",
+      "ende": "31.12.2001"
+    },
+    "sha256": "0448c3f4e5ce0c19270824a99fd4fd6f7d9edca77460e9adf336d6c836a2789d",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2001-calendar.gz",
+    "hours": 8760,
+    "present": 365,
+    "retrieved_at": "2026-09-14T20:41:43.044861555+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2002,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2002",
+      "ende": "31.12.2002"
+    },
+    "sha256": "ce414a449754c9d975cb88d2aa97702d26d2473a15d175b6f40948bb07979cb6",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2002-calendar.gz",
+    "hours": 8760,
+    "present": 365,
+    "retrieved_at": "2026-09-14T20:41:43.046603203+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2003,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2003",
+      "ende": "31.12.2003"
+    },
+    "sha256": "93beb399e96d299dc85ca7e66cad39a44a81800fcbba803ffb53b822fb47e350",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2003-calendar.gz",
+    "hours": 8760,
+    "present": 365,
+    "retrieved_at": "2026-09-14T20:41:43.048851728+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2004,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2004",
+      "ende": "31.12.2004"
+    },
+    "sha256": "0d1a25c6467d1238611681256ef9dafc3a625a08157dceccb4a36a4361cbab72",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2004-calendar.gz",
+    "hours": 8784,
+    "present": 366,
+    "retrieved_at": "2026-09-14T20:41:43.052003860+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2005,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2005",
+      "ende": "31.12.2005"
+    },
+    "sha256": "6a7a48b896176dd259cde798eebb1e1ee8e1d67f2f776ab2b88f0090b364088d",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2005-calendar.gz",
+    "hours": 8760,
+    "present": 366,
+    "retrieved_at": "2026-09-14T20:41:43.053119659+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2006,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2006",
+      "ende": "31.12.2006"
+    },
+    "sha256": "9d59792d7a2135f63caf409df850b5db6e07b70a705c0c45d2e1c381453a5798",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2006-calendar.gz",
+    "hours": 8760,
+    "present": 365,
+    "retrieved_at": "2026-09-14T20:41:43.054627657+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2007,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2007",
+      "ende": "31.12.2007"
+    },
+    "sha256": "9a5c17027eb4dcf6ffe3d78e7a6cd0d98be200c4a66b6292ef71efcee7bd6b90",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2007-calendar.gz",
+    "hours": 8496,
+    "present": 327,
+    "retrieved_at": "2026-09-14T20:41:43.056961775+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2008,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2008",
+      "ende": "31.12.2008"
+    },
+    "sha256": "03d2930be8618d770d57d9aba2fe4ea96fc23d40a5dea90997422d51539a8a11",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2008-calendar.gz",
+    "hours": 8760,
+    "present": 6762,
+    "retrieved_at": "2026-09-14T20:41:43.058940887+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2009,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2009",
+      "ende": "31.12.2009"
+    },
+    "sha256": "faa912eacd43f6d0fced0153ce7d48d800e8d9d8e732be5d34da261dddec0969",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2009-calendar.gz",
+    "hours": 8760,
+    "present": 8744,
+    "retrieved_at": "2026-09-14T20:41:43.060386658+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2010,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2010",
+      "ende": "31.12.2010"
+    },
+    "sha256": "56cc8148a3593c2cdcd8024fd577063422e5f8797420d1d1b2f6aabd7a347359",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2010-calendar.gz",
+    "hours": 8760,
+    "present": 8757,
+    "retrieved_at": "2026-09-14T20:41:43.062353134+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2011,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2011",
+      "ende": "31.12.2011"
+    },
+    "sha256": "800818bca2725d1d6c39280cd599e29558c5b1dcc13ad6a17785aecd75f79c36",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2011-calendar.gz",
+    "hours": 8760,
+    "present": 8748,
+    "retrieved_at": "2026-09-14T20:41:43.066353082+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2012,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2012",
+      "ende": "31.12.2012"
+    },
+    "sha256": "9c66ee0663004a44d257ed33e3b61d52c1be0e73d13b2dcfc6e8e954d358905f",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2012-calendar.gz",
+    "hours": 8784,
+    "present": 8772,
+    "retrieved_at": "2026-09-14T20:41:43.069878817+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2013,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2013",
+      "ende": "31.12.2013"
+    },
+    "sha256": "326f5b4ae06698ee577ee2042d3931fe1b3d5af14ab95d85c733488511873022",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2013-calendar.gz",
+    "hours": 8760,
+    "present": 8748,
+    "retrieved_at": "2026-09-14T20:41:43.071582079+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2014,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2014",
+      "ende": "31.12.2014"
+    },
+    "sha256": "3e21904fc2db1fa75e1cdef231aebce88d98c23d44a9b2b1ade00c952ba7ed49",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2014-calendar.gz",
+    "hours": 8760,
+    "present": 8756,
+    "retrieved_at": "2026-09-14T20:41:43.074585438+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2015,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2015",
+      "ende": "31.12.2015"
+    },
+    "sha256": "404034b05a3a9ea02d7ae663d54ae798ea3af54cb74e34c7b745f180deac61a8",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2015-calendar.gz",
+    "hours": 8760,
+    "present": 8729,
+    "retrieved_at": "2026-09-14T20:41:43.077062607+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2016,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2016",
+      "ende": "31.12.2016"
+    },
+    "sha256": "3dea742048d485b7c861b9fce803abb280a169d62fb86107c01d4e352b56424e",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2016-calendar.gz",
+    "hours": 8784,
+    "present": 8781,
+    "retrieved_at": "2026-09-14T20:41:43.080031157+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2017,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2017",
+      "ende": "31.12.2017"
+    },
+    "sha256": "b8cdbbfe98e5efdf3cb57fe13acf6c3c16a396bd149e580c4ccf18433d708b2e",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2017-calendar.gz",
+    "hours": 8760,
+    "present": 8748,
+    "retrieved_at": "2026-09-14T20:41:43.081507444+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2018,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2018",
+      "ende": "31.12.2018"
+    },
+    "sha256": "cdb8580cb17cfb0dd467cbea2e1122526415b4e9de67ea98c9163a33c3366ee0",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2018-calendar.gz",
+    "hours": 8760,
+    "present": 8721,
+    "retrieved_at": "2026-09-14T20:41:43.084691763+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2019,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2019",
+      "ende": "31.12.2019"
+    },
+    "sha256": "8e2ae579e09e5688d0c6de6ccac846ce704e1a91856ae76319c581ac250cda24",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2019-calendar.gz",
+    "hours": 8760,
+    "present": 8742,
+    "retrieved_at": "2026-09-14T20:41:43.086353064+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2020,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2020",
+      "ende": "31.12.2020"
+    },
+    "sha256": "896852fb6649d40ac6f563d4cd28bdc8a303da3ee0e59beb595568eb110dd306",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2020-calendar.gz",
+    "hours": 8784,
+    "present": 8770,
+    "retrieved_at": "2026-09-14T20:41:43.090019703+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2021,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2021",
+      "ende": "31.12.2021"
+    },
+    "sha256": "e43b4202035a250e17410e613f1ee272b579b68f6faaaa58abe36febde1bb341",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2021-calendar.gz",
+    "hours": 8760,
+    "present": 8703,
+    "retrieved_at": "2026-09-14T20:41:43.090353012+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2022,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2022",
+      "ende": "31.12.2022"
+    },
+    "sha256": "7d919c4f9a5ca2b9dbe7cc7d87c5846152860b863086ae8932e464b6457e72ea",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2022-calendar.gz",
+    "hours": 8760,
+    "present": 8757,
+    "retrieved_at": "2026-09-14T20:41:43.094629765+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2023,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2023",
+      "ende": "31.12.2023"
+    },
+    "sha256": "ff30ea4558d902629e13e95758017a45f7cd58bd3904a7a18dec2d4159ec72c1",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2023-calendar.gz",
+    "hours": 8760,
+    "present": 8735,
+    "retrieved_at": "2026-09-14T20:41:43.097683430+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2024,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2024",
+      "ende": "31.12.2024"
+    },
+    "sha256": "e33a17756b3b53c19fbaff44f951eb39c91bc9fc16a269d2a22b4aaee3230924",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2024-calendar.gz",
+    "hours": 8784,
+    "present": 8745,
+    "retrieved_at": "2026-09-14T20:41:43.100593090+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2025,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2025",
+      "ende": "31.12.2025"
+    },
+    "sha256": "56b3b9dd212645178707459bc86bbfe0c63d1c68807581f2aff1fea1774c1986",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2025-calendar.gz",
+    "hours": 8760,
+    "present": 8727,
+    "retrieved_at": "2026-09-14T20:41:43.102381468+00:00"
+  },
+  {
+    "series": "loisach_beuerberg",
+    "station": "beuerberg-16408504",
+    "year": 2026,
+    "source_start_year": 1980,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/beuerberg-16408504/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2026",
+      "ende": "14.09.2026"
+    },
+    "sha256": "6960d28c41b24f8cb383800444abfccab21ec6c59091b91c46ce8b7e4d4253e5",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2026-calendar-through-20260914T21.gz",
+    "hours": 6167,
+    "present": 6150,
+    "retrieved_at": "2026-09-14T21:08:39.621440887+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2004,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2004",
+      "ende": "31.12.2004"
+    },
+    "sha256": "9201f11d2a27862747b0ca90fb47b3b57f581af0a37e1d16492c609169c66727",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2004-calendar.gz",
+    "hours": 72,
+    "present": 54,
+    "retrieved_at": "2026-09-14T20:41:43.106655121+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2005,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2005",
+      "ende": "31.12.2005"
+    },
+    "sha256": "9adf0ab955d25a2d28c12f3e9b2b7ed0eaa27c77e58b833417c78098b7cedf80",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2005-calendar.gz",
+    "hours": 0,
+    "present": 0,
+    "retrieved_at": "2026-09-14T20:41:43.107281208+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2006,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2006",
+      "ende": "31.12.2006"
+    },
+    "sha256": "bd65a740b05cc1665702c6a42d59687f2da1cceeba01ac711c37a5cd578ef45d",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2006-calendar.gz",
+    "hours": 0,
+    "present": 0,
+    "retrieved_at": "2026-09-14T20:41:43.107281208+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2007,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2007",
+      "ende": "31.12.2007"
+    },
+    "sha256": "0166cc012a431c1f474c8f604ed9c1e8c4f6a45bdd54e744ceaa8534a8663c1e",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2007-calendar.gz",
+    "hours": 0,
+    "present": 0,
+    "retrieved_at": "2026-09-14T20:41:43.107281208+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2008,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2008",
+      "ende": "31.12.2008"
+    },
+    "sha256": "86ca84564a95bd9d3a1be9b7b260caae4aa79715113f1f31f61a220a5ee58c72",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2008-calendar.gz",
+    "hours": 0,
+    "present": 0,
+    "retrieved_at": "2026-09-14T20:41:43.107281208+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2009,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2009",
+      "ende": "31.12.2009"
+    },
+    "sha256": "f98ddb95369f5d6e7d48cbe7dd007a4df68ae3a5014c6c86c3add5b1bad3f849",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2009-calendar.gz",
+    "hours": 0,
+    "present": 0,
+    "retrieved_at": "2026-09-14T20:41:43.107281208+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2010,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2010",
+      "ende": "31.12.2010"
+    },
+    "sha256": "8e925e19f37dd1d9b16007a2cb09cf8d3e201a27a913d45826819a6827aa4952",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2010-calendar.gz",
+    "hours": 4296,
+    "present": 4214,
+    "retrieved_at": "2026-09-14T20:41:43.108658791+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2011,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2011",
+      "ende": "31.12.2011"
+    },
+    "sha256": "50f0f2a7d987630d1d05cc360989f65bb59aa22881ea37686bc6b34ab2528b99",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2011-calendar.gz",
+    "hours": 8760,
+    "present": 8555,
+    "retrieved_at": "2026-09-14T20:41:43.110179663+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2012,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2012",
+      "ende": "31.12.2012"
+    },
+    "sha256": "96c04bae6ae2cc7385e29851b1cbd79507e5387fa036e599e76d7b43a341d8d0",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2012-calendar.gz",
+    "hours": 2280,
+    "present": 2265,
+    "retrieved_at": "2026-09-14T20:41:43.112226248+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2013,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2013",
+      "ende": "31.12.2013"
+    },
+    "sha256": "ff5013b6d62f422ae6f8a37d7c811f52cbd655674fc4b6efb6a5b3449f66cb7d",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2013-calendar.gz",
+    "hours": 24,
+    "present": 0,
+    "retrieved_at": "2026-09-14T20:41:43.112226248+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2014,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2014",
+      "ende": "31.12.2014"
+    },
+    "sha256": "142a8369b892c33b0d1b66ecb4e66b8a06f4d8bdbd1bfec183b5cc285ec55ca7",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2014-calendar.gz",
+    "hours": 7224,
+    "present": 6925,
+    "retrieved_at": "2026-09-14T20:41:43.114253283+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2015,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2015",
+      "ende": "31.12.2015"
+    },
+    "sha256": "1a7344ff1643529eb87fb9784fbd2a074a7d017f89b5c54f16e712e6e10234e3",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2015-calendar.gz",
+    "hours": 8760,
+    "present": 8749,
+    "retrieved_at": "2026-09-14T20:41:43.117519140+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2016,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2016",
+      "ende": "31.12.2016"
+    },
+    "sha256": "91a12ba3ef0ae19e23bfa03336b6a0f6b3ad38d3b2ce670685e04544d84d9616",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2016-calendar.gz",
+    "hours": 8784,
+    "present": 8774,
+    "retrieved_at": "2026-09-14T20:41:43.120679855+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2017,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2017",
+      "ende": "31.12.2017"
+    },
+    "sha256": "5ab326a3dad3f4273a34faf758eb1ed1555c9141924341a96e9799a9c96a0a61",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2017-calendar.gz",
+    "hours": 8760,
+    "present": 8716,
+    "retrieved_at": "2026-09-14T20:41:43.122373819+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2018,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2018",
+      "ende": "31.12.2018"
+    },
+    "sha256": "39ce1cb2a5613c49c66dd31d59d241e00320f8dfeead69c5d9c76f09936fd0ea",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2018-calendar.gz",
+    "hours": 8760,
+    "present": 8739,
+    "retrieved_at": "2026-09-14T20:41:43.126368523+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2019,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2019",
+      "ende": "31.12.2019"
+    },
+    "sha256": "435c29b2f57b79bf48236ab134591e31ecf3de97e83cc453338a39c744454e86",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2019-calendar.gz",
+    "hours": 8760,
+    "present": 8756,
+    "retrieved_at": "2026-09-14T20:41:43.129567385+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2020,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2020",
+      "ende": "31.12.2020"
+    },
+    "sha256": "95774d234ad585b68509ae478930ea0e5f499d79c625ef46f9104acad2e23584",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2020-calendar.gz",
+    "hours": 8784,
+    "present": 8743,
+    "retrieved_at": "2026-09-14T20:41:43.133481503+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2021,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2021",
+      "ende": "31.12.2021"
+    },
+    "sha256": "7d2ce45beb7866b6856e84c5ae2c386ef5019f8d5bf09564a628d083a54c6f39",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2021-calendar.gz",
+    "hours": 8760,
+    "present": 8716,
+    "retrieved_at": "2026-09-14T20:41:43.134353161+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2022,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2022",
+      "ende": "31.12.2022"
+    },
+    "sha256": "2e63e6ebe37f715a9b4c3be8e6ca0c19ff35e6cbac13a40cf47f55a179fac7d7",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2022-calendar.gz",
+    "hours": 8760,
+    "present": 8720,
+    "retrieved_at": "2026-09-14T20:41:43.138353109+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2023,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2023",
+      "ende": "31.12.2023"
+    },
+    "sha256": "fbbbd0b300625ab2ba0cc6458202e684ca3bcbc6cc4a8271e7d1d36ee0e75786",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2023-calendar.gz",
+    "hours": 8760,
+    "present": 8757,
+    "retrieved_at": "2026-09-14T20:41:43.142353058+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2024,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2024",
+      "ende": "31.12.2024"
+    },
+    "sha256": "2a19c55b569abad18a4e5a4a6477497265f9d25975e63c4e62e38e38bbcb8572",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2024-calendar.gz",
+    "hours": 8784,
+    "present": 8781,
+    "retrieved_at": "2026-09-14T20:41:43.146353006+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2025,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2025",
+      "ende": "31.12.2025"
+    },
+    "sha256": "507ce205e2b1f2456f79df142734e305098a805402f2b6d44605e0ebd4aa8556",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2025-calendar.gz",
+    "hours": 8760,
+    "present": 8756,
+    "retrieved_at": "2026-09-14T20:41:43.148564577+00:00"
+  },
+  {
+    "series": "eisbach",
+    "station": "muenchen-himmelreichbruecke-16515005",
+    "year": 2026,
+    "source_start_year": 2004,
+    "url": "https://www.gkd.bayern.de/de/fluesse/wassertemperatur/isar/muenchen-himmelreichbruecke-16515005/messwerte/tabelle",
+    "params": {
+      "beginn": "01.01.2026",
+      "ende": "14.09.2026"
+    },
+    "sha256": "0b26c171ae0e71f10c2890bd6a05f970d75fe8faf9e61d1bf71f537816867944",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2026-calendar-through-20260914T21.gz",
+    "hours": 6167,
+    "present": 6166,
+    "retrieved_at": "2026-09-14T21:09:44.815840244+00:00"
+  }
+]

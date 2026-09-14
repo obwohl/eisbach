@@ -60,7 +60,7 @@ def test_prepare_data_equivalence(mocker):
     # 4. Water temperature is filled only up to its last real observation. Beyond that
     # it must stay NaN, or the model would be fed invented measurements for the window
     # where only weather covariates exist.
-    last_wt_time_utc = df_long[(df_long['cols'] == 'wassertemp')]['date'].iloc[len(mock_wt) - 1]
+    last_wt_time_utc = df_wt.loc[df_wt['wassertemp'].notna(), 'timestamp'].max()
 
     hist_wt_valid = df_long[(df_long['cols'] == 'wassertemp') & (df_long['date'] <= last_wt_time_utc)]
     assert not hist_wt_valid['data'].isna().any()

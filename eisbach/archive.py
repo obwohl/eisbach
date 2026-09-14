@@ -161,14 +161,21 @@ def _as_utc(value) -> pd.Timestamp:
     return ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
 
 
-def _as_utc_series(values) -> pd.Series:
+def _as_utc_series(values, *, index: pd.Index | None = None) -> pd.Series:
     """Parse a column of timestamps to UTC, tolerating a column that is not there.
 
     Returns an all-NaT series for a missing column, so callers can treat "written before
     this field existed" the same as "this row has no value".
+
+    ``index`` is the frame the column belongs to. Without it a missing column used to
+    come back one row long, and every mask derived from it was then one row long too:
+    ``fillna`` aligns on the index and cannot lengthen a series. In
+    ``load_weather_snapshot`` that turned a whole partition into a single unusable row,
+    which is why every snapshot written before ``reference_time`` existed — the entire
+    May to July 2026 archive — read back as "no snapshot usable for a replay".
     """
     if values is None:
-        return pd.Series(pd.NaT, dtype="datetime64[ns, UTC]")
+        return pd.Series(pd.NaT, index=index, dtype="datetime64[ns, UTC]")
     return pd.to_datetime(values, utc=True, errors="coerce", format="mixed")
 
 
@@ -180,7 +187,11 @@ def _read_partition(path: Path) -> pd.DataFrame:
     # weather snapshot, not a value to do arithmetic on.
     for col in ("reference_time", "target_time", "issued_at", "timestamp", "scored_at"):
         if col in df.columns:
-            df[col] = pd.to_datetime(df[col], utc=True, errors="coerce")
+            # `format="mixed"` per row, not one format inferred from the first value.
+            # A partition can hold both spellings — a schema change, a hand-written row —
+            # and inferring one of them coerces every row in the other to NaT. That was
+            # silently discarding 120 valid rows in each of May, June and July 2026.
+            df[col] = pd.to_datetime(df[col], utc=True, errors="coerce", format="mixed")
     return df
 
 
@@ -415,7 +426,8 @@ def write_weather_snapshot(df_weather: pd.DataFrame, *, archived_at=None,
         # but not the fetch time, so deduplicating on the fetch would keep both and leave
         # a replay to pick between two sets of the same timestamps arbitrarily. The
         # newest fetch for an anchor is the one that run actually forecast from.
-        superseded = _as_utc_series(existing.get("reference_time")) == reference_time
+        superseded = _as_utc_series(
+            existing.get("reference_time"), index=existing.index) == reference_time
         same_fetch = existing["archive_timestamp"].astype(str) == archived_at.isoformat()
         existing = existing[~(superseded | same_fetch)]
         snapshot = pd.concat([existing, snapshot], ignore_index=True)
@@ -468,7 +480,7 @@ def load_weather_snapshot(reference_time, *, max_age_hours: float = SNAPSHOT_MAX
     df = pd.concat(frames, ignore_index=True)
     fetched = _as_utc_series(df["archive_timestamp"])
     # Snapshots written before anchors existed fall back to their fetch time.
-    anchor = _as_utc_series(df.get("reference_time")).fillna(fetched)
+    anchor = _as_utc_series(df.get("reference_time"), index=df.index).fillna(fetched)
 
     in_window = anchor >= reference_time - window
     own_run = anchor == reference_time
@@ -535,6 +547,54 @@ def write_observations(df_observations: pd.DataFrame, root: Path = DEFAULT_ROOT)
         _write_partition(path, combined)
         written.append(path)
     return written
+
+
+def retract_observation(timestamp, column: str, *, reason: str,
+                        root: Path = DEFAULT_ROOT) -> Path | None:
+    """Blank one stored measurement that the instrument never really made.
+
+    ``write_observations`` merges with ``GroupBy.last``, which skips nulls so that a
+    narrow write cannot blank the columns it does not mention. The cost of that rule is
+    that a *wrong* reading, once stored, can never be corrected through the normal path:
+    writing NaN over it leaves the old value standing. This is the deliberate exception.
+
+    It is not a licence to revise history. A forecast we published stays exactly as
+    published, however bad — that record is what the verification store's honesty rests
+    on. This touches only a measurement, and only one that provably did not happen: on
+    2026-09-09 the Eisbach gauge reported **154.4 °C** for a single hour, between
+    neighbours of 19.1 °C. Leaving it in would mean scoring real forecasts against a
+    number no river produced.
+
+    The hour becomes *never measured* rather than something else — the same state
+    :func:`eisbach.data.reject_implausible_readings` now produces before the value can
+    reach the archive at all. Verification rows already scored against it do not update
+    themselves: that store is derived, and deleting its partition is how a recomputation
+    is asked for.
+
+    Returns the partition written, or ``None`` when the timestamp holds nothing.
+    """
+    when = pd.Timestamp(timestamp)
+    if when.tzinfo is None:
+        when = when.tz_localize("UTC")
+    else:
+        when = when.tz_convert("UTC")
+
+    path = _partition_path(root, "observations", when)
+    existing = _read_partition(path)
+    if existing.empty or column not in existing.columns:
+        return None
+
+    stored = _as_utc_series(existing["timestamp"], index=existing.index)
+    hit = stored == when
+    if not hit.any():
+        return None
+
+    was = existing.loc[hit, column].tolist()
+    existing.loc[hit, column] = pd.NA
+    _write_partition(path, existing)
+    logger.warning("Retracted %s=%s at %s from %s: %s",
+                   column, ", ".join(str(v) for v in was), when, path, reason)
+    return path
 
 
 def read_observations(root: Path = DEFAULT_ROOT) -> pd.DataFrame:

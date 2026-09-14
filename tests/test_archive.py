@@ -666,3 +666,126 @@ def test_a_narrow_write_does_not_blank_the_columns_it_omits(root):
     stored = pd.read_csv(root / "observations" / "2026-05.csv")
     assert stored["wassertemp"].iloc[0] == pytest.approx(99.0), "the correction must land"
     assert stored["lufttemperatur_c"].iloc[0] == pytest.approx(18.0), "and take nothing with it"
+
+
+def test_a_snapshot_without_a_reference_time_column_is_still_replayable(root):
+    """The whole pre-August 2026 archive was written before anchors existed.
+
+    ``_as_utc_series`` returned a one-row series for a missing column, and ``fillna``
+    aligns on the index rather than lengthening — so every mask built from it was one
+    row long and the partition collapsed to nothing eligible. Three months of archived
+    DWD forecasts read back as "no snapshot usable for a replay".
+    """
+    fetched = pd.Timestamp("2026-05-01 18:39:39", tz="UTC")
+    legacy = pd.DataFrame({
+        "timestamp": pd.date_range(fetched.ceil("h"), periods=6, freq="1h"),
+        "temperature": [18.0, 19.0, 20.0, 21.0, 22.0, 23.0],
+        "archive_timestamp": fetched.isoformat(),
+    })
+    (root / "weather").mkdir(parents=True, exist_ok=True)
+    legacy.to_csv(root / "weather" / "2026-05.csv", index=False)
+
+    found = archive.load_weather_snapshot(fetched + pd.Timedelta(hours=2), root=root)
+    assert found is not None
+    snapshot, anchor = found
+    assert len(snapshot) == 6
+    assert anchor == fetched
+
+
+def test_a_partition_holding_both_timestamp_spellings_keeps_every_row(root):
+    """One inferred format coerces the other spelling to NaT, row by row.
+
+    120 valid rows in each of May, June and July 2026 were being discarded on read.
+    """
+    (root / "weather").mkdir(parents=True, exist_ok=True)
+    (root / "weather" / "2026-05.csv").write_text(
+        "timestamp,temperature,archive_timestamp\n"
+        "2026-05-01T19:00:00+00:00,18.0,2026-05-01T18:39:39+00:00\n"
+        "2026-05-01 20:00:00+00:00,19.0,2026-05-01T18:39:39+00:00\n"
+    )
+
+    stored = archive._read_partition(root / "weather" / "2026-05.csv")
+    assert stored["timestamp"].notna().all()
+    assert stored["timestamp"].tolist() == [
+        pd.Timestamp("2026-05-01 19:00", tz="UTC"),
+        pd.Timestamp("2026-05-01 20:00", tz="UTC"),
+    ]
+
+
+def test_appending_to_a_partition_without_reference_times_keeps_the_old_rows(root):
+    """The same one-row series reached the write path, where it would misalign the
+    mask that decides which existing rows a new snapshot supersedes."""
+    fetched = pd.Timestamp("2026-05-01 18:39:39", tz="UTC")
+    legacy = pd.DataFrame({
+        "timestamp": pd.date_range(fetched.ceil("h"), periods=3, freq="1h"),
+        "temperature": [18.0, 19.0, 20.0],
+        "archive_timestamp": fetched.isoformat(),
+    })
+    (root / "weather").mkdir(parents=True, exist_ok=True)
+    legacy.to_csv(root / "weather" / "2026-05.csv", index=False)
+
+    later = fetched + pd.Timedelta(hours=6)
+    archive.write_weather_snapshot(
+        full_fetch(later), archived_at=later, reference_time=later, root=root,
+    )
+
+    stored = pd.read_csv(root / "weather" / "2026-05.csv")
+    assert (stored["archive_timestamp"] == fetched.isoformat()).sum() == 3
+
+
+def test_a_false_measurement_can_be_retracted(root):
+    """``GroupBy.last`` skips nulls, so a wrong reading cannot be written over.
+
+    Without a deliberate retraction the 154.4 °C the gauge reported on 2026-09-09 would
+    stay in the archive for ever and keep scoring real forecasts against it.
+    """
+    index = pd.date_range("2026-09-09 07:00", periods=3, freq="1h", tz="UTC")
+    archive.write_observations(
+        pd.DataFrame({"wassertemp": [19.1, 154.4, 19.1]}, index=index), root=root,
+    )
+
+    written = archive.retract_observation(
+        index[1], "wassertemp", reason="gauge fault", root=root,
+    )
+    assert written is not None
+
+    stored = archive.read_observations(root=root)["wassertemp"]
+    assert stored.loc[index[0]] == 19.1
+    assert pd.isna(stored.loc[index[1]])
+    assert stored.loc[index[2]] == 19.1
+
+
+def test_retracting_leaves_the_other_columns_alone(root):
+    index = pd.date_range("2026-09-09 07:00", periods=2, freq="1h", tz="UTC")
+    archive.write_observations(
+        pd.DataFrame({"wassertemp": [19.1, 154.4], "lufttemperatur_c": [18.8, 19.5]},
+                     index=index), root=root,
+    )
+    archive.retract_observation(index[1], "wassertemp", reason="gauge fault", root=root)
+
+    stored = archive.read_observations(root=root)
+    assert pd.isna(stored.loc[index[1], "wassertemp"])
+    assert stored.loc[index[1], "lufttemperatur_c"] == 19.5
+
+
+def test_a_later_write_does_not_resurrect_a_retracted_reading(root):
+    """The merge keeps the stored value when a new write carries NaN for it."""
+    index = pd.date_range("2026-09-09 07:00", periods=2, freq="1h", tz="UTC")
+    archive.write_observations(
+        pd.DataFrame({"wassertemp": [19.1, 154.4]}, index=index), root=root,
+    )
+    archive.retract_observation(index[1], "wassertemp", reason="gauge fault", root=root)
+
+    # What the pipeline now writes for that hour: the gate turned it into NaN.
+    archive.write_observations(
+        pd.DataFrame({"wassertemp": [19.1, float("nan")]}, index=index), root=root,
+    )
+    assert pd.isna(archive.read_observations(root=root).loc[index[1], "wassertemp"])
+
+
+def test_retracting_a_timestamp_that_holds_nothing_is_a_no_op(root):
+    index = pd.date_range("2026-09-09 07:00", periods=1, freq="1h", tz="UTC")
+    archive.write_observations(pd.DataFrame({"wassertemp": [19.1]}, index=index), root=root)
+    assert archive.retract_observation(
+        pd.Timestamp("2026-09-09 12:00", tz="UTC"), "wassertemp",
+        reason="nothing there", root=root) is None
