@@ -44,7 +44,13 @@ CHAIN_T = ["isar_mittenwald", "rissbach_klamm", "isar_lenggries", "isar_toelz",
 CHAIN_Q = ["q_mittenwald", "q_rissbachdueker", "q_rissbachklamm", "q_sylvenstein",
            "q_lenggries", "q_toelz_kw", "q_puppling", "q_loisach_kochel",
            "q_loisach_beuerberg", "q_isar_muenchen", "q_eisbach"]
-LOCAL = ["schwabinger_bach", "q_schwabinger_bach"]
+#: Empty on purpose. The Schwabinger Bach branches off the Eisbach **below** the
+#: Himmelreichbrücke gauge, so it is downstream of the target and cannot carry anything
+#: the target does not already have. The data agreed before the geography was checked: at
+#: r = 0.998 it made the forecast 0.5 % worse, and its 3462-hour gap from 2025-07 to
+#: 2025-11 blocked every window whose year of context overlapped it — which cost the whole
+#: recent record. Kept named here so nobody adds it back.
+LOCAL: list[str] = []
 
 
 def load() -> pd.DataFrame:
@@ -86,15 +92,44 @@ def pick_anchors(df: pd.DataFrame, required: list[str], *, n: int,
 
     if not candidates:
         return []
-    by_month: dict[int, list] = {}
+    return _stratify(candidates, n)
+
+
+def _spread(group: list, take: int) -> list:
+    """``take`` elements spanning ``group`` end to end rather than clustering."""
+    take = min(take, len(group))
+    if take <= 0:
+        return []
+    if take == 1:
+        return [group[len(group) // 2]]
+    return [group[round(i * (len(group) - 1) / (take - 1))] for i in range(take)]
+
+
+def _stratify(candidates: list[pd.Timestamp], n: int) -> list[pd.Timestamp]:
+    """Spread ``n`` anchors over every calendar month of every year present.
+
+    Stratifying by month alone balances the seasons perfectly and still lets two years
+    supply two thirds of the windows, because a month's candidates are not spread evenly
+    across years. The cost is not cosmetic: a year left with a single window shows up in a
+    by-year table looking like a result.
+    """
+    groups: dict[tuple[int, int], list] = {}
     for ts in candidates:
-        by_month.setdefault(ts.month, []).append(ts)
-    per_month = max(1, n // 12)
-    picked = []
-    for month in sorted(by_month):
-        group = by_month[month]
-        step = max(1, len(group) // per_month)
-        picked.extend(group[::step][:per_month])
+        groups.setdefault((ts.year, ts.month), []).append(ts)
+
+    quota = max(1, n // len(groups))
+    picked = {ts for key in groups for ts in _spread(groups[key], quota)}
+
+    # Groups smaller than the quota give less than it, so the shortfall is handed round
+    # one window per group per pass. Dumping it into the largest group instead is what
+    # made month 5 supply a third of the windows the first time this was written.
+    spare = {key: [ts for ts in groups[key] if ts not in picked] for key in groups}
+    while len(picked) < n and any(spare.values()):
+        for key in sorted(spare, key=lambda k: -len(spare[k])):
+            if len(picked) >= n:
+                break
+            if spare[key]:
+                picked.add(spare[key].pop(len(spare[key]) // 2))
     return sorted(picked)
 
 
