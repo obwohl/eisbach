@@ -59,7 +59,17 @@ STATIONS = [
     ("q_loisach_beuerberg", "abfluss", "beuerberg-16408504"),
     ("q_isar_muenchen", "abfluss", "muenchen-16005701"),
     ("q_eisbach", "abfluss", "muenchen-himmelreichbruecke-16515005"),
-    ("q_schwabinger_bach", "abfluss", "muenchen-tieraerztl-hochschule-16516008"),
+    # Added after reading the hydrology: paths and lateral inflows the first pass missed.
+    # The Loisach-Isar canal is a real route into the Isar, the virtual Beuerberg gauge is
+    # the Loisach including its canal, and the Jachen, Walchen, Gaissach, Ellbach and
+    # Schronbach all enter between Sylvenstein and Munich, below the Bad Tölz gauge.
+    ("q_loisach_isar_kanal", "abfluss", "bruggen-16495000"),
+    ("q_loisach_beuerberg_kanal", "abfluss", "beuerberg-virtuell-16408506"),
+    ("q_sylvensteinsee_ab", "abfluss", "sylvensteinsee-abfluss-16002204"),
+    ("q_jachen", "abfluss", "peternerbruecke-16326002"),
+    ("q_walchen", "abfluss", "walchen-16166008"),
+    ("q_gaissach", "abfluss", "gaissach-16345007"),
+    ("q_ellbach", "abfluss", "bad-toelz-16391004"),
 ]
 
 COLUMN = {"wassertemperatur": "wassertemp", "abfluss": "abfluss"}
@@ -105,12 +115,26 @@ def fetch_series(label: str, kind: str, slug: str, last_year: int) -> pd.Series:
     return s.resample("1h").mean().rename(label)
 
 
-def build(last_year: int | None = None) -> pd.DataFrame:
+def build(last_year: int | None = None, *, refetch: bool = False) -> pd.DataFrame:
+    """Fetch every station, or only the ones the cache does not already hold.
+
+    Incremental by default: adding a gauge to ``STATIONS`` should cost one gauge's
+    requests, not twenty-nine. Pass ``refetch=True`` to rebuild the lot.
+    """
     last_year = last_year or pd.Timestamp.now(tz="UTC").year
     CACHE.mkdir(parents=True, exist_ok=True)
 
-    series = []
+    path = CACHE / "stations_hourly.csv"
+    have = pd.DataFrame()
+    if path.exists() and not refetch:
+        have = pd.read_csv(path, index_col=0, parse_dates=[0])
+        have.index = pd.DatetimeIndex(have.index).tz_convert("UTC")
+        logger.info("cache holds %d series; fetching only what is missing", have.shape[1])
+
+    series = [have[c] for c in have.columns]
     for label, kind, slug in STATIONS:
+        if label in have.columns:
+            continue
         s = fetch_series(label, kind, slug, last_year)
         series.append(s)
         logger.info("%-22s %6d hours, %s .. %s, %.0f%% present",
@@ -120,7 +144,6 @@ def build(last_year: int | None = None) -> pd.DataFrame:
     df = pd.concat(series, axis=1, sort=True).sort_index()
     valid = df["eisbach"].notna()
     df = df.loc[valid.idxmax(): valid[::-1].idxmax()]
-    path = CACHE / "stations_hourly.csv"
     df.to_csv(path)
     logger.info("Wrote %s: %d rows x %d columns", path, len(df), df.shape[1])
     return df
