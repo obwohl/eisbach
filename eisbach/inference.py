@@ -306,9 +306,25 @@ def run_inference(
     archive.write_weather_snapshot(
         snapshot.reset_index(), reference_time=last_timestamp, root=archive_root,
     )
-    archive.write_observations(
-        _observed_frame(df_wt, df_weather, last_timestamp), root=archive_root,
-    )
+    incoming = _observed_frame(df_wt, df_weather, last_timestamp)
+    existing = archive.read_observations(root=archive_root)
+    # Late weather may arrive after the water reading, including at a retracted
+    # water hour that _observed_frame deliberately omits. Only existing observation
+    # hours can receive a weather-only update; never archive future forecast values.
+    late_weather = df_weather.loc[
+        df_weather.index.isin(existing.index) & (df_weather.index <= last_timestamp),
+        OBSERVED_WEATHER_COLUMNS,
+    ]
+    incoming = incoming.combine_first(late_weather)
+    shared = incoming.index.intersection(existing.index)
+    # Preserve first-sample water observations and explicit retractions. For weather,
+    # fill previously missing fields but never restate an already archived value.
+    incoming.loc[shared, "wassertemp"] = float("nan")
+    for column in OBSERVED_WEATHER_COLUMNS:
+        if column in existing:
+            protected = shared[existing.loc[shared, column].notna()]
+            incoming.loc[protected, column] = float("nan")
+    archive.write_observations(incoming.dropna(how="all"), root=archive_root)
 
     backtests = {
         offset: _resolve_backtest(

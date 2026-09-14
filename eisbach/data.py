@@ -69,7 +69,8 @@ def fetch_brightsky_data(start_date: datetime, end_date: datetime,
     try:
         response = requests.get(BRIGHTSKY_URL, params=params, timeout=30)
         response.raise_for_status()
-        data = response.json().get("weather", [])
+        payload = response.json()
+        data = payload.get("weather", [])
     except requests.exceptions.RequestException:
         logger.exception("Bright Sky request failed")
         return None
@@ -78,11 +79,17 @@ def fetch_brightsky_data(start_date: datetime, end_date: datetime,
         logger.warning("Bright Sky returned no weather for the requested range")
         return pd.DataFrame()
 
+    sources = {source["id"]: source for source in payload.get("sources", [])}
+    for row in data:
+        source = sources.get(row.get("source_id"))
+        if source is None or str(source.get("dwd_station_id")).zfill(5) != station_id:
+            raise ValueError(f"Bright Sky returned an unverified station; expected {station_id}")
+
     logger.info("Loaded %d hourly weather points", len(data))
     return pd.DataFrame(data)
 
 
-def get_prepared_weather_data() -> pd.DataFrame:
+def get_prepared_weather_data(*, start_date=None, end_date=None) -> pd.DataFrame:
     """Return the hourly DWD weather in local time.
 
     Air temperature and pressure are the model's covariates. Precipitation and everything
@@ -95,8 +102,8 @@ def get_prepared_weather_data() -> pd.DataFrame:
     """
     now_local = datetime.now().astimezone()
     df_raw = fetch_brightsky_data(
-        now_local - timedelta(days=HISTORY_DAYS),
-        now_local + timedelta(days=FORECAST_DAYS),
+        start_date or now_local - timedelta(days=HISTORY_DAYS),
+        end_date or now_local + timedelta(days=FORECAST_DAYS),
         WEATHER_STATION_ID,
     )
     if df_raw is None or df_raw.empty:
@@ -126,13 +133,9 @@ def get_prepared_weather_data() -> pd.DataFrame:
         "pressure_msl": "pressure",
     })
 
-    weather["niederschlag_mm"] = weather["niederschlag_mm"].fillna(0)
-    weather["lufttemperatur_c"] = weather["lufttemperatur_c"].interpolate(method="time")
-    weather["pressure"] = weather["pressure"].interpolate(method="time")
-
     aggregation = {
         "lufttemperatur_c": "mean",
-        "niederschlag_mm": "sum",
+        "niederschlag_mm": lambda values: values.sum(min_count=1),
         "pressure": "mean",
     }
     for field in archived:
@@ -367,7 +370,7 @@ def reject_implausible_readings(df_wt: pd.DataFrame) -> pd.DataFrame:
 
 
 def prepare_data():
-    """Fetch everything the pipeline needs.
+    """Legacy direct-fetch helper; production now uses covariates.prepare_live.
 
     Returns ``(df_long, df_weather, df_wt)``: the model's input frame, the hourly weather
     in UTC, and the raw hourly water temperature. The latter two are returned separately
@@ -437,15 +440,17 @@ def assemble_long_frame(df_wt: pd.DataFrame, df_weather: pd.DataFrame) -> pd.Dat
     df_merged = df_merged.set_index('timestamp')
     df_merged = df_merged[df_merged.index.notna()].sort_index()
 
-    # Fill the water temperature only up to its last real observation. Filling beyond it
-    # would invent measurements for the window where only weather covariates exist, and
-    # the model would learn to trust them.
-    last_wt_time = df_wt['timestamp'].max()
-    df_merged.loc[:last_wt_time, 'wassertemp'] = (
-        df_merged.loc[:last_wt_time, 'wassertemp'].interpolate(method='time').ffill().bfill()
+    from eisbach.covariates import fill_short_gaps
+
+    # A whole one-hour internal gap may be interpolated for the model only. Longer
+    # gaps, edges and drained-river episodes remain missing; the model refuses them.
+    df_merged = df_merged.groupby(level=0).first().resample("1h").asfreq()
+    last_wt_time = df_wt.loc[df_wt["wassertemp"].notna(), "timestamp"].max()
+    df_merged.loc[:last_wt_time, "wassertemp"] = fill_short_gaps(
+        df_merged.loc[:last_wt_time, "wassertemp"], "eisbach",
     )
-    df_merged['airtemp'] = df_merged['airtemp'].interpolate(method='time').ffill().bfill()
-    df_merged['pressure'] = df_merged['pressure'].interpolate(method='time').ffill().bfill()
+    df_merged["airtemp"] = fill_short_gaps(df_merged["airtemp"], "airtemp")
+    df_merged["pressure"] = fill_short_gaps(df_merged["pressure"], "pressure")
 
     df_merged['airtemp_96'] = df_merged['airtemp'].shift(-COVARIATE_SHIFT_HOURS)
     df_merged['pressure_96'] = df_merged['pressure'].shift(-COVARIATE_SHIFT_HOURS)

@@ -70,6 +70,9 @@ jobs:
       # forecasts as they were issued, so it belongs in the repository. It is
       # month-partitioned, so each run appends to one small file.
       - name: Commit archive
+        # A quality-gate failure must not throw away the measurements and rejection
+        # decisions already persisted by refresh(). Preserve partial successful fetches.
+        if: ${{ !cancelled() }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

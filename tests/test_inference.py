@@ -457,3 +457,49 @@ def test_canonical_weather_prefers_processed_names():
     assert list(result.columns) == ["lufttemperatur_c", "pressure"]
     assert result["lufttemperatur_c"].tolist() == [10.0, 20.0, 30.0]
     assert result["pressure"].tolist() == [900.0, 901.0, 902.0]
+
+
+def test_covariate_backfill_cannot_restate_old_observations_or_retractions(run):
+    index = pd.DatetimeIndex([LAST_OBSERVATION - pd.Timedelta(hours=2),
+                              LAST_OBSERVATION - pd.Timedelta(hours=1)])
+    archive.write_observations(pd.DataFrame({"wassertemp": [7.7, np.nan]}, index=index), root=run.root)
+    run()
+    stored = archive.read_observations(root=run.root)
+    assert stored.loc[index[0], "wassertemp"] == 7.7
+    assert pd.isna(stored.loc[index[1], "wassertemp"])
+    assert LAST_OBSERVATION in stored.index
+
+
+def test_late_weather_fills_existing_hours_without_restating_measurements(run):
+    index = pd.DatetimeIndex([LAST_OBSERVATION - pd.Timedelta(hours=2),
+                              LAST_OBSERVATION - pd.Timedelta(hours=1)])
+    archive.write_observations(pd.DataFrame({
+        "wassertemp": [7.7, np.nan],
+        "lufttemperatur_c": [np.nan, 3.3],
+        "pressure": [999.0, np.nan],
+    }, index=index), root=run.root)
+    water = make_water()
+    # No current water reading at the retracted hour: its late weather must still merge.
+    water.loc[water.timestamp == index[1], "wassertemp"] = np.nan
+    weather = make_weather()
+    inference.run_inference(make_long_frame(), weather, water, archive_root=run.root)
+    stored = archive.read_observations(root=run.root)
+    assert stored.loc[index[0], "wassertemp"] == 7.7
+    assert pd.isna(stored.loc[index[1], "wassertemp"])
+    assert stored.loc[index[0], "lufttemperatur_c"] == pytest.approx(
+        weather.loc[index[0], "lufttemperatur_c"],
+    )
+    assert stored.loc[index[1], "pressure"] == pytest.approx(weather.loc[index[1], "pressure"])
+    assert stored.loc[index[0], "pressure"] == 999.0
+    assert stored.loc[index[1], "lufttemperatur_c"] == 3.3
+    assert stored.index.max() == LAST_OBSERVATION
+
+
+def test_late_weather_adds_columns_to_water_only_partition(run):
+    index = pd.DatetimeIndex([LAST_OBSERVATION - pd.Timedelta(hours=1)])
+    archive.write_observations(pd.DataFrame({"wassertemp": [7.7]}, index=index), root=run.root)
+    run()
+    stored = archive.read_observations(root=run.root)
+    assert stored.loc[index[0], "wassertemp"] == 7.7
+    for column in inference.OBSERVED_WEATHER_COLUMNS:
+        assert stored.loc[index[0], column] == pytest.approx(make_weather().loc[index[0], column])
