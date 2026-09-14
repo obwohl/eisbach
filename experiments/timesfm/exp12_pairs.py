@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 SCREEN_CONTEXT = 1024
 #: Where the screen's survivors are re-measured. exp1 found this the best hourly context.
 CONFIRM_CONTEXT = 8760
-BATCH = 16
+BATCH = 8
 FUTURE = ["airtemp", "t_catchment"]
 
 #: (label, temperature, discharge) at the same gauge, ordered down the catchment.
