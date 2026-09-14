@@ -16,13 +16,43 @@
   img { width: 100%; height: auto; margin: 1.25rem 0; border-radius: 4px }
   footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #8883; font-size: .9rem }
   a { color: inherit }
+
+  .models { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1.5rem 0 0 }
+  .models button {
+    font: inherit; padding: .4rem .9rem; border-radius: 999px; cursor: pointer;
+    border: 1px solid #8886; background: transparent; color: inherit;
+  }
+  .models button[aria-pressed="true"] { background: #1771F1; border-color: #1771F1; color: #fff }
+  .note { font-size: .9rem; color: #8889 }
+  [hidden] { display: none !important }
 </style>
 
 <h1>Eisbach water temperature</h1>
 <p>A 96-hour probabilistic forecast for the Eisbach in Munich, regenerated three times a day.
    Each plot carries its own issue time.</p>
 
-<img src="Prediction.png" alt="Forecast with recent history and air temperature">
+<!-- Without scripting the page still shows the model in production; the buttons simply
+     never appear, rather than leaving a dead control behind. -->
+<div class="models" id="models" hidden>
+  <button type="button" data-model="duet" aria-pressed="true">DUET (in production)</button>
+  <button type="button" data-model="timesfm" aria-pressed="false">TimesFM (candidate)</button>
+</div>
+
+<p class="note" id="about-duet">
+  The model that has been running since the start: 2.7&#8202;M parameters, trained on this
+  river, 16 days of context. Bands are q0.01&#8211;q0.99, q0.05&#8211;q0.95 and
+  q0.25&#8211;q0.75.
+</p>
+<p class="note" id="about-timesfm" hidden>
+  A zero-shot foundation model, not trained on this river, reading a full year of context
+  and eight covariates. It reports <strong>deciles only</strong>, so its bands are
+  q0.1&#8211;q0.9 and q0.2&#8211;q0.8. Those are narrower than DUET's outermost band by
+  construction, not by confidence &mdash; q0.1&#8211;q0.9 covers 80&#8202;% where
+  q0.01&#8211;q0.99 covers 98&#8202;%. Compare like with like.
+</p>
+
+<img id="forecast" src="Prediction.png"
+     alt="Forecast with recent history and air temperature">
 
 <h2>With backtests</h2>
 <p>The same forecast alongside backtests at &minus;96&#8202;h, &minus;192&#8202;h and
@@ -31,9 +61,51 @@
    Dashed ones are oracle backtests, computed with the weather that actually occurred,
    so they flatter the model and are not evidence of real-world skill.</p>
 
-<img src="Prediction_Backtest.png" alt="Forecast with three backtests">
+<img id="backtest" src="Prediction_Backtest.png" alt="Forecast with three backtests">
 
 <footer>
-  <a href="Prediction.csv">Quantiles as CSV</a> &middot;
+  <a id="csv" href="Prediction.csv">Quantiles as CSV</a> &middot;
   <a href="https://github.com/obwohl/eisbach">Source and method</a>
 </footer>
+
+<script>
+  const FILES = {
+    duet:    { forecast: 'Prediction.png',
+               backtest: 'Prediction_Backtest.png',
+               csv: 'Prediction.csv' },
+    timesfm: { forecast: 'Prediction_timesfm.png',
+               backtest: 'Prediction_Backtest_timesfm.png',
+               csv: 'Prediction_timesfm.csv' },
+  };
+
+  const els = {
+    forecast: document.getElementById('forecast'),
+    backtest: document.getElementById('backtest'),
+    csv: document.getElementById('csv'),
+  };
+  const buttons = [...document.querySelectorAll('#models button')];
+
+  function show(model) {
+    const files = FILES[model];
+    els.forecast.src = files.forecast;
+    els.backtest.src = files.backtest;
+    els.csv.href = files.csv;
+    for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.model === model));
+    document.getElementById('about-duet').hidden = model !== 'duet';
+    document.getElementById('about-timesfm').hidden = model !== 'timesfm';
+    try { localStorage.setItem('eisbach-model', model); } catch (e) { /* private window */ }
+  }
+
+  // Only offer the switch once the candidate's plot is actually there. A run that could
+  // not produce it — a missing dependency, a gauge outage upstream — then degrades to
+  // the production model rather than to a button that yields a broken image.
+  const probe = new Image();
+  probe.onload = () => {
+    document.getElementById('models').hidden = false;
+    for (const b of buttons) b.addEventListener('click', () => show(b.dataset.model));
+    let stored = null;
+    try { stored = localStorage.getItem('eisbach-model'); } catch (e) { /* ignore */ }
+    if (stored && FILES[stored]) show(stored);
+  };
+  probe.src = FILES.timesfm.forecast;
+</script>
