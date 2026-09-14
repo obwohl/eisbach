@@ -61,7 +61,9 @@ SOLAR = ["solar_hohenpeissenberg", "solar_garmisch"]
 #: Radiation gaps are short and the value between two measured hours is not in doubt, but
 #: a NaN handed to the model over the horizon is. Anything longer than this is left as a
 #: gap and the anchor filter drops the window instead of inventing a day of sunshine.
-MAX_GAP_HOURS = 3
+#: A day is the limit: Hohenpeißenberg's longest gap is four hours, so it fills entirely.
+#: Garmisch's longest is 1329 hours — 55 days — which no interpolation should touch.
+MAX_GAP_HOURS = 24
 
 
 def load() -> pd.DataFrame:
@@ -83,22 +85,34 @@ def load() -> pd.DataFrame:
         logger.info("%-26s %6d hours missing, %6d still missing after filling gaps "
                     "of up to %d h", col, before, df[col].isna().sum(), MAX_GAP_HOURS)
     df[f"{SOLAR[0]}_24h"] = df[SOLAR[0]].rolling(24, min_periods=24).sum()
+    # airtemp carries one 69-hour hole of its own, and it is a known-future covariate in
+    # every variant here, so it gets the same treatment rather than silently dropping a
+    # year of anchors around it.
+    df["airtemp"] = df["airtemp"].interpolate(limit=MAX_GAP_HOURS, limit_area="inside")
     return df
 
 
-def complete_anchors(df: pd.DataFrame, anchors: list[pd.Timestamp],
-                     cols: list[str]) -> list[pd.Timestamp]:
-    """Anchors whose whole window — context and horizon — carries every column.
+def usable_anchors(df: pd.DataFrame, anchors: list[pd.Timestamp],
+                   cols: list[str], *, context: int = CONFIRM_CONTEXT) -> list[pd.Timestamp]:
+    """Anchors whose window carries every column, context and horizon alike.
 
-    ``pick_anchors`` tolerates 5 % missing, which is right for a past-only covariate and
-    wrong for one handed over as known: a single NaN in the horizon poisons the forecast
-    rather than degrading it.
+    The first version of this demanded a spotless *year* of context for every column and
+    left 15 anchors out of 250, all of them inside an eighteen-month window — a paired
+    comparison on nothing. The cause was Garmisch's 1329-hour gap: every anchor within a
+    year of it died, whether or not the variant under test used Garmisch at all.
+
+    So gaps up to ``MAX_GAP_HOURS`` are filled first and only what survives that is
+    required to be clean. The horizon is the part that truly cannot carry a NaN — a
+    known-future covariate with a hole in it poisons the forecast rather than degrading
+    it — but a hole in the context is not obviously handled either, since the backend's
+    own interpolation is documented for the target and not for the covariates. Demanding
+    both is the safe reading; the cost is only the windows near a genuine multi-day gap.
     """
     idx = df.index
     kept = []
     for ts in anchors:
         pos = idx.get_loc(ts)
-        block = df[cols].iloc[pos - CONFIRM_CONTEXT + 1: pos + 1 + bench.HORIZON]
+        block = df[cols].iloc[pos - context + 1: pos + 1 + bench.HORIZON]
         if not block.isna().to_numpy().any():
             kept.append(ts)
     return kept
@@ -126,26 +140,33 @@ def solar_vs_air(df: pd.DataFrame) -> None:
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
-    from timesfm3 import TimesFM3Forecaster
 
     df = load()
     truth = df[TARGET]
     solar_vs_air(df)
 
-    needed = [*SETTLED, *SOLAR, f"{SOLAR[0]}_24h"]
-    anchors = pick_anchors(df, [*needed, TARGET], n=250)
-    anchors = complete_anchors(df, anchors, needed)
-    logger.info("%d anchors, %s .. %s", len(anchors), anchors[0], anchors[-1])
-    logger.info("per year: %s", pd.Series(anchors).dt.year.value_counts().sort_index().to_dict())
-
-    fc = TimesFM3Forecaster.from_pretrained("google/timesfm-3.0-pytorch")
-
     hp, ga = SOLAR
+    # Two anchor sets, because the two questions do not need the same data. Whether
+    # radiation helps at all is asked of Hohenpeißenberg, which is missing eleven hours in
+    # eight years; which of the two stations to use is asked only where both are present.
+    main_cols = [*SETTLED, hp, f"{hp}_24h"]
+    candidates = pick_anchors(df, [*main_cols, TARGET], n=250)
+    anchors = usable_anchors(df, candidates, main_cols)
+    logger.info("%d Anker, %s .. %s", len(anchors), anchors[0], anchors[-1])
+    logger.info("pro Jahr: %s",
+                pd.Series(anchors).dt.year.value_counts().sort_index().to_dict())
+
+    station_anchors = usable_anchors(df, anchors, [*main_cols, ga])
+    logger.info("%d davon auch mit Garmisch vollständig (%s .. %s)", len(station_anchors),
+                station_anchors[0] if station_anchors else "-",
+                station_anchors[-1] if station_anchors else "-")
+
+    fc = bench.load_forecaster()
+
     #: (label, known-future covariates, past-only covariates)
     variants = [
         ("ohne Strahlung", SETTLED, []),
         ("+ Hohenpeißenberg", [*SETTLED, hp], []),
-        ("+ Garmisch", [*SETTLED, ga], []),
         ("+ Hohenpeißenberg, nur Vergangenheit", SETTLED, [hp]),
         # The isolation check. Rain looked worthless alone and earned its place in the
         # full set, so a covariate measured on its own is measured on the wrong question.
@@ -157,11 +178,41 @@ def main() -> None:
         # already uses and the same objection applies to both: a uniform 24-hour window
         # is a weighting, however plain. It is here as one labelled variant so the
         # question is visible rather than decided by leaving it out.
-        ("+ Hohenpeißenberg als 24h-Summe (konstruiert)",
-         [*SETTLED, f"{hp}_24h"], []),
+        ("+ Hohenpeißenberg als 24h-Summe (konstruiert)", [*SETTLED, f"{hp}_24h"], []),
     ]
 
-    path = bench.CACHE / "exp13_solar.csv"
+    rows = sweep(fc, df, truth, anchors, variants, bench.CACHE / "exp13_solar.csv",
+                 context=SCREEN_CONTEXT)
+    report(pd.DataFrame(rows),
+           f"Screen bei {SCREEN_CONTEXT} h Kontext, {len(anchors)} Fenster")
+
+    # Which station, on the windows where the question is answerable at all.
+    if len(station_anchors) >= 50:
+        station_variants = [
+            ("ohne Strahlung", SETTLED, []),
+            ("+ Hohenpeißenberg", [*SETTLED, hp], []),
+            ("+ Garmisch", [*SETTLED, ga], []),
+        ]
+        st_rows = sweep(fc, df, truth, station_anchors, station_variants,
+                        bench.CACHE / "exp13_stations.csv", context=SCREEN_CONTEXT)
+        report(pd.DataFrame(st_rows),
+               f"Stationswahl, {len(station_anchors)} Fenster mit beiden Stationen")
+    else:
+        logger.warning("nur %d Fenster mit beiden Stationen — Stationsvergleich "
+                       "übersprungen, Hohenpeißenberg gewinnt kampflos auf Abdeckung",
+                       len(station_anchors))
+
+    # Confirmation of the main question at the context exp1 and exp11 both found best.
+    confirm = [v for v in variants
+               if v[0] in ("ohne Strahlung", "+ Hohenpeißenberg",
+                           "+ Hohenpeißenberg als 24h-Summe (konstruiert)")]
+    confirm_rows = sweep(fc, df, truth, anchors, confirm,
+                         bench.CACHE / "exp13_confirm.csv", context=CONFIRM_CONTEXT)
+    report(pd.DataFrame(confirm_rows),
+           f"Bestätigung bei {CONFIRM_CONTEXT} h, {len(anchors)} Fenster")
+
+
+def sweep(fc, df, truth, anchors, variants, path, *, context: int) -> list[dict]:
     rows = _resume(path, [label for label, _, _ in variants])
     done = {r["label"] for r in rows}
     for label, future, past_only in variants:
@@ -169,30 +220,10 @@ def main() -> None:
             continue
         t0 = time.time()
         rows += evaluate(fc, df, anchors, truth, label=label, past_only=past_only,
-                         context=SCREEN_CONTEXT, future=future)
+                         context=context, future=future)
         pd.DataFrame(rows).to_csv(path, index=False)
-        logger.info("%-38s %.0fs", label, time.time() - t0)
-
-    scores = pd.DataFrame(rows)
-    report(scores, f"Screen bei {SCREEN_CONTEXT} h Kontext, {len(anchors)} Fenster")
-
-    shortlist = ["+ Hohenpeißenberg", "+ Garmisch"]
-    confirm_path = bench.CACHE / "exp13_confirm.csv"
-    confirm_rows = _resume(confirm_path, ["ohne Strahlung", *shortlist])
-    confirm_done = {r["label"] for r in confirm_rows}
-    spec = {label: (future, past_only) for label, future, past_only in variants}
-    for label in ["ohne Strahlung", *shortlist]:
-        if label in confirm_done:
-            continue
-        future, past_only = spec[label]
-        t0 = time.time()
-        confirm_rows += evaluate(fc, df, anchors, truth, label=label, past_only=past_only,
-                                 context=CONFIRM_CONTEXT, future=future)
-        pd.DataFrame(confirm_rows).to_csv(confirm_path, index=False)
-        logger.info("confirm %-30s %.0fs", label, time.time() - t0)
-
-    report(pd.DataFrame(confirm_rows),
-           f"Bestätigung bei {CONFIRM_CONTEXT} h, {len(anchors)} Fenster")
+        logger.info("ctx=%d %-46s %.0fs", context, label, time.time() - t0)
+    return rows
 
 
 def report(scores: pd.DataFrame, title: str) -> None:
