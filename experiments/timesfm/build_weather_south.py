@@ -6,7 +6,9 @@ which is where the river is actually made. Rain is the starker case: a thunderst
 Munich adds almost nothing to the Isar, while the same storm over Lenggries arrives as
 real volume at a different temperature.
 
-Five locations up the catchment plus Munich itself, air temperature and precipitation.
+Five locations up the catchment plus Munich itself: air temperature, precipitation and
+global radiation — the last being the energy that actually heats the water, where air
+temperature is only its proxy.
 Bright Sky stitches observations and the DWD forecast at a coordinate, so every one of
 these is available **as past and as future** — a genuine known-future covariate, not an
 oracle, once the pipeline asks for it at run time.
@@ -45,7 +47,7 @@ LOCATIONS = {
     "garmisch": (47.483, 11.062),
 }
 
-FIELDS = ("temperature", "precipitation")
+FIELDS = ("temperature", "precipitation", "solar")
 
 
 def fetch_location(name: str, lat: float, lon: float, last_year: int) -> pd.DataFrame:
@@ -78,7 +80,8 @@ def fetch_location(name: str, lat: float, lon: float, last_year: int) -> pd.Data
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
     df = df.sort_values("timestamp").drop_duplicates("timestamp").set_index("timestamp")
     out = df[[f for f in FIELDS if f in df.columns]].resample("1h").mean()
-    return out.rename(columns={"temperature": f"t_{name}", "precipitation": f"rain_{name}"})
+    return out.rename(columns={"temperature": f"t_{name}", "precipitation": f"rain_{name}",
+                              "solar": f"solar_{name}"})
 
 
 def build(last_year: int | None = None) -> pd.DataFrame:

@@ -29,7 +29,7 @@ from exp8_catchment_weather import load_all  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
-BATCH = 4
+BATCH = 2
 
 #: What experiments 6 to 8 left standing, in the order they earned their place.
 UPSTREAM = ["isar_lenggries", "isar_toelz", "q_lenggries", "q_toelz_kw"]
