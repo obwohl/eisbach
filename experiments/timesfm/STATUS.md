@@ -39,6 +39,7 @@ its 24-hour sum. Nothing in the set below is constructed any more.
 | `t_catchment` | known-future | −4.1 % MAE, −4.3 % CRPS | exp8 |
 | four raw rain gauges, hourly | known-future | −2.5 % MAE, −2.7 % CRPS on top of air + Bad Tölz | exp15 |
 | `isar_toelz` (Wassertemperatur) | past-only | −4.7 % MAE, −4.6 % CRPS at full context | exp12 |
+| `loisach_beuerberg` (Wassertemperatur) | past-only | −2.83 % MAE beside the fixed set at full context; paired 95% block interval [−5.25%, −0.40%] | [exp17](REPORT_exp17.md) |
 | `solar_hohenpeissenberg`, hourly | known-future | **−5.8 % MAE, −5.9 % CRPS** at a year of context, better in 65 % of 212 windows | exp13 |
 
 `t_catchment` is **one southern station**, not a mean of four: Bright Sky answers for a
@@ -60,16 +61,32 @@ windows where both exist).
 | `schwabinger_bach` | Branches off **below** the gauge. |
 | `q_sylvenstein` / `q_sylvensteinsee_ab` | Pooled −0.6 %, but the whole gain is 2024: drop that year and it turns +0.3 %. In 2022 it costs +3.8 % MAE, interval excluding zero. And the two correlate at r = 0.996. |
 | `loisach_eschenlohe` | Beats bare weather, adds +0.25 % beside Bad Tölz. |
+| `isar_lenggries` | Worsens the fixed set and the leading pair in exp17. |
+| `isar_puppling` | Its tiny gain beside Beuerberg fails on 68 new origins: +1.55 % MAE, interval [−0.03%, +3.00%]. See exp17. |
 | 24-hour sums (rain, radiation) | Raw beats constructed in both cases. |
 | heat flux `Q × T` | exp18: nothing over the two raw series. The model forms the product itself when it needs it. |
 | 15-minute resolution | See above. |
 
-## What we do not have yet
+## Settled: final set against DUET
 
-**One run of the whole set against one baseline.** Every number above is an increment
-measured on its own anchor set, against its own reference. They cannot be added up, and I
-have never measured the final configuration end to end. That is the number that answers
-"how much better are we", and it does not exist yet.
+The incremental effects above cannot be added. An end-to-end comparison now exists:
+[exp19](REPORT_exp19.md), 24 daily 96-hour windows in August–September 2026,
+**oracle against oracle**. Final TimesFM achieves MAE 0.3028 vs 0.4534 °C and
+shared-decile CRPS 0.1979 vs 0.2987 °C for DUET. This is a comparison of the fixed
+systems with their respective contexts and inputs, not an isolated architecture test.
+
+[exp20](REPORT_exp20.md) reruns the old DUET adapter before the production changes
+on 23 starts before the September sensor fault. Its quantiles exactly reproduce
+the comparison baseline. TimesFM still improves MAE by **32.0 %** and CRPS by
+**32.7 %**. These overlapping seasonal windows do not prove a universal advantage.
+
+The huge current production bands are caused by one historical **154.4 °C** water
+reading. Repairing only that hour reproduces normal-width bands with unchanged
+weights and weather. The implausible-reading guard exists on this research branch
+but is absent from the audited production commit. The audit did not deploy a fix.
+
+Still open: a live comparison of the complete final set with archived weather
+forecasts for all its inputs. The oracle result does not replace that measurement.
 
 What *is* measured end to end is older and narrower: TimesFM zero-shot with the replayed
 DWD forecast beat the live DUET on 76 identical windows, 0.290 against 0.422 MAE and
