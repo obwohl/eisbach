@@ -286,6 +286,12 @@ def prepare_inputs(target: np.ndarray, past_only: np.ndarray | None,
     every score already recorded in ``data/experiments``. It switches on for MLX, where it
     is the difference between a forecast and a NaN, or with ``force``.
 
+    ``target`` may be one series or a stack of them, ``(variates, time)``, since TimesFM
+    3.0 forecasts several at once — exp9 hands it a stack. The trim is then over time, at
+    the first step where every variate is present: slicing a stack as if it were one
+    series would cut away variates rather than leading NaN, and quietly forecast the
+    wrong thing.
+
     Never touches the arrays it is given, and never the truth used for scoring.
     """
     import os
@@ -298,16 +304,19 @@ def prepare_inputs(target: np.ndarray, past_only: np.ndarray | None,
     past_future = (None if past_future is None
                    else np.array(past_future, dtype=np.float32, copy=True))
 
+    # Validity per time step: for a stack, a step counts only if every variate has it.
     valid = ~np.isnan(target)
+    if valid.ndim > 1:
+        valid = valid.all(axis=0)
     if valid.any():
         first = int(np.argmax(valid))
-        target = target[first:]
+        target = target[..., first:]
         if past_only is not None:
             past_only = past_only[:, first:]
         if past_future is not None:
             past_future = past_future[:, first:]
     else:
-        target[:] = 0.0
+        target[...] = 0.0
 
     for arr in (target, past_only, past_future):
         if arr is None:
