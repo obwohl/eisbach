@@ -66,6 +66,14 @@ MAX_GAP_HOURS = 3
 
 def load() -> pd.DataFrame:
     df = load_all()
+    # The coordinate-derived solar columns go first, and by name rather than by being
+    # quietly overwritten: they are the stitched ones, four of them identical and with a
+    # source change in September 2020. One of them is even called solar_garmisch, which
+    # is not the Garmisch station but whatever was nearest to Garmisch that month.
+    stitched = [c for c in df.columns if c.startswith("solar_")]
+    df = df.drop(columns=stitched)
+    logger.info("dropped %d coordinate-derived solar columns: %s",
+                len(stitched), ", ".join(stitched))
     solar = pd.read_csv(bench.CACHE / "solar_stations.csv", index_col=0, parse_dates=[0])
     solar.index = pd.DatetimeIndex(solar.index).tz_convert("UTC")
     df = df.join(solar, how="left")
@@ -74,6 +82,7 @@ def load() -> pd.DataFrame:
         df[col] = df[col].interpolate(limit=MAX_GAP_HOURS, limit_area="inside")
         logger.info("%-26s %6d hours missing, %6d still missing after filling gaps "
                     "of up to %d h", col, before, df[col].isna().sum(), MAX_GAP_HOURS)
+    df[f"{SOLAR[0]}_24h"] = df[SOLAR[0]].rolling(24, min_periods=24).sum()
     return df
 
 
@@ -123,8 +132,9 @@ def main() -> None:
     truth = df[TARGET]
     solar_vs_air(df)
 
-    anchors = pick_anchors(df, [*SETTLED, *SOLAR, TARGET], n=250)
-    anchors = complete_anchors(df, anchors, [*SETTLED, *SOLAR])
+    needed = [*SETTLED, *SOLAR, f"{SOLAR[0]}_24h"]
+    anchors = pick_anchors(df, [*needed, TARGET], n=250)
+    anchors = complete_anchors(df, anchors, needed)
     logger.info("%d anchors, %s .. %s", len(anchors), anchors[0], anchors[-1])
     logger.info("per year: %s", pd.Series(anchors).dt.year.value_counts().sort_index().to_dict())
 
@@ -141,6 +151,14 @@ def main() -> None:
         # full set, so a covariate measured on its own is measured on the wrong question.
         ("nur Luft + Hohenpeißenberg", ["airtemp", hp], []),
         ("nur Luft", ["airtemp"], []),
+        # Constructed, and flagged as such. An hour of radiation is mostly the time of
+        # day — zero every night — and correlates only +0.27 with the water; the running
+        # day-sum correlates +0.66. It is the same transformation `rain_catchment_24h`
+        # already uses and the same objection applies to both: a uniform 24-hour window
+        # is a weighting, however plain. It is here as one labelled variant so the
+        # question is visible rather than decided by leaving it out.
+        ("+ Hohenpeißenberg als 24h-Summe (konstruiert)",
+         [*SETTLED, f"{hp}_24h"], []),
     ]
 
     path = bench.CACHE / "exp13_solar.csv"
