@@ -54,7 +54,7 @@ windows where both exist).
 
 | series | why |
 |---|---|
-| **every discharge** | exp12, six gauges: alone indistinguishable from zero, and next to its own temperature −0.4 % to −0.7 % with every interval crossing zero and "better in" at 51–54 %. The idea that a temperature is unreadable without the volume behind it does not survive contact with the data. |
+| **discharge from the weather-conditioned set** | exp12 found no clear gain at six gauges. exp18 confirms no resolved Q increment beside Bad Tölz T and oracle air weather at full context (+0.26 % MAE, −0.05 % CRPS; intervals also do not establish ±1 % equivalence). **Without weather**, Q improves T by −3.0 % MAE / −2.9 % CRPS, especially in moving windows. This is conditional redundancy evidence, not physical irrelevance; see [exp18](REPORT_exp18.md). |
 | `isar_mittenwald`, `rissbach_klamm` | Above the Krün diversion, where most of their water leaves for the Walchensee. The two that fail are exactly the two upstream of it. |
 | `isar_muenchen` | r = 0.999 with the target and +1.7 % MAE. A near-duplicate carries no lead time. |
 | `schwabinger_bach` | Branches off **below** the gauge. |

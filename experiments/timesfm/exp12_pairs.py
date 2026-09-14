@@ -74,7 +74,7 @@ def evaluate(fc, df, anchors, truth, *, label: str, past_only: list[str],
                 if past_only else None)
             pf_list.append(np.stack([
                 df[c].iloc[lo:pos + 1 + bench.HORIZON].to_numpy(dtype=np.float32)
-                for c in future]))
+                for c in future]) if future else None)
             metas.append((ts, idx[pos + 1: pos + 1 + bench.HORIZON]))
         # Per window, not per batch. A no-op on PyTorch, which does this internally; on
         # MLX it is the difference between a forecast and a column of NaN.

@@ -1,53 +1,21 @@
-"""Experiment 18 — the discharge question, asked without the weather in the room.
+"""Experiment 18 — predictive value of discharge, with and without weather.
 
-exp12 walked six measuring points and found the discharge worthless: on its own
-indistinguishable from zero, and next to its own water temperature worth −0.4 % to
-−0.7 % with every interval crossing zero and "better in" at 51–54 %, a coin flip.
+exp12 tested discharge conditional on airtemp and t_catchment. Here eleven variants
+compare the Eisbach's own history, upstream water temperature T, discharge Q, and
+T*Q, with and without those same two oracle weather covariates. T is Bad Tölz B472
+water temperature; Q is Bad Tölz KW discharge, at a different measuring point.
 
-But exp12 always asked with `airtemp` and `t_catchment` already handed over. That is the
-question "does the discharge add anything **to a model that already knows the weather**",
-and it is not the same question as "does the discharge carry information about the
-Eisbach". Air temperature drives both the Isar's temperature and, through snowmelt and
-rain, a good deal of its volume, so it can stand in for a covariate that is genuinely
-informative and leave it looking redundant.
+T*Q is the sole permitted constructed feature. Its units are m³·°C/s: it is a
+heat-transport proxy relative to 0 °C, not a heat flux in watts or a measured heat
+input to the Eisbach. Useful predictions would not establish a causal mechanism;
+a null result would not establish physical irrelevance.
 
-The intuition being tested is a physical one and a reasonable one: 50 m³/s at 11 °C and
-200 m³/s at 11 °C are very different amounts of heat arriving downstream, and it is hard
-to believe the quantity is irrelevant. Nothing so far has actually cornered it.
-
-So this strips the model back to the river:
-
-* `nur Eisbach` — univariate, nothing but its own history
-* `+ T` — the Bad Tölz water temperature
-* `+ Q` — the Bad Tölz discharge, without the temperature
-* `+ T + Q` — both
-
-and then runs the identical four **with** the settled weather, so the two readings sit
-side by side. If the discharge helps bare and stops helping once the weather is present,
-that is an answer — redundancy, not irrelevance — and a different one from exp12's.
-
-Names, because they matter here: `isar_toelz` is the **water temperature** at the Bad Tölz
-measuring point; `q_toelz_kw` is the **discharge**, from the Bad Tölz power-station gauge.
-
-The heat flux `Q × T` is in here too, as the one exception to the no-invented-features
-rule. It is not an invented weighting: it is a physical quantity with a unit, the heat
-arriving per second relative to 0 °C, and it is exactly what the intuition above is
-about. If the model cannot combine two raw series into it but can use it when handed it
-ready-made, that is worth knowing. The deleted `t_mix` was a different animal — a
-discharge-weighted *mixture* with coefficients nobody could justify.
-
-Scored twice: pooled, and split by how much the river actually moved. A covariate can be
-worth nothing on a plateau and everything across a cold snap, and the pooled mean, which
-is mostly plateaus, would hide it. The swing classification is exp5's.
-
-**Escalation, not grinding.** Every variant starts on 100 windows at a short context,
-which costs under a minute, and only what is still *undecided* goes on to 250 windows and
-then to a year of context. Undecided has a definition here rather than a feeling: an
-interval that excludes zero has answered, and so has an interval that lies entirely
-within ±1 %, because that is a tight null — the effect is measured and it is negligible.
-Escalation is for intervals that are wide, meaning the sample is too small to tell, not
-for intervals that are narrow and centred on nothing. Grinding a null down to another
-decimal place buys nothing.
+The compute ladder uses paired IID intervals as an exploratory stopping rule:
+exclude zero, or fall wholly inside the practical ±1% margin, to stop a comparison.
+These are not sequentially or multiplicity-adjusted confidence statements. Changing
+context also changes the forecasting question. audit_exp18.py checks decoder parity
+and screened-out variants at full context; report_exp18.py adds calendar-block and
+movement-regime sensitivities without fitting additional models.
 """
 from __future__ import annotations
 
@@ -56,6 +24,7 @@ import sys
 import time
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -83,6 +52,12 @@ LADDER = [(100, SCREEN_CONTEXT), (250, SCREEN_CONTEXT), (250, CONFIRM_CONTEXT)]
 NEGLIGIBLE_PCT = 1.0
 
 
+def select_anchors(anchors, n: int):
+    """A nested screen spanning the full ordered confirmation sample."""
+    indices = np.linspace(0, len(anchors) - 1, min(n, len(anchors))).round().astype(int)
+    return [anchors[i] for i in indices]
+
+
 def verdict(subset: pd.DataFrame, candidate: str, reference: str,
             metric: str) -> tuple[str, float, float, float]:
     """Decided how, and by how much — in percent of the reference's own score."""
@@ -92,7 +67,8 @@ def verdict(subset: pd.DataFrame, candidate: str, reference: str,
     if row.empty:
         return "fehlt", float("nan"), float("nan"), float("nan")
     r = row.iloc[0]
-    base = bench.pool(subset[subset.label == reference])[metric].iloc[0]
+    # Match paired(): one equally weighted score per forecast window.
+    base = bench.per_run(subset, metric)[reference].mean()
     lo, hi = 100 * r["ci_lo"] / base, 100 * r["ci_hi"] / base
     if hi < 0:
         return "hilft", r["pct"], lo, hi
@@ -159,7 +135,7 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 
     df = load_all()
-    # Heat flux relative to 0 °C: m³/s x °C. A physical quantity, not a fitted weight.
+    # Heat-transport proxy relative to 0 °C: m³/s x °C; watts would require rho*c_p.
     df[FLUX] = df[Q] * df[T]
     truth = df[TARGET]
     anchors = pick_anchors(df, [*WEATHER, T, Q, TARGET], n=250)
@@ -213,8 +189,7 @@ def main() -> None:
             logger.info("alles entschieden — Stufe %d entfällt", stage)
             break
         # A nested subset, so a stage never changes which windows an earlier one used.
-        step = max(1, len(anchors) // n_windows)
-        subset_anchors = anchors[::step][:n_windows]
+        subset_anchors = select_anchors(anchors, n_windows)
         needed = {lab for pair in open_pairs for lab in pair}
         stage_variants = [v for v in variants if v[0] in needed]
         logger.info("Stufe %d: %d Fenster, %d h Kontext, %d Varianten, %d offene Fragen",
@@ -235,16 +210,17 @@ def main() -> None:
             line = "  ".join(f"{m.upper()} {v[0]} ({v[1]:+.2f} % "
                              f"[{v[2]:+.2f},{v[3]:+.2f}])" for m, v in calls.items())
             print(f"   {candidate:20s} vs {reference:16s} {line}")
-            if any(v[0] == "unentschieden" for v in calls.values()):
+            if any(v[0] in ("unentschieden", "fehlt") for v in calls.values()):
                 still_open.append((candidate, reference))
         open_pairs = still_open
 
     if open_pairs:
         print("\nNach der letzten Stufe noch unentschieden: "
               + ", ".join(f"{c} vs {r}" for c, r in open_pairs))
-        print("Das heißt: der Effekt ist zu klein, um ihn mit diesem Aufwand von null zu "
-              "trennen, und zu groß, um ihn belanglos zu nennen. Mehr Fenster würden das "
-              "ändern; ob die Antwort eine Entscheidung ändert, ist eine andere Frage.")
+        print("Die Intervalle erlauben weder eine Richtung noch Äquivalenz innerhalb ±1 %. "
+              "Das ist Unsicherheit über den Effekt, kein Nachweis seiner Größe. "
+              "Mehr Fenster garantieren keine Entscheidung; Blockabhängigkeit und "
+              "Kontextwechsel sind gesondert zu prüfen.")
     else:
         print("\nAlles entschieden.")
 
