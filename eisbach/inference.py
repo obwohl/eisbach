@@ -306,9 +306,11 @@ def run_inference(
     archive.write_weather_snapshot(
         snapshot.reset_index(), reference_time=last_timestamp, root=archive_root,
     )
-    archive.write_observations(
-        _observed_frame(df_wt, df_weather, last_timestamp), root=archive_root,
-    )
+    incoming = _observed_frame(df_wt, df_weather, last_timestamp)
+    existing = archive.read_observations(root=archive_root)
+    # Covariate backfill uses hourly means; historical production observations used
+    # the first sample. Never restate those values or resurrect a retracted row.
+    archive.write_observations(incoming.loc[~incoming.index.isin(existing.index)], root=archive_root)
 
     backtests = {
         offset: _resolve_backtest(

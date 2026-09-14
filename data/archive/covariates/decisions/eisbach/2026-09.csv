@@ -1,0 +1,2 @@
+timestamp,raw_value,value,status,reason,policy,series
+2026-09-09 08:00:00+00:00,65.775,,never_measured,outside_physical_range,v1,eisbach

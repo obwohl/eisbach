@@ -457,3 +457,14 @@ def test_canonical_weather_prefers_processed_names():
     assert list(result.columns) == ["lufttemperatur_c", "pressure"]
     assert result["lufttemperatur_c"].tolist() == [10.0, 20.0, 30.0]
     assert result["pressure"].tolist() == [900.0, 901.0, 902.0]
+
+
+def test_covariate_backfill_cannot_restate_old_observations_or_retractions(run):
+    index = pd.DatetimeIndex([LAST_OBSERVATION - pd.Timedelta(hours=2),
+                              LAST_OBSERVATION - pd.Timedelta(hours=1)])
+    archive.write_observations(pd.DataFrame({"wassertemp": [7.7, np.nan]}, index=index), root=run.root)
+    run()
+    stored = archive.read_observations(root=run.root)
+    assert stored.loc[index[0], "wassertemp"] == 7.7
+    assert pd.isna(stored.loc[index[1], "wassertemp"])
+    assert LAST_OBSERVATION in stored.index

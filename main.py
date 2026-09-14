@@ -9,7 +9,7 @@ import sys
 
 import pandas as pd
 
-from eisbach.data import prepare_data
+from eisbach.covariates import prepare_live
 from eisbach.inference import run_inference
 from eisbach.plotting import plot_forecasts
 from eisbach.validate import validate_run
@@ -24,7 +24,7 @@ def main() -> int:
         issued_at = pd.Timestamp.now(tz="UTC")
 
         logger.info("Fetching water temperature and weather...")
-        df_long, df_weather, df_wt = prepare_data()
+        df_long, df_weather, df_wt = prepare_live()
 
         logger.info("Running forecast and backtests...")
         df_inference, backtests = run_inference(df_long, df_weather, df_wt)
