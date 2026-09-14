@@ -15,6 +15,7 @@ The Eisbach is always variate 0, and only its forecast is scored.
 from __future__ import annotations
 
 import logging
+import pathlib
 import sys
 import time
 from pathlib import Path
@@ -24,12 +25,18 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bench  # noqa: E402
-from exp6_upstream import CONTEXT, TARGET, pick_anchors  # noqa: E402
+from exp6_upstream import TARGET, pick_anchors  # noqa: E402
 from exp8_catchment_weather import load_all  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
-BATCH = 2
+BATCH = 8
+
+#: Screen cheaply, confirm at the context exp1 and exp11 both found best. The first
+#: attempt at this experiment ran every variant at 8760 h and was still on its baseline
+#: after an hour.
+SCREEN_CONTEXT = 1024
+CONFIRM_CONTEXT = 8760
 
 #: What experiments 6 to 8 left standing, in the order they earned their place.
 UPSTREAM = ["isar_lenggries", "isar_toelz", "q_lenggries", "q_toelz_kw"]
@@ -37,7 +44,7 @@ WEATHER = ["airtemp", "t_catchment"]
 
 
 def evaluate(fc, df, anchors, truth, *, label: str, targets: list[str],
-             past_only: list[str], future: list[str]) -> list[dict]:
+             past_only: list[str], future: list[str], context: int) -> list[dict]:
     """``targets`` are forecast alongside the Eisbach; only the Eisbach is scored."""
     idx = df.index
     rows = []
@@ -46,7 +53,7 @@ def evaluate(fc, df, anchors, truth, *, label: str, targets: list[str],
         contexts, po_list, pf_list, metas = [], [], [], []
         for ts in chunk:
             pos = idx.get_loc(ts)
-            lo = pos - CONTEXT + 1
+            lo = pos - context + 1
             block = [truth.iloc[lo:pos + 1].to_numpy(dtype=np.float32)]
             block += [df[c].iloc[lo:pos + 1].to_numpy(dtype=np.float32) for c in targets]
             contexts.append(np.stack(block) if targets else block[0])
@@ -74,14 +81,13 @@ def evaluate(fc, df, anchors, truth, *, label: str, targets: list[str],
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
-    from timesfm3 import TimesFM3Forecaster
 
     df = load_all()
     truth = df[TARGET]
     anchors = pick_anchors(df, WEATHER + UPSTREAM + [TARGET], n=150)
     logger.info("%d anchors, %s .. %s", len(anchors), anchors[0], anchors[-1])
 
-    fc = TimesFM3Forecaster.from_pretrained("google/timesfm-3.0-pytorch")
+    fc = bench.load_forecaster()
 
     temps = ["isar_lenggries", "isar_toelz"]
     flows = ["q_lenggries", "q_toelz_kw"]
@@ -93,28 +99,41 @@ def main() -> None:
         ("temps as targets, none as covariates", temps, [], WEATHER),
     ]
 
-    rows = []
-    for label, targets, past_only, future in variants:
-        t0 = time.time()
-        rows += evaluate(fc, df, anchors, truth, label=label, targets=targets,
-                         past_only=past_only, future=future)
-        logger.info("%-38s %d targets, %d past-only  %.0fs",
-                    label, 1 + len(targets), len(past_only), time.time() - t0)
+    def sweep(context: int, subset, path: pathlib.Path) -> pd.DataFrame:
+        rows = []
+        for label, targets, past_only, future in subset:
+            t0 = time.time()
+            rows += evaluate(fc, df, anchors, truth, label=label, targets=targets,
+                             past_only=past_only, future=future, context=context)
+            pd.DataFrame(rows).to_csv(path, index=False)
+            logger.info("ctx=%d %-38s %d targets  %.0fs",
+                        context, label, 1 + len(targets), time.time() - t0)
+        return pd.DataFrame(rows)
 
-    scores = pd.DataFrame(rows)
-    scores.to_csv(bench.CACHE / "exp9_targets.csv", index=False)
-
-    print(f"\n=== covariate or target, {len(anchors)} windows ===")
-    print(bench.pool(scores)[["label", "n", "runs", "mae", "crps", "cov_80", "width_80"]]
-          .to_string(index=False))
-    for metric in ("mae", "crps"):
-        print(f"\n--- {metric.upper()} against 'upstream as covariates', paired ---")
-        p = bench.paired(scores, "upstream as covariates", metric=metric)
-        print(p[["label", metric, "pct", "ci_lo", "ci_hi", "better_in", "verdict"]]
+    def show(scores: pd.DataFrame, title: str) -> pd.DataFrame:
+        print(f"\n=== {title} ===")
+        print(bench.pool(scores)[["label", "n", "runs", "mae", "crps", "cov_80", "width_80"]]
               .to_string(index=False))
-    print("\n--- MAE by lead bucket ---")
-    print(bench.pool(scores, by=["label", "lead_lo"]).pivot(
-        index="label", columns="lead_lo", values="mae").round(3).to_string())
+        out = None
+        for metric in ("mae", "crps"):
+            p = bench.paired(scores, "upstream as covariates", metric=metric)
+            out = out if out is not None else p
+            print(f"\n--- {metric.upper()} against 'upstream as covariates', paired ---")
+            print(p[["label", metric, "pct", "ci_lo", "ci_hi", "better_in", "verdict"]]
+                  .to_string(index=False))
+        print("\n--- MAE by lead bucket ---")
+        print(bench.pool(scores, by=["label", "lead_lo"]).pivot(
+            index="label", columns="lead_lo", values="mae").round(3).to_string())
+        return out
+
+    screened = sweep(SCREEN_CONTEXT, variants, bench.CACHE / "exp9_targets.csv")
+    ranked = show(screened, f"screen at {SCREEN_CONTEXT} h, {len(anchors)} windows")
+
+    keep = ["upstream as covariates"] + [lab for lab in ranked.label
+                                         if lab != "baseline: air only"][:2]
+    subset = [v for v in variants if v[0] in keep]
+    confirmed = sweep(CONFIRM_CONTEXT, subset, bench.CACHE / "exp9_confirm.csv")
+    show(confirmed, f"confirmation at {CONFIRM_CONTEXT} h, {len(anchors)} windows")
 
 
 if __name__ == "__main__":
