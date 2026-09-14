@@ -39,7 +39,7 @@ its 24-hour sum. Nothing in the set below is constructed any more.
 | `t_catchment` | known-future | −4.1 % MAE, −4.3 % CRPS | exp8 |
 | four raw rain gauges, hourly | known-future | −2.5 % MAE, −2.7 % CRPS on top of air + Bad Tölz | exp15 |
 | `isar_toelz` (Wassertemperatur) | past-only | −4.7 % MAE, −4.6 % CRPS at full context | exp12 |
-| `solar_hohenpeissenberg`, hourly | known-future | −4.2 % MAE, −4.3 % CRPS at screen context | exp13 *(confirmation running)* |
+| `solar_hohenpeissenberg`, hourly | known-future | **−5.8 % MAE, −5.9 % CRPS** at a year of context, better in 65 % of 212 windows | exp13 |
 
 `t_catchment` is **one southern station**, not a mean of four: Bright Sky answers for a
 coordinate and all four southern coordinates resolve to the same station, differing by
@@ -61,6 +61,7 @@ windows where both exist).
 | `q_sylvenstein` / `q_sylvensteinsee_ab` | Pooled −0.6 %, but the whole gain is 2024: drop that year and it turns +0.3 %. In 2022 it costs +3.8 % MAE, interval excluding zero. And the two correlate at r = 0.996. |
 | `loisach_eschenlohe` | Beats bare weather, adds +0.25 % beside Bad Tölz. |
 | 24-hour sums (rain, radiation) | Raw beats constructed in both cases. |
+| heat flux `Q × T` | exp18: nothing over the two raw series. The model forms the product itself when it needs it. |
 | 15-minute resolution | See above. |
 
 ## What we do not have yet
