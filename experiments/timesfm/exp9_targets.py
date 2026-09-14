@@ -38,8 +38,12 @@ BATCH = 8
 SCREEN_CONTEXT = 1024
 CONFIRM_CONTEXT = 8760
 
-#: What experiments 6 to 8 left standing, in the order they earned their place.
-UPSTREAM = ["isar_lenggries", "isar_toelz", "q_lenggries", "q_toelz_kw"]
+#: What exp12 left standing. It walked six gauges and found every main-stem *temperature*
+#: below the Krün diversion beating the weather baseline, every *discharge* alone
+#: indistinguishable from zero, and the discharge next to its own temperature worth
+#: nothing at any of the six — six intervals, six containing zero. So the discharges are
+#: gone from this design, and the question is asked of the series that actually carry.
+UPSTREAM = ["isar_toelz", "isar_lenggries"]
 WEATHER = ["airtemp", "t_catchment"]
 
 
@@ -89,14 +93,19 @@ def main() -> None:
 
     fc = bench.load_forecaster()
 
-    temps = ["isar_lenggries", "isar_toelz"]
-    flows = ["q_lenggries", "q_toelz_kw"]
+    best = ["isar_toelz"]  # exp12's strongest single gauge: -4.2 % MAE, -4.3 % CRPS.
     variants = [
         ("baseline: air only", [], [], ["airtemp"]),
+        # The reference both framings are measured against.
         ("upstream as covariates", [], UPSTREAM, WEATHER),
-        ("upstream temps as targets", temps, flows, WEATHER),
-        ("all four upstream as targets", UPSTREAM, [], WEATHER),
-        ("temps as targets, none as covariates", temps, [], WEATHER),
+        ("upstream as targets", UPSTREAM, [], WEATHER),
+        # One gauge, both ways. Two targets may simply cost more capacity than one gauge
+        # is worth, which would confound the framing question with a count question.
+        ("Bad Tölz only, as covariate", [], best, WEATHER),
+        ("Bad Tölz only, as target", best, [], WEATHER),
+        # Both at once: forecast alongside *and* handed over. TimesFM allows it, and if
+        # the two paths carry different things it should beat either alone.
+        ("upstream as targets and covariates", UPSTREAM, UPSTREAM, WEATHER),
     ]
 
     def sweep(context: int, subset, path: pathlib.Path) -> pd.DataFrame:
