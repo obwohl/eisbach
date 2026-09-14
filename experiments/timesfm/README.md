@@ -82,6 +82,16 @@ retraining — it can, and it does not help).
 
 ## Traps
 
+* **MLX 3.0.2 does not fill missing inputs as PyTorch does.** The exp11 completeness
+  threshold deliberately permits gaps. Without input preparation, all 120 local windows
+  produced NaN forecasts. `exp11_resolution.model_inputs()` mirrors PyTorch's leading
+  target-gap trimming and per-series linear interpolation on input copies only; scoring
+  truth stays unchanged. Non-finite forecasts now raise before scoring. Run its regression
+  checks explicitly with `pytest -q experiments/timesfm/test_exp11_resolution.py`.
+  A local check of the first selected window at both resolutions matched the prepared
+  inputs exactly to PyTorch. The resulting maximum quantile differences between backends
+  were 0.00001764 °C hourly and 0.00461984 °C quarter-hourly (TimesFM 3.0.2); this is a
+  spot check, not a guarantee of backend equivalence on every window.
 * **The CRPS grid is not free.** The production CRPS integrates the pinball loss over
   the levels the model reports. DUET reports [0.01, 0.99] and TimesFM [0.1, 0.9], so
   integrating each over its own range hands TimesFM a smaller number for nothing.
