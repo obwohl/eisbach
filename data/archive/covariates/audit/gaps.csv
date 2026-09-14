@@ -302,7 +302,7 @@ isar_toelz,2025-12-08 14:00:00+00:00,2025-12-09 01:00:00+00:00,12,internal,unkno
 isar_toelz,2026-02-01 14:00:00+00:00,2026-02-01 23:00:00+00:00,10,internal,unknown_outage_or_physical_event
 isar_toelz,2026-03-29 01:00:00+00:00,2026-03-29 01:00:00+00:00,1,internal,unknown_outage_or_physical_event
 isar_toelz,2026-07-07 07:00:00+00:00,2026-07-07 09:00:00+00:00,3,internal,unknown_outage_or_physical_event
-isar_toelz,2026-09-14 14:00:00+00:00,2026-09-14 19:00:00+00:00,6,edge,unknown_outage_or_physical_event
+isar_toelz,2026-09-14 14:00:00+00:00,2026-09-14 21:00:00+00:00,8,edge,unknown_outage_or_physical_event
 loisach_beuerberg,1980-10-31 23:00:00+00:00,1980-11-01 06:00:00+00:00,8,edge,unknown_outage_or_physical_event
 loisach_beuerberg,1980-11-01 08:00:00+00:00,1980-11-02 06:00:00+00:00,23,internal,daily_sampling_pattern_not_an_hourly_instrument_outage
 loisach_beuerberg,1980-11-02 08:00:00+00:00,1980-11-03 06:00:00+00:00,23,internal,daily_sampling_pattern_not_an_hourly_instrument_outage
@@ -10283,6 +10283,7 @@ airtemp,2016-09-05 09:00:00+00:00,2016-09-05 12:00:00+00:00,4,internal,unknown_n
 airtemp,2024-08-28 08:00:00+00:00,2024-08-28 11:00:00+00:00,4,internal,unknown_no_observation
 airtemp,2025-04-22 13:00:00+00:00,2025-04-25 09:00:00+00:00,69,internal,unknown_no_observation
 airtemp,2025-11-17 12:00:00+00:00,2025-11-17 14:00:00+00:00,3,internal,unknown_no_observation
+airtemp,2026-09-14 21:00:00+00:00,2026-09-14 21:00:00+00:00,1,edge,unknown_no_observation
 t_catchment,2014-06-07 14:00:00+00:00,2014-06-08 05:00:00+00:00,16,internal,unknown_no_observation
 t_catchment,2017-01-19 02:00:00+00:00,2017-01-19 08:00:00+00:00,7,internal,unknown_no_observation
 t_catchment,2020-07-14 14:00:00+00:00,2020-07-16 05:00:00+00:00,40,internal,unknown_no_observation
@@ -10294,6 +10295,7 @@ t_catchment,2024-04-08 11:00:00+00:00,2024-04-11 07:00:00+00:00,69,internal,unkn
 t_catchment,2024-04-16 09:00:00+00:00,2024-04-16 10:00:00+00:00,2,internal,unknown_no_observation
 t_catchment,2025-02-13 11:00:00+00:00,2025-02-13 12:00:00+00:00,2,internal,unknown_no_observation
 t_catchment,2025-02-27 21:00:00+00:00,2025-02-28 05:00:00+00:00,9,internal,unknown_no_observation
+t_catchment,2026-09-14 21:00:00+00:00,2026-09-14 21:00:00+00:00,1,edge,unknown_no_observation
 rain_toelz,2011-05-16 10:00:00+00:00,2011-05-16 10:00:00+00:00,1,internal,unknown_no_observation
 rain_toelz,2012-05-29 17:00:00+00:00,2012-06-06 09:00:00+00:00,185,internal,unknown_no_observation
 rain_toelz,2016-05-24 02:00:00+00:00,2016-05-24 02:00:00+00:00,1,internal,unknown_no_observation
@@ -10304,7 +10306,7 @@ rain_toelz,2021-01-25 07:00:00+00:00,2021-01-29 13:00:00+00:00,103,internal,unkn
 rain_toelz,2021-07-19 19:00:00+00:00,2021-07-20 01:00:00+00:00,7,internal,unknown_no_observation
 rain_toelz,2022-06-30 18:00:00+00:00,2022-07-01 06:00:00+00:00,13,internal,unknown_no_observation
 rain_toelz,2023-08-13 21:00:00+00:00,2023-08-14 14:00:00+00:00,18,internal,unknown_no_observation
-rain_toelz,2026-09-14 00:00:00+00:00,2026-09-14 19:00:00+00:00,20,edge,unknown_no_observation
+rain_toelz,2026-09-14 00:00:00+00:00,2026-09-14 21:00:00+00:00,22,edge,unknown_no_observation
 rain_lenggries,2010-11-13 07:00:00+00:00,2010-11-13 07:00:00+00:00,1,internal,unknown_no_observation
 rain_lenggries,2012-07-08 19:00:00+00:00,2012-07-23 00:00:00+00:00,342,internal,unknown_no_observation
 rain_lenggries,2013-10-11 03:00:00+00:00,2013-10-11 14:00:00+00:00,12,internal,unknown_no_observation
@@ -10330,7 +10332,7 @@ rain_lenggries,2023-10-26 19:00:00+00:00,2023-10-27 08:00:00+00:00,14,internal,u
 rain_lenggries,2024-06-25 07:00:00+00:00,2024-07-05 06:00:00+00:00,240,internal,unknown_no_observation
 rain_lenggries,2024-08-12 11:00:00+00:00,2024-08-13 06:00:00+00:00,20,internal,unknown_no_observation
 rain_lenggries,2025-07-07 11:00:00+00:00,2025-07-07 14:00:00+00:00,4,internal,unknown_no_observation
-rain_lenggries,2026-09-14 00:00:00+00:00,2026-09-14 19:00:00+00:00,20,edge,unknown_no_observation
+rain_lenggries,2026-09-14 00:00:00+00:00,2026-09-14 21:00:00+00:00,22,edge,unknown_no_observation
 rain_kochel,2010-04-25 04:00:00+00:00,2010-04-26 00:00:00+00:00,21,internal,unknown_no_observation
 rain_kochel,2011-01-26 09:00:00+00:00,2011-02-14 14:00:00+00:00,462,internal,unknown_no_observation
 rain_kochel,2012-09-28 07:00:00+00:00,2012-09-28 07:00:00+00:00,1,internal,unknown_no_observation
@@ -10387,7 +10389,7 @@ rain_kochel,2023-12-02 06:00:00+00:00,2023-12-02 10:00:00+00:00,5,internal,unkno
 rain_kochel,2024-09-27 18:00:00+00:00,2024-09-27 19:00:00+00:00,2,internal,unknown_no_observation
 rain_kochel,2025-01-23 10:00:00+00:00,2025-01-23 10:00:00+00:00,1,internal,unknown_no_observation
 rain_kochel,2025-03-30 02:00:00+00:00,2025-03-30 02:00:00+00:00,1,internal,unknown_no_observation
-rain_kochel,2026-09-14 00:00:00+00:00,2026-09-14 19:00:00+00:00,20,edge,unknown_no_observation
+rain_kochel,2026-09-14 00:00:00+00:00,2026-09-14 21:00:00+00:00,22,edge,unknown_no_observation
 rain_garmisch,2015-05-26 10:00:00+00:00,2015-05-26 10:00:00+00:00,1,internal,unknown_no_observation
 rain_garmisch,2017-01-07 06:00:00+00:00,2017-01-07 12:00:00+00:00,7,internal,unknown_no_observation
 rain_garmisch,2017-01-19 03:00:00+00:00,2017-01-19 09:00:00+00:00,7,internal,unknown_no_observation
@@ -10405,6 +10407,7 @@ rain_garmisch,2024-09-28 08:00:00+00:00,2024-09-29 04:00:00+00:00,21,internal,un
 rain_garmisch,2025-07-02 17:00:00+00:00,2025-07-03 08:00:00+00:00,16,internal,unknown_no_observation
 rain_garmisch,2026-03-28 23:00:00+00:00,2026-03-28 23:00:00+00:00,1,internal,unknown_no_observation
 rain_garmisch,2026-07-20 11:00:00+00:00,2026-07-22 13:00:00+00:00,51,internal,unknown_no_observation
+rain_garmisch,2026-09-14 21:00:00+00:00,2026-09-14 21:00:00+00:00,1,edge,unknown_no_observation
 solar_hohenpeissenberg,2010-01-01 00:00:00+00:00,2010-04-21 00:00:00+00:00,2641,edge,unknown_no_observation
 solar_hohenpeissenberg,2011-06-22 19:00:00+00:00,2011-07-04 13:00:00+00:00,283,internal,unknown_no_observation
 solar_hohenpeissenberg,2011-07-05 07:00:00+00:00,2011-07-12 10:00:00+00:00,172,internal,unknown_no_observation
@@ -10439,6 +10442,7 @@ solar_hohenpeissenberg,2025-02-19 08:00:00+00:00,2025-02-19 14:00:00+00:00,7,int
 solar_hohenpeissenberg,2025-09-08 11:00:00+00:00,2025-09-08 12:00:00+00:00,2,internal,unknown_no_observation
 solar_hohenpeissenberg,2025-11-19 13:00:00+00:00,2025-11-19 13:00:00+00:00,1,internal,unknown_no_observation
 solar_hohenpeissenberg,2026-01-13 11:00:00+00:00,2026-01-13 11:00:00+00:00,1,internal,unknown_no_observation
+solar_hohenpeissenberg,2026-09-14 21:00:00+00:00,2026-09-14 21:00:00+00:00,1,edge,unknown_no_observation
 pressure,2016-01-02 13:00:00+00:00,2016-01-02 13:00:00+00:00,1,internal,unknown_no_observation
 pressure,2016-09-03 12:00:00+00:00,2016-09-03 13:00:00+00:00,2,internal,unknown_no_observation
 pressure,2016-09-03 16:00:00+00:00,2016-09-03 17:00:00+00:00,2,internal,unknown_no_observation
@@ -10448,3 +10452,4 @@ pressure,2016-09-05 09:00:00+00:00,2016-09-05 09:00:00+00:00,1,internal,unknown_
 pressure,2018-07-23 18:00:00+00:00,2018-07-23 20:00:00+00:00,3,internal,unknown_no_observation
 pressure,2025-04-22 13:00:00+00:00,2025-04-25 09:00:00+00:00,69,internal,unknown_no_observation
 pressure,2025-11-17 12:00:00+00:00,2025-11-17 14:00:00+00:00,3,internal,unknown_no_observation
+pressure,2026-09-14 21:00:00+00:00,2026-09-14 21:00:00+00:00,1,edge,unknown_no_observation

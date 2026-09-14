@@ -19,7 +19,12 @@ import requests
 from bs4 import BeautifulSoup
 
 from eisbach.archive import DEFAULT_ROOT, _as_utc, _read_partition, _write_partition
-from eisbach.data import BRIGHTSKY_URL, _spikes
+from eisbach.data import (
+    BRIGHTSKY_URL,
+    MAX_REJECTED_FRACTION,
+    ImplausibleGaugeData,
+    _spikes,
+)
 
 logger = logging.getLogger(__name__)
 POLICY_VERSION = "v1"
@@ -172,7 +177,15 @@ def hourly_gkd(html: str) -> tuple[pd.DataFrame, list[dict]]:
     raw["conflict"] = raw.index.map(conflicts).astype(bool)
     raw.loc[raw["conflict"], "value"] = np.nan
     grouped = raw.resample("1h")
-    out = grouped.value.agg(raw_value="mean", raw_min="min", raw_max="max", samples="count")
+    # First of the hour, not the mean. GKD delivers four quarter-hourly samples, and the
+    # production path this replaced used `resample("1h").first()`: every observation
+    # already in `data/archive/observations/` is a first-of-hour reading, and DUET is a
+    # fixed checkpoint trained on series prepared that way. Averaging instead moved 83 %
+    # of September's hours, by up to 0.375 °C — a quiet discontinuity in both the model's
+    # input and the target it is scored against. The mean is kept beside it, so nothing
+    # is lost and the convention stays the one the record was built on.
+    out = grouped.value.agg(raw_value="first", raw_mean="mean", raw_min="min",
+                            raw_max="max", samples="count")
     out["duplicate_count"] = grouped.duplicate_count.sum()
     out["conflict"] = grouped.conflict.max().fillna(0).astype(int)
     return out, issues
@@ -297,23 +310,52 @@ def model_values(name: str, *, root: Path = STORE, start=None, end=None) -> pd.S
     s = frame.raw_value.copy()
     flags = assess_frame(frame, name)
     record_quality(flags, name, root=root)
-    # Conservative: hard water/air bounds only automatically rejected. Hampel/jump and
-    # plateaux are review findings, not proof of broken instruments or a dry river.
+    # Conservative: for air and rain, hard bounds only. Hampel/jump and plateaux are
+    # review findings there, not proof of a broken instrument or a dry river — a front,
+    # a downpour and sunrise are all genuinely abrupt.
     reject = (flags["range"] if SPECS[name].field in {"water", "temperature"}
               else pd.Series(False, index=s.index))
+    reasons = pd.Series("outside_physical_range", index=s.index)
     if SPECS[name].field == "water":
         # Check subhourly extremes too: an hourly mean must not dilute a bad sample.
         reject |= frame.raw_min.lt(-5) | frame.raw_max.gt(40)
+        # And the neighbourhood test, which is the whole point of the gate. Bounds alone
+        # catch 154.4 °C and miss 30 °C between neighbours of 19 °C — in range, and no
+        # river did it. `quality` runs the same two-pass residual-MAD test as the legacy
+        # `reject_implausible_readings`, calibrated over sixteen years: the largest
+        # genuine residual is 1.33 °C, the one instrument fault 46.7 °C, and the 2.0 °C
+        # floor flags exactly one reading in the whole record. Computing that verdict and
+        # then not acting on it left production with no spike protection at all.
+        spikes = flags["hampel"] & ~reject
+        reasons = reasons.mask(spikes, "neighbourhood_spike")
+        reject |= spikes
+    measured = s.notna()
+    # Below this many readings the fraction cannot mean anything: at a 1 % budget a
+    # single rejection already exceeds it in any window shorter than a hundred hours,
+    # so the test would condemn a healthy gauge for one spike. The legacy gate was only
+    # ever called on a full 384-hour window and never met the case.
+    enough = measured.sum() >= round(1 / MAX_REJECTED_FRACTION)
+    if enough:
+        share = float((reject & measured).sum()) / float(measured.sum())
+        if share > MAX_REJECTED_FRACTION:
+            # Past this point the series is not a good signal with a spike in it, and a
+            # run that interpolated over it would forecast from mostly guesses.
+            raise ImplausibleGaugeData(
+                f"{name}: {int((reject & measured).sum())} of {int(measured.sum())} "
+                f"readings are implausible ({share:.1%} > {MAX_REJECTED_FRACTION:.1%}); "
+                f"the instrument is broken, not spiky"
+            )
     for ts in s.index[reject]:
         record = {"timestamp": ts, "raw_value": s.loc[ts], "value": np.nan,
-                  "status": "never_measured", "reason": "outside_physical_range",
+                  "status": "never_measured", "reason": reasons.loc[ts],
                   "policy": POLICY_VERSION, "series": name}
         path = root / "decisions" / name / f"{ts:%Y-%m}.csv"
         previous = _read_partition(path)
         combined = pd.concat([previous, pd.DataFrame([record])], ignore_index=True)
         combined = combined.drop_duplicates(["timestamp", "policy", "reason"], keep="last")
         _write_partition(path, combined)
-        logger.warning("%s %s: raw=%s -> never_measured (range, %s)", name, ts, s.loc[ts], POLICY_VERSION)
+        logger.warning("%s %s: raw=%s -> never_measured (%s, %s)",
+                       name, ts, s.loc[ts], reasons.loc[ts], POLICY_VERSION)
     return s.mask(reject).rename(name)
 
 

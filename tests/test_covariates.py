@@ -17,6 +17,7 @@ from eisbach.covariates import (
     refresh,
     write_hourly,
 )
+from eisbach.data import ImplausibleGaugeData
 
 
 def series(values):
@@ -62,11 +63,19 @@ def gkd(rows):
             + '</tbody></table>')
 
 
-def test_gkd_keeps_raw_extreme_before_hourly_mean():
+def test_gkd_takes_the_first_sample_and_still_sees_the_extreme():
+    """The production convention is first-of-hour, and the extreme must survive it.
+
+    Averaging would have hidden 154.4 °C inside a mean of 86.75 and moved every other
+    hour besides. Taking the first sample keeps the convention every archived
+    observation was written under, and `raw_max` is what lets `model_values` notice a
+    bad quarter-hour that the hourly value does not show.
+    """
     html = gkd([("09.09.2026 12:00", "19,1"), ("09.09.2026 12:15", "154,4")])
     out, issues = hourly_gkd(html)
     assert not issues
-    assert out.raw_value.iloc[0] == pytest.approx((19.1 + 154.4) / 2)
+    assert out.raw_value.iloc[0] == pytest.approx(19.1)
+    assert out.raw_mean.iloc[0] == pytest.approx((19.1 + 154.4) / 2)
     assert out.raw_max.iloc[0] == 154.4
     assert str(out.index[0]) == "2026-09-09 10:00:00+00:00"
 
@@ -215,3 +224,68 @@ def test_leap_year_refresh_never_requests_next_local_year(mocker, tmp_path):
         params = call.args[1]
         if "beginn" in params and params["beginn"].endswith("2024"):
             assert params["ende"] == "31.12.2024"
+
+
+def test_an_in_range_spike_is_rejected_for_the_model(tmp_path):
+    """The whole point of the gate, and what bounds alone cannot do.
+
+    30 °C is inside the plausible range for a river and no Eisbach hour ever did it
+    between neighbours of 19 °C. Rejecting only out-of-range values catches 154.4 and
+    lets this through — which is what production looked like when `main.py` moved off
+    `reject_implausible_readings` and the neighbourhood verdict was computed but unused.
+    """
+    raw = frame([19.1, 19.0, 19.1, 19.0, 30.0, 19.1, 19.0, 19.1, 19.0])
+    write_hourly("eisbach", raw, root=tmp_path)
+
+    s = model_values("eisbach", root=tmp_path)
+
+    assert pd.isna(s.iloc[4])
+    assert s.drop(s.index[4]).notna().all()
+    # The raw archive is untouched; only the model's view of it changes.
+    assert read_hourly("eisbach", root=tmp_path).raw_value.iloc[4] == 30.0
+    decisions = pd.read_csv(tmp_path / "decisions/eisbach/2026-09.csv")
+    assert decisions.reason.tolist() == ["neighbourhood_spike"]
+
+
+def test_a_calm_series_is_left_alone(tmp_path):
+    """MAD is exactly zero over a still winter window; without the floor the threshold
+    collapses to zero and the gate rejects most of the window."""
+    raw = frame([4.1] * 12)
+    write_hourly("eisbach", raw, root=tmp_path)
+    assert model_values("eisbach", root=tmp_path).notna().all()
+
+
+def test_a_broken_instrument_stops_the_run(tmp_path):
+    """Past the budget the series is not a good signal with a spike in it, and a run
+    that interpolated over it would forecast from mostly guesses."""
+    values = [19.0] * 200
+    for i in range(10, 200, 20):
+        values[i] = 30.0
+    write_hourly("eisbach", frame(values), root=tmp_path)
+    with pytest.raises(ImplausibleGaugeData, match="broken, not spiky"):
+        model_values("eisbach", root=tmp_path)
+
+
+def test_one_spike_in_a_long_window_is_within_budget(tmp_path):
+    """A single bad hour in a healthy window is repaired, not grounds for refusing."""
+    values = [19.0] * 200
+    values[100] = 30.0
+    write_hourly("eisbach", frame(values), root=tmp_path)
+    s = model_values("eisbach", root=tmp_path)
+    assert pd.isna(s.iloc[100])
+    assert s.notna().sum() == 199
+
+
+def test_the_budget_cannot_condemn_a_window_too_short_to_judge(tmp_path):
+    """One rejection in nine readings is 11 %, which says nothing about the instrument."""
+    raw = frame([19.1, 19.0, 19.1, 19.0, 30.0, 19.1, 19.0, 19.1, 19.0])
+    write_hourly("eisbach", raw, root=tmp_path)
+    assert pd.isna(model_values("eisbach", root=tmp_path).iloc[4])
+
+
+def test_rain_keeps_its_downpours(tmp_path):
+    """A front, a downpour and sunrise are genuinely abrupt: the neighbourhood test is
+    a review flag for weather, not grounds for rejection."""
+    raw = frame([0.0, 0.0, 0.0, 0.0, 30.6, 0.0, 0.0, 0.0])
+    write_hourly("rain_kochel", raw, root=tmp_path)
+    assert model_values("rain_kochel", root=tmp_path).notna().all()

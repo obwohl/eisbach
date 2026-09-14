@@ -14,7 +14,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2010.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:45:41.376982689+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.847825289+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -31,7 +31,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2010.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:45:41.376982689+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.847825289+00:00"
   },
   {
     "series": "t_catchment",
@@ -48,7 +48,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2011.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:45:42.480262756+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.851091623+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -65,7 +65,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2011.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:45:42.480262756+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.851091623+00:00"
   },
   {
     "series": "t_catchment",
@@ -82,7 +82,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2012.gz",
     "hours": 8784,
     "present": 8784,
-    "retrieved_at": "2026-09-14T19:45:43.562024593+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.853325844+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -99,7 +99,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2012.gz",
     "hours": 8784,
     "present": 8784,
-    "retrieved_at": "2026-09-14T19:45:43.562024593+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.853325844+00:00"
   },
   {
     "series": "t_catchment",
@@ -116,7 +116,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2013.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:45:44.657449484+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.854352951+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -133,7 +133,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2013.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:45:44.657449484+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.854352951+00:00"
   },
   {
     "series": "t_catchment",
@@ -150,7 +150,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2014.gz",
     "hours": 8760,
     "present": 8744,
-    "retrieved_at": "2026-09-14T19:45:45.750402451+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.857389688+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -167,7 +167,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2014.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:45:45.750402451+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.857389688+00:00"
   },
   {
     "series": "t_catchment",
@@ -184,7 +184,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2015.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:45:46.770025730+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.858229399+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -201,7 +201,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2015.gz",
     "hours": 8760,
     "present": 8759,
-    "retrieved_at": "2026-09-14T19:45:46.770025730+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.858229399+00:00"
   },
   {
     "series": "t_catchment",
@@ -218,7 +218,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2016.gz",
     "hours": 8784,
     "present": 8784,
-    "retrieved_at": "2026-09-14T19:45:47.876909733+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.858353138+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -235,7 +235,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2016.gz",
     "hours": 8784,
     "present": 8784,
-    "retrieved_at": "2026-09-14T19:45:47.876909733+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.858353138+00:00"
   },
   {
     "series": "t_catchment",
@@ -252,7 +252,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2017.gz",
     "hours": 8760,
     "present": 8753,
-    "retrieved_at": "2026-09-14T19:45:48.965481043+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.861971378+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -269,7 +269,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2017.gz",
     "hours": 8760,
     "present": 8741,
-    "retrieved_at": "2026-09-14T19:45:48.965481043+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.861971378+00:00"
   },
   {
     "series": "t_catchment",
@@ -286,7 +286,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2018.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:45:50.100085258+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.862483263+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -303,7 +303,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2018.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:45:50.100085258+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.862483263+00:00"
   },
   {
     "series": "t_catchment",
@@ -320,7 +320,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2019.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:45:51.168519735+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.866237640+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -337,7 +337,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2019.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:45:51.168519735+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.866237640+00:00"
   },
   {
     "series": "t_catchment",
@@ -354,7 +354,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2020.gz",
     "hours": 8784,
     "present": 8744,
-    "retrieved_at": "2026-09-14T19:45:52.286715508+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.866821766+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -371,7 +371,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2020.gz",
     "hours": 8784,
     "present": 8766,
-    "retrieved_at": "2026-09-14T19:45:52.286715508+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.866821766+00:00"
   },
   {
     "series": "t_catchment",
@@ -388,7 +388,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2021.gz",
     "hours": 8760,
     "present": 8758,
-    "retrieved_at": "2026-09-14T19:45:53.413042068+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.868795633+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -405,7 +405,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2021.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:45:53.413042068+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.868795633+00:00"
   },
   {
     "series": "t_catchment",
@@ -422,7 +422,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2022.gz",
     "hours": 8760,
     "present": 8732,
-    "retrieved_at": "2026-09-14T19:45:54.547663927+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.872750998+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -439,7 +439,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2022.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:45:54.547663927+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.872750998+00:00"
   },
   {
     "series": "t_catchment",
@@ -456,7 +456,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2023.gz",
     "hours": 8760,
     "present": 8754,
-    "retrieved_at": "2026-09-14T19:45:55.698556423+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.875117779+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -473,7 +473,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2023.gz",
     "hours": 8760,
     "present": 8748,
-    "retrieved_at": "2026-09-14T19:45:55.698556423+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.875117779+00:00"
   },
   {
     "series": "t_catchment",
@@ -490,7 +490,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2024.gz",
     "hours": 8724,
     "present": 8713,
-    "retrieved_at": "2026-09-14T19:45:56.915803909+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.875117779+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -507,7 +507,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2024.gz",
     "hours": 8724,
     "present": 8671,
-    "retrieved_at": "2026-09-14T19:45:56.915803909+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.875117779+00:00"
   },
   {
     "series": "t_catchment",
@@ -524,7 +524,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2025.gz",
     "hours": 8760,
     "present": 8749,
-    "retrieved_at": "2026-09-14T19:45:57.951760530+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.878706217+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -541,7 +541,7 @@
     "raw_path": "data/archive/covariates/raw/01550/2025.gz",
     "hours": 8760,
     "present": 8744,
-    "retrieved_at": "2026-09-14T19:45:57.951760530+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.878706217+00:00"
   },
   {
     "series": "t_catchment",
@@ -552,13 +552,13 @@
     "params": {
       "dwd_station_id": "01550",
       "date": "2026-01-01T00:00:00+00:00",
-      "last_date": "2026-09-14T19:00:00+00:00"
+      "last_date": "2026-09-14T21:00:00+00:00"
     },
-    "sha256": "c80e6d0be2f635697ef53a7e3bac5245f3d8a4c0134c48a8a281268c3ad74610",
-    "raw_path": "data/archive/covariates/raw/01550/2026-through-20260914T19.gz",
-    "hours": 6164,
-    "present": 6164,
-    "retrieved_at": "2026-09-14T19:45:58.815428734+00:00"
+    "sha256": "41f113f14ee2c63ef3a47f2525fff2d0fcaecbc78cdb96f32b712c07f99d5db0",
+    "raw_path": "data/archive/covariates/raw/01550/2026-through-20260914T21.gz",
+    "hours": 6165,
+    "present": 6165,
+    "retrieved_at": "2026-09-14T21:03:46.358798504+00:00"
   },
   {
     "series": "rain_garmisch",
@@ -569,13 +569,13 @@
     "params": {
       "dwd_station_id": "01550",
       "date": "2026-01-01T00:00:00+00:00",
-      "last_date": "2026-09-14T19:00:00+00:00"
+      "last_date": "2026-09-14T21:00:00+00:00"
     },
-    "sha256": "c80e6d0be2f635697ef53a7e3bac5245f3d8a4c0134c48a8a281268c3ad74610",
-    "raw_path": "data/archive/covariates/raw/01550/2026-through-20260914T19.gz",
-    "hours": 6164,
-    "present": 6112,
-    "retrieved_at": "2026-09-14T19:45:58.815428734+00:00"
+    "sha256": "41f113f14ee2c63ef3a47f2525fff2d0fcaecbc78cdb96f32b712c07f99d5db0",
+    "raw_path": "data/archive/covariates/raw/01550/2026-through-20260914T21.gz",
+    "hours": 6165,
+    "present": 6113,
+    "retrieved_at": "2026-09-14T21:03:46.358798504+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -592,7 +592,7 @@
     "raw_path": "data/archive/covariates/raw/02290/2010.gz",
     "hours": 8760,
     "present": 6119,
-    "retrieved_at": "2026-09-14T19:45:59.878856659+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.882353067+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -609,7 +609,7 @@
     "raw_path": "data/archive/covariates/raw/02290/2011.gz",
     "hours": 8760,
     "present": 8267,
-    "retrieved_at": "2026-09-14T19:46:00.744643927+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.885263920+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -626,7 +626,7 @@
     "raw_path": "data/archive/covariates/raw/02290/2012.gz",
     "hours": 8784,
     "present": 8762,
-    "retrieved_at": "2026-09-14T19:46:01.724377155+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.887504816+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -643,7 +643,7 @@
     "raw_path": "data/archive/covariates/raw/02290/2013.gz",
     "hours": 8760,
     "present": 8731,
-    "retrieved_at": "2026-09-14T19:46:02.643827438+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.887504816+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -660,7 +660,7 @@
     "raw_path": "data/archive/covariates/raw/02290/2014.gz",
     "hours": 8760,
     "present": 8683,
-    "retrieved_at": "2026-09-14T19:46:03.479165316+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.890352964+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -677,7 +677,7 @@
     "raw_path": "data/archive/covariates/raw/02290/2015.gz",
     "hours": 8760,
     "present": 8758,
-    "retrieved_at": "2026-09-14T19:46:04.399085522+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.891530275+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -694,7 +694,7 @@
     "raw_path": "data/archive/covariates/raw/02290/2016.gz",
     "hours": 8784,
     "present": 8784,
-    "retrieved_at": "2026-09-14T19:46:05.257376671+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.892818928+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -711,7 +711,7 @@
     "raw_path": "data/archive/covariates/raw/02290/2017.gz",
     "hours": 8760,
     "present": 8759,
-    "retrieved_at": "2026-09-14T19:46:06.149091482+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.894582510+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -728,7 +728,7 @@
     "raw_path": "data/archive/covariates/raw/02290/2018.gz",
     "hours": 8760,
     "present": 8747,
-    "retrieved_at": "2026-09-14T19:46:07.066660643+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.894582510+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -745,7 +745,7 @@
     "raw_path": "data/archive/covariates/raw/02290/2019.gz",
     "hours": 8760,
     "present": 8750,
-    "retrieved_at": "2026-09-14T19:46:08.088399172+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.894582510+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -762,7 +762,7 @@
     "raw_path": "data/archive/covariates/raw/02290/2020.gz",
     "hours": 8784,
     "present": 8780,
-    "retrieved_at": "2026-09-14T19:46:09.088438749+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.899673462+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -779,7 +779,7 @@
     "raw_path": "data/archive/covariates/raw/02290/2021.gz",
     "hours": 8760,
     "present": 8755,
-    "retrieved_at": "2026-09-14T19:46:09.996330976+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.900929928+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -796,7 +796,7 @@
     "raw_path": "data/archive/covariates/raw/02290/2022.gz",
     "hours": 8760,
     "present": 8758,
-    "retrieved_at": "2026-09-14T19:46:10.922970057+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.902537823+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -813,7 +813,7 @@
     "raw_path": "data/archive/covariates/raw/02290/2023.gz",
     "hours": 8760,
     "present": 8755,
-    "retrieved_at": "2026-09-14T19:46:11.859547377+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.904001951+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -830,7 +830,7 @@
     "raw_path": "data/archive/covariates/raw/02290/2024.gz",
     "hours": 8784,
     "present": 8779,
-    "retrieved_at": "2026-09-14T19:46:12.695757627+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.906352997+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -847,7 +847,7 @@
     "raw_path": "data/archive/covariates/raw/02290/2025.gz",
     "hours": 8760,
     "present": 8750,
-    "retrieved_at": "2026-09-14T19:46:13.625135183+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.907537699+00:00"
   },
   {
     "series": "solar_hohenpeissenberg",
@@ -858,13 +858,13 @@
     "params": {
       "dwd_station_id": "02290",
       "date": "2026-01-01T00:00:00+00:00",
-      "last_date": "2026-09-14T19:00:00+00:00"
+      "last_date": "2026-09-14T21:00:00+00:00"
     },
-    "sha256": "52614ef1beca670c3370ddb052d90b506280dff2f4575028e3d561fa6826232d",
-    "raw_path": "data/archive/covariates/raw/02290/2026-through-20260914T19.gz",
-    "hours": 6164,
-    "present": 6163,
-    "retrieved_at": "2026-09-14T19:46:14.322116852+00:00"
+    "sha256": "52eb970afaaedd133ab4dff676189bf48e25e11ecd49ff3566738506810845a7",
+    "raw_path": "data/archive/covariates/raw/02290/2026-through-20260914T21.gz",
+    "hours": 6165,
+    "present": 6164,
+    "retrieved_at": "2026-09-14T21:03:57.418757915+00:00"
   },
   {
     "series": "airtemp",
@@ -881,7 +881,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2010.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:15.230017185+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.910796881+00:00"
   },
   {
     "series": "pressure",
@@ -898,7 +898,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2010.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:15.230017185+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.910796881+00:00"
   },
   {
     "series": "airtemp",
@@ -915,7 +915,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2011.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:16.372651339+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.913036108+00:00"
   },
   {
     "series": "pressure",
@@ -932,7 +932,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2011.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:16.372651339+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.913036108+00:00"
   },
   {
     "series": "airtemp",
@@ -949,7 +949,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2012.gz",
     "hours": 8784,
     "present": 8784,
-    "retrieved_at": "2026-09-14T19:46:17.453410864+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.914918423+00:00"
   },
   {
     "series": "pressure",
@@ -966,7 +966,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2012.gz",
     "hours": 8784,
     "present": 8784,
-    "retrieved_at": "2026-09-14T19:46:17.453410864+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.914918423+00:00"
   },
   {
     "series": "airtemp",
@@ -983,7 +983,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2013.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:18.598237514+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.916225433+00:00"
   },
   {
     "series": "pressure",
@@ -1000,7 +1000,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2013.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:18.598237514+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.916225433+00:00"
   },
   {
     "series": "airtemp",
@@ -1017,7 +1017,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2014.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:19.644788265+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.918353081+00:00"
   },
   {
     "series": "pressure",
@@ -1034,7 +1034,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2014.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:19.644788265+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.918353081+00:00"
   },
   {
     "series": "airtemp",
@@ -1051,7 +1051,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2015.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:20.709887981+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.919306993+00:00"
   },
   {
     "series": "pressure",
@@ -1068,7 +1068,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2015.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:20.709887981+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.919306993+00:00"
   },
   {
     "series": "airtemp",
@@ -1085,7 +1085,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2016.gz",
     "hours": 8784,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:21.869934082+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.921993494+00:00"
   },
   {
     "series": "pressure",
@@ -1102,7 +1102,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2016.gz",
     "hours": 8784,
     "present": 8772,
-    "retrieved_at": "2026-09-14T19:46:21.869934082+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.921993494+00:00"
   },
   {
     "series": "airtemp",
@@ -1119,7 +1119,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2017.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:22.982237339+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.923134804+00:00"
   },
   {
     "series": "pressure",
@@ -1136,7 +1136,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2017.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:22.982237339+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.923134804+00:00"
   },
   {
     "series": "airtemp",
@@ -1153,7 +1153,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2018.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:24.142055035+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.924342155+00:00"
   },
   {
     "series": "pressure",
@@ -1170,7 +1170,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2018.gz",
     "hours": 8760,
     "present": 8757,
-    "retrieved_at": "2026-09-14T19:46:24.142055035+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.924342155+00:00"
   },
   {
     "series": "airtemp",
@@ -1187,7 +1187,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2019.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:25.182728767+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.926352978+00:00"
   },
   {
     "series": "pressure",
@@ -1204,7 +1204,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2019.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:25.182728767+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.926352978+00:00"
   },
   {
     "series": "airtemp",
@@ -1221,7 +1221,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2020.gz",
     "hours": 8784,
     "present": 8784,
-    "retrieved_at": "2026-09-14T19:46:26.264529705+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.927921057+00:00"
   },
   {
     "series": "pressure",
@@ -1238,7 +1238,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2020.gz",
     "hours": 8784,
     "present": 8784,
-    "retrieved_at": "2026-09-14T19:46:26.264529705+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.927921057+00:00"
   },
   {
     "series": "airtemp",
@@ -1255,7 +1255,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2021.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:27.385721207+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.929489136+00:00"
   },
   {
     "series": "pressure",
@@ -1272,7 +1272,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2021.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:27.385721207+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.929489136+00:00"
   },
   {
     "series": "airtemp",
@@ -1289,7 +1289,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2022.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:28.471629858+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.930353165+00:00"
   },
   {
     "series": "pressure",
@@ -1306,7 +1306,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2022.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:28.471629858+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.930353165+00:00"
   },
   {
     "series": "airtemp",
@@ -1323,7 +1323,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2023.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:29.663198709+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.932428837+00:00"
   },
   {
     "series": "pressure",
@@ -1340,7 +1340,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2023.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:29.663198709+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.932428837+00:00"
   },
   {
     "series": "airtemp",
@@ -1357,7 +1357,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2024.gz",
     "hours": 8784,
     "present": 8780,
-    "retrieved_at": "2026-09-14T19:46:30.714910984+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.934353113+00:00"
   },
   {
     "series": "pressure",
@@ -1374,7 +1374,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2024.gz",
     "hours": 8784,
     "present": 8784,
-    "retrieved_at": "2026-09-14T19:46:30.714910984+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.934353113+00:00"
   },
   {
     "series": "airtemp",
@@ -1391,7 +1391,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2025.gz",
     "hours": 8760,
     "present": 8688,
-    "retrieved_at": "2026-09-14T19:46:31.746797085+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.936135054+00:00"
   },
   {
     "series": "pressure",
@@ -1408,7 +1408,7 @@
     "raw_path": "data/archive/covariates/raw/03379/2025.gz",
     "hours": 8760,
     "present": 8688,
-    "retrieved_at": "2026-09-14T19:46:31.746797085+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.936135054+00:00"
   },
   {
     "series": "airtemp",
@@ -1419,13 +1419,13 @@
     "params": {
       "dwd_station_id": "03379",
       "date": "2026-01-01T00:00:00+00:00",
-      "last_date": "2026-09-14T19:00:00+00:00"
+      "last_date": "2026-09-14T21:00:00+00:00"
     },
-    "sha256": "85f29690b80578f93d9a74de76a41d450f22e4529eb92b1f48f98bee257be28f",
-    "raw_path": "data/archive/covariates/raw/03379/2026-through-20260914T19.gz",
-    "hours": 6164,
-    "present": 6164,
-    "retrieved_at": "2026-09-14T19:46:32.605074406+00:00"
+    "sha256": "27626446cb381fb749987fde59678df12aaf68e84febf97813dc0a028d3e7894",
+    "raw_path": "data/archive/covariates/raw/03379/2026-through-20260914T21.gz",
+    "hours": 6165,
+    "present": 6165,
+    "retrieved_at": "2026-09-14T21:04:15.524542570+00:00"
   },
   {
     "series": "pressure",
@@ -1436,13 +1436,13 @@
     "params": {
       "dwd_station_id": "03379",
       "date": "2026-01-01T00:00:00+00:00",
-      "last_date": "2026-09-14T19:00:00+00:00"
+      "last_date": "2026-09-14T21:00:00+00:00"
     },
-    "sha256": "85f29690b80578f93d9a74de76a41d450f22e4529eb92b1f48f98bee257be28f",
-    "raw_path": "data/archive/covariates/raw/03379/2026-through-20260914T19.gz",
-    "hours": 6164,
-    "present": 6164,
-    "retrieved_at": "2026-09-14T19:46:32.605074406+00:00"
+    "sha256": "27626446cb381fb749987fde59678df12aaf68e84febf97813dc0a028d3e7894",
+    "raw_path": "data/archive/covariates/raw/03379/2026-through-20260914T21.gz",
+    "hours": 6165,
+    "present": 6165,
+    "retrieved_at": "2026-09-14T21:04:15.524542570+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1459,7 +1459,7 @@
     "raw_path": "data/archive/covariates/raw/05262/2010.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:33.458662033+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.938772202+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1476,7 +1476,7 @@
     "raw_path": "data/archive/covariates/raw/05262/2011.gz",
     "hours": 8760,
     "present": 8759,
-    "retrieved_at": "2026-09-14T19:46:34.121897697+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.939612389+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1493,7 +1493,7 @@
     "raw_path": "data/archive/covariates/raw/05262/2012.gz",
     "hours": 8599,
     "present": 8599,
-    "retrieved_at": "2026-09-14T19:46:34.855576038+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.940387726+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1510,7 +1510,7 @@
     "raw_path": "data/archive/covariates/raw/05262/2013.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:35.502581595+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.940947533+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1527,7 +1527,7 @@
     "raw_path": "data/archive/covariates/raw/05262/2014.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:36.125842333+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.941376209+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1544,7 +1544,7 @@
     "raw_path": "data/archive/covariates/raw/05262/2015.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:36.827655077+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.943733692+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1561,7 +1561,7 @@
     "raw_path": "data/archive/covariates/raw/05262/2016.gz",
     "hours": 8783,
     "present": 8783,
-    "retrieved_at": "2026-09-14T19:46:37.519485950+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.944106579+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1578,7 +1578,7 @@
     "raw_path": "data/archive/covariates/raw/05262/2017.gz",
     "hours": 8757,
     "present": 8752,
-    "retrieved_at": "2026-09-14T19:46:38.240361214+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.944513083+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1595,7 +1595,7 @@
     "raw_path": "data/archive/covariates/raw/05262/2018.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:38.886444569+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.945102453+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1612,7 +1612,7 @@
     "raw_path": "data/archive/covariates/raw/05262/2019.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:39.521276712+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.945673466+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1629,7 +1629,7 @@
     "raw_path": "data/archive/covariates/raw/05262/2020.gz",
     "hours": 8761,
     "present": 8761,
-    "retrieved_at": "2026-09-14T19:46:40.310160160+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.946034908+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1646,7 +1646,7 @@
     "raw_path": "data/archive/covariates/raw/05262/2021.gz",
     "hours": 8657,
     "present": 8650,
-    "retrieved_at": "2026-09-14T19:46:41.068856001+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.946456909+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1663,7 +1663,7 @@
     "raw_path": "data/archive/covariates/raw/05262/2022.gz",
     "hours": 8760,
     "present": 8747,
-    "retrieved_at": "2026-09-14T19:46:41.745361328+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.946853161+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1680,7 +1680,7 @@
     "raw_path": "data/archive/covariates/raw/05262/2023.gz",
     "hours": 8760,
     "present": 8742,
-    "retrieved_at": "2026-09-14T19:46:42.426328182+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.947237492+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1697,7 +1697,7 @@
     "raw_path": "data/archive/covariates/raw/05262/2024.gz",
     "hours": 8784,
     "present": 8784,
-    "retrieved_at": "2026-09-14T19:46:43.154207706+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.947954893+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1714,7 +1714,7 @@
     "raw_path": "data/archive/covariates/raw/05262/2025.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:43.789353371+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.947954893+00:00"
   },
   {
     "series": "rain_toelz",
@@ -1725,13 +1725,13 @@
     "params": {
       "dwd_station_id": "05262",
       "date": "2026-01-01T00:00:00+00:00",
-      "last_date": "2026-09-14T19:00:00+00:00"
+      "last_date": "2026-09-14T21:00:00+00:00"
     },
-    "sha256": "7aa447c2e7c5943964ac593b32a5a2445983186aaf405ae6c961839b50489139",
-    "raw_path": "data/archive/covariates/raw/05262/2026-through-20260914T19.gz",
+    "sha256": "7e8a107c098c34c270a16a582d27707d2e286b47171cb9ca0675d83e88f16c19",
+    "raw_path": "data/archive/covariates/raw/05262/2026-through-20260914T21.gz",
     "hours": 6144,
     "present": 6144,
-    "retrieved_at": "2026-09-14T19:46:44.384253740+00:00"
+    "retrieved_at": "2026-09-14T21:04:26.063187599+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -1748,7 +1748,7 @@
     "raw_path": "data/archive/covariates/raw/06257/2010.gz",
     "hours": 8759,
     "present": 8759,
-    "retrieved_at": "2026-09-14T19:46:45.079154968+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.949029684+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -1765,7 +1765,7 @@
     "raw_path": "data/archive/covariates/raw/06257/2011.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:45.773065805+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.949814558+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -1782,7 +1782,7 @@
     "raw_path": "data/archive/covariates/raw/06257/2012.gz",
     "hours": 8442,
     "present": 8442,
-    "retrieved_at": "2026-09-14T19:46:46.512047291+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.949814558+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -1799,7 +1799,7 @@
     "raw_path": "data/archive/covariates/raw/06257/2013.gz",
     "hours": 8748,
     "present": 8748,
-    "retrieved_at": "2026-09-14T19:46:47.152269602+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -1816,7 +1816,7 @@
     "raw_path": "data/archive/covariates/raw/06257/2014.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:47.772370338+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -1833,7 +1833,7 @@
     "raw_path": "data/archive/covariates/raw/06257/2015.gz",
     "hours": 8565,
     "present": 8565,
-    "retrieved_at": "2026-09-14T19:46:48.375413656+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -1850,7 +1850,7 @@
     "raw_path": "data/archive/covariates/raw/06257/2016.gz",
     "hours": 8784,
     "present": 8784,
-    "retrieved_at": "2026-09-14T19:46:49.057715416+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -1867,7 +1867,7 @@
     "raw_path": "data/archive/covariates/raw/06257/2017.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:49.663244724+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -1884,7 +1884,7 @@
     "raw_path": "data/archive/covariates/raw/06257/2018.gz",
     "hours": 8608,
     "present": 8608,
-    "retrieved_at": "2026-09-14T19:46:50.370254993+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -1901,7 +1901,7 @@
     "raw_path": "data/archive/covariates/raw/06257/2019.gz",
     "hours": 8651,
     "present": 8651,
-    "retrieved_at": "2026-09-14T19:46:50.999864817+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -1918,7 +1918,7 @@
     "raw_path": "data/archive/covariates/raw/06257/2020.gz",
     "hours": 8784,
     "present": 8784,
-    "retrieved_at": "2026-09-14T19:46:51.681320667+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -1935,7 +1935,7 @@
     "raw_path": "data/archive/covariates/raw/06257/2021.gz",
     "hours": 8760,
     "present": 8667,
-    "retrieved_at": "2026-09-14T19:46:52.326595545+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.950691223+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -1952,7 +1952,7 @@
     "raw_path": "data/archive/covariates/raw/06257/2022.gz",
     "hours": 8760,
     "present": 8648,
-    "retrieved_at": "2026-09-14T19:46:53.000096560+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.955230474+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -1969,7 +1969,7 @@
     "raw_path": "data/archive/covariates/raw/06257/2023.gz",
     "hours": 8185,
     "present": 8022,
-    "retrieved_at": "2026-09-14T19:46:53.742510796+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.955634356+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -1986,7 +1986,7 @@
     "raw_path": "data/archive/covariates/raw/06257/2024.gz",
     "hours": 8784,
     "present": 8524,
-    "retrieved_at": "2026-09-14T19:46:54.492024899+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.956085205+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -2003,7 +2003,7 @@
     "raw_path": "data/archive/covariates/raw/06257/2025.gz",
     "hours": 8760,
     "present": 8756,
-    "retrieved_at": "2026-09-14T19:46:55.181835175+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.956498384+00:00"
   },
   {
     "series": "rain_lenggries",
@@ -2014,13 +2014,13 @@
     "params": {
       "dwd_station_id": "06257",
       "date": "2026-01-01T00:00:00+00:00",
-      "last_date": "2026-09-14T19:00:00+00:00"
+      "last_date": "2026-09-14T21:00:00+00:00"
     },
-    "sha256": "4d5a203e25a66e71fc521777a9df289a068fc025093fa4b4a24f2c2a8c0cafa1",
-    "raw_path": "data/archive/covariates/raw/06257/2026-through-20260914T19.gz",
+    "sha256": "54201799a48cdf19ffeec3024c1a23fc80168889bcfdbae2d05c3dd9f6dad02e",
+    "raw_path": "data/archive/covariates/raw/06257/2026-through-20260914T21.gz",
     "hours": 6144,
     "present": 6144,
-    "retrieved_at": "2026-09-14T19:46:55.924910069+00:00"
+    "retrieved_at": "2026-09-14T21:04:35.399797201+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2037,7 +2037,7 @@
     "raw_path": "data/archive/covariates/raw/06342/2010.gz",
     "hours": 8739,
     "present": 8739,
-    "retrieved_at": "2026-09-14T19:46:56.720868587+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.958729744+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2054,7 +2054,7 @@
     "raw_path": "data/archive/covariates/raw/06342/2011.gz",
     "hours": 8298,
     "present": 8298,
-    "retrieved_at": "2026-09-14T19:46:57.387125731+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.959211826+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2071,7 +2071,7 @@
     "raw_path": "data/archive/covariates/raw/06342/2012.gz",
     "hours": 8487,
     "present": 8487,
-    "retrieved_at": "2026-09-14T19:46:58.107815027+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.959764242+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2088,7 +2088,7 @@
     "raw_path": "data/archive/covariates/raw/06342/2013.gz",
     "hours": 8759,
     "present": 8759,
-    "retrieved_at": "2026-09-14T19:46:58.697682619+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.960310221+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2105,7 +2105,7 @@
     "raw_path": "data/archive/covariates/raw/06342/2014.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:46:59.330781698+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.960921764+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2122,7 +2122,7 @@
     "raw_path": "data/archive/covariates/raw/06342/2015.gz",
     "hours": 8749,
     "present": 8749,
-    "retrieved_at": "2026-09-14T19:46:59.991001368+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.960921764+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2139,7 +2139,7 @@
     "raw_path": "data/archive/covariates/raw/06342/2016.gz",
     "hours": 7924,
     "present": 7924,
-    "retrieved_at": "2026-09-14T19:47:00.662804365+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.960921764+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2156,7 +2156,7 @@
     "raw_path": "data/archive/covariates/raw/06342/2017.gz",
     "hours": 7455,
     "present": 7417,
-    "retrieved_at": "2026-09-14T19:47:01.668894768+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.962202549+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2173,7 +2173,7 @@
     "raw_path": "data/archive/covariates/raw/06342/2018.gz",
     "hours": 6794,
     "present": 6794,
-    "retrieved_at": "2026-09-14T19:47:02.302318573+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.962202549+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2190,7 +2190,7 @@
     "raw_path": "data/archive/covariates/raw/06342/2019.gz",
     "hours": 8759,
     "present": 8759,
-    "retrieved_at": "2026-09-14T19:47:02.942284584+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.962352991+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2207,7 +2207,7 @@
     "raw_path": "data/archive/covariates/raw/06342/2020.gz",
     "hours": 8784,
     "present": 8784,
-    "retrieved_at": "2026-09-14T19:47:03.614013910+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.962352991+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2224,7 +2224,7 @@
     "raw_path": "data/archive/covariates/raw/06342/2021.gz",
     "hours": 8760,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:47:04.292992830+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.964067459+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2241,7 +2241,7 @@
     "raw_path": "data/archive/covariates/raw/06342/2022.gz",
     "hours": 8732,
     "present": 8732,
-    "retrieved_at": "2026-09-14T19:47:05.071492434+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.964624643+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2258,7 +2258,7 @@
     "raw_path": "data/archive/covariates/raw/06342/2023.gz",
     "hours": 8759,
     "present": 8719,
-    "retrieved_at": "2026-09-14T19:47:05.724197626+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.965067863+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2275,7 +2275,7 @@
     "raw_path": "data/archive/covariates/raw/06342/2024.gz",
     "hours": 8784,
     "present": 8782,
-    "retrieved_at": "2026-09-14T19:47:06.449147224+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.965464592+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2292,7 +2292,7 @@
     "raw_path": "data/archive/covariates/raw/06342/2025.gz",
     "hours": 8760,
     "present": 8758,
-    "retrieved_at": "2026-09-14T19:47:07.340749979+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.965858459+00:00"
   },
   {
     "series": "rain_kochel",
@@ -2303,13 +2303,13 @@
     "params": {
       "dwd_station_id": "06342",
       "date": "2026-01-01T00:00:00+00:00",
-      "last_date": "2026-09-14T19:00:00+00:00"
+      "last_date": "2026-09-14T21:00:00+00:00"
     },
-    "sha256": "3dc432bf3f9877c256bb589bae56a988486352c8a11801cebd81a637fb51eefc",
-    "raw_path": "data/archive/covariates/raw/06342/2026-through-20260914T19.gz",
+    "sha256": "a8ff9ac0641882739b5f3bf69b0fd49e5b4f933e1a53d15293e9d3c3f7679b44",
+    "raw_path": "data/archive/covariates/raw/06342/2026-through-20260914T21.gz",
     "hours": 6144,
     "present": 6144,
-    "retrieved_at": "2026-09-14T19:47:07.928641796+00:00"
+    "retrieved_at": "2026-09-14T21:04:44.718066931+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2325,7 +2325,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2007-calendar.gz",
     "hours": 1008,
     "present": 992,
-    "retrieved_at": "2026-09-14T19:51:13.102164030+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.968006849+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2341,7 +2341,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2008-calendar.gz",
     "hours": 8784,
     "present": 8702,
-    "retrieved_at": "2026-09-14T19:51:13.523366690+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.969031096+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2357,7 +2357,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2009-calendar.gz",
     "hours": 8760,
     "present": 8746,
-    "retrieved_at": "2026-09-14T19:51:14.397350311+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.969606638+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2373,7 +2373,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2010-calendar.gz",
     "hours": 8760,
     "present": 8746,
-    "retrieved_at": "2026-09-14T19:51:15.322984457+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.971050978+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2389,7 +2389,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2011-calendar.gz",
     "hours": 8760,
     "present": 8733,
-    "retrieved_at": "2026-09-14T19:51:16.259938477+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.971050978+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2405,7 +2405,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2012-calendar.gz",
     "hours": 8784,
     "present": 8760,
-    "retrieved_at": "2026-09-14T19:51:17.181434870+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.973096371+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2421,7 +2421,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2013-calendar.gz",
     "hours": 8760,
     "present": 8738,
-    "retrieved_at": "2026-09-14T19:51:18.067618608+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.973096371+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2437,7 +2437,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2014-calendar.gz",
     "hours": 8760,
     "present": 8756,
-    "retrieved_at": "2026-09-14T19:51:19.009310484+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.975787878+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2453,7 +2453,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2015-calendar.gz",
     "hours": 8760,
     "present": 8755,
-    "retrieved_at": "2026-09-14T19:51:19.965380192+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.976943254+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2469,7 +2469,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2016-calendar.gz",
     "hours": 8784,
     "present": 8758,
-    "retrieved_at": "2026-09-14T19:51:20.893381596+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.978109598+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2485,7 +2485,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2017-calendar.gz",
     "hours": 8760,
     "present": 8743,
-    "retrieved_at": "2026-09-14T19:51:21.770289660+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.978757858+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2501,7 +2501,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2018-calendar.gz",
     "hours": 8760,
     "present": 8727,
-    "retrieved_at": "2026-09-14T19:51:22.695796013+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.979874372+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2517,7 +2517,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2019-calendar.gz",
     "hours": 8760,
     "present": 8736,
-    "retrieved_at": "2026-09-14T19:51:23.633151531+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.980401754+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2533,7 +2533,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2020-calendar.gz",
     "hours": 8784,
     "present": 8695,
-    "retrieved_at": "2026-09-14T19:51:24.564359903+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.982485771+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2549,7 +2549,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2021-calendar.gz",
     "hours": 8760,
     "present": 8733,
-    "retrieved_at": "2026-09-14T19:51:25.454822063+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.983798504+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2565,7 +2565,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2022-calendar.gz",
     "hours": 8760,
     "present": 8747,
-    "retrieved_at": "2026-09-14T19:51:26.498101950+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.985195637+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2581,7 +2581,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2023-calendar.gz",
     "hours": 8760,
     "present": 8721,
-    "retrieved_at": "2026-09-14T19:51:28.257292509+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.986353159+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2597,7 +2597,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2024-calendar.gz",
     "hours": 8778,
     "present": 8717,
-    "retrieved_at": "2026-09-14T19:51:30.904396057+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.990353107+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2613,7 +2613,7 @@
     "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2025-calendar.gz",
     "hours": 8760,
     "present": 8732,
-    "retrieved_at": "2026-09-14T19:51:33.593240738+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.993010759+00:00"
   },
   {
     "series": "isar_toelz",
@@ -2625,11 +2625,11 @@
       "beginn": "01.01.2026",
       "ende": "14.09.2026"
     },
-    "sha256": "7956c2d8e778b3dbb2217a2cfc33bc7fd8f4aa6fee935ef5b608fa04d8edbf3d",
-    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2026-calendar-through-20260914T19.gz",
-    "hours": 6165,
+    "sha256": "8816105b6f24cbd31c7fb7ab79681272f6c3e6ba2ad937bde7e89f76ad08cd25",
+    "raw_path": "data/archive/covariates/raw/bad-toelz-b472-16003207/2026-calendar-through-20260914T21.gz",
+    "hours": 6167,
     "present": 6145,
-    "retrieved_at": "2026-09-14T19:51:36.168009520+00:00"
+    "retrieved_at": "2026-09-14T21:05:20.207509756+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2645,7 +2645,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1980-calendar.gz",
     "hours": 1464,
     "present": 61,
-    "retrieved_at": "2026-09-14T19:51:37.901652575+00:00"
+    "retrieved_at": "2026-09-14T20:41:42.999897480+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2661,7 +2661,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1981-calendar.gz",
     "hours": 8760,
     "present": 365,
-    "retrieved_at": "2026-09-14T19:51:38.781881571+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.002352953+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2677,7 +2677,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1982-calendar.gz",
     "hours": 8760,
     "present": 365,
-    "retrieved_at": "2026-09-14T19:51:41.389491796+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.007199287+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2693,7 +2693,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1983-calendar.gz",
     "hours": 8760,
     "present": 365,
-    "retrieved_at": "2026-09-14T19:51:43.979214430+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.009260416+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2709,7 +2709,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1984-calendar.gz",
     "hours": 8784,
     "present": 366,
-    "retrieved_at": "2026-09-14T19:51:46.633762598+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.010353088+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2725,7 +2725,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1985-calendar.gz",
     "hours": 8760,
     "present": 365,
-    "retrieved_at": "2026-09-14T19:51:49.196391821+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.010353088+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2741,7 +2741,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1986-calendar.gz",
     "hours": 8760,
     "present": 365,
-    "retrieved_at": "2026-09-14T19:51:51.833115578+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.015490532+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2757,7 +2757,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1987-calendar.gz",
     "hours": 8760,
     "present": 364,
-    "retrieved_at": "2026-09-14T19:51:54.562284708+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.018605947+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2773,7 +2773,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1988-calendar.gz",
     "hours": 8784,
     "present": 366,
-    "retrieved_at": "2026-09-14T19:51:57.132758856+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.021039963+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2789,7 +2789,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1989-calendar.gz",
     "hours": 8760,
     "present": 365,
-    "retrieved_at": "2026-09-14T19:51:59.671136141+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.022755146+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2805,7 +2805,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1990-calendar.gz",
     "hours": 8760,
     "present": 364,
-    "retrieved_at": "2026-09-14T19:52:02.289313555+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.024914980+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2821,7 +2821,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1991-calendar.gz",
     "hours": 8760,
     "present": 363,
-    "retrieved_at": "2026-09-14T19:52:04.945787191+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.028335094+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2837,7 +2837,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1992-calendar.gz",
     "hours": 8784,
     "present": 366,
-    "retrieved_at": "2026-09-14T19:52:07.499027491+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.030360460+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2853,7 +2853,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1993-calendar.gz",
     "hours": 8760,
     "present": 365,
-    "retrieved_at": "2026-09-14T19:52:10.045637846+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.031126738+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2869,7 +2869,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1994-calendar.gz",
     "hours": 8760,
     "present": 365,
-    "retrieved_at": "2026-09-14T19:52:12.645833969+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.032939195+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2885,7 +2885,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1995-calendar.gz",
     "hours": 8760,
     "present": 365,
-    "retrieved_at": "2026-09-14T19:52:15.250794411+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.035837173+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2901,7 +2901,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1996-calendar.gz",
     "hours": 8784,
     "present": 366,
-    "retrieved_at": "2026-09-14T19:52:17.873690128+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.037655354+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2917,7 +2917,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1997-calendar.gz",
     "hours": 8760,
     "present": 365,
-    "retrieved_at": "2026-09-14T19:52:20.440618753+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.038936377+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2933,7 +2933,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1998-calendar.gz",
     "hours": 8760,
     "present": 365,
-    "retrieved_at": "2026-09-14T19:52:23.051276445+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.040831804+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2949,7 +2949,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/1999-calendar.gz",
     "hours": 8760,
     "present": 365,
-    "retrieved_at": "2026-09-14T19:52:25.637936592+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.042370796+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2965,7 +2965,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2000-calendar.gz",
     "hours": 8784,
     "present": 366,
-    "retrieved_at": "2026-09-14T19:52:28.268949509+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.044121027+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2981,7 +2981,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2001-calendar.gz",
     "hours": 8760,
     "present": 365,
-    "retrieved_at": "2026-09-14T19:52:30.819752216+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.044861555+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -2997,7 +2997,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2002-calendar.gz",
     "hours": 8760,
     "present": 365,
-    "retrieved_at": "2026-09-14T19:52:33.403517962+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.046603203+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3013,7 +3013,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2003-calendar.gz",
     "hours": 8760,
     "present": 365,
-    "retrieved_at": "2026-09-14T19:52:36.009436846+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.048851728+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3029,7 +3029,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2004-calendar.gz",
     "hours": 8784,
     "present": 366,
-    "retrieved_at": "2026-09-14T19:52:38.605237961+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.052003860+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3045,7 +3045,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2005-calendar.gz",
     "hours": 8760,
     "present": 366,
-    "retrieved_at": "2026-09-14T19:52:41.144150019+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.053119659+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3061,7 +3061,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2006-calendar.gz",
     "hours": 8760,
     "present": 365,
-    "retrieved_at": "2026-09-14T19:52:43.748691559+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.054627657+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3077,7 +3077,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2007-calendar.gz",
     "hours": 8496,
     "present": 327,
-    "retrieved_at": "2026-09-14T19:52:46.346236229+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.056961775+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3093,7 +3093,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2008-calendar.gz",
     "hours": 8760,
     "present": 6762,
-    "retrieved_at": "2026-09-14T19:52:48.653410673+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.058940887+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3109,7 +3109,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2009-calendar.gz",
     "hours": 8760,
     "present": 8744,
-    "retrieved_at": "2026-09-14T19:52:50.843014479+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.060386658+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3125,7 +3125,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2010-calendar.gz",
     "hours": 8760,
     "present": 8757,
-    "retrieved_at": "2026-09-14T19:52:53.474523067+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.062353134+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3141,7 +3141,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2011-calendar.gz",
     "hours": 8760,
     "present": 8748,
-    "retrieved_at": "2026-09-14T19:52:56.196747065+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.066353082+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3157,7 +3157,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2012-calendar.gz",
     "hours": 8784,
     "present": 8772,
-    "retrieved_at": "2026-09-14T19:52:58.821565151+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.069878817+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3173,7 +3173,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2013-calendar.gz",
     "hours": 8760,
     "present": 8748,
-    "retrieved_at": "2026-09-14T19:53:01.385927439+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.071582079+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3189,7 +3189,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2014-calendar.gz",
     "hours": 8760,
     "present": 8756,
-    "retrieved_at": "2026-09-14T19:53:03.978572130+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.074585438+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3205,7 +3205,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2015-calendar.gz",
     "hours": 8760,
     "present": 8729,
-    "retrieved_at": "2026-09-14T19:53:06.598143816+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.077062607+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3221,7 +3221,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2016-calendar.gz",
     "hours": 8784,
     "present": 8781,
-    "retrieved_at": "2026-09-14T19:53:09.200599194+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.080031157+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3237,7 +3237,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2017-calendar.gz",
     "hours": 8760,
     "present": 8748,
-    "retrieved_at": "2026-09-14T19:53:11.805456877+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.081507444+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3253,7 +3253,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2018-calendar.gz",
     "hours": 8760,
     "present": 8721,
-    "retrieved_at": "2026-09-14T19:53:14.438752651+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.084691763+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3269,7 +3269,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2019-calendar.gz",
     "hours": 8760,
     "present": 8742,
-    "retrieved_at": "2026-09-14T19:53:17.128337383+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.086353064+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3285,7 +3285,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2020-calendar.gz",
     "hours": 8784,
     "present": 8770,
-    "retrieved_at": "2026-09-14T19:53:19.768861771+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.090019703+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3301,7 +3301,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2021-calendar.gz",
     "hours": 8760,
     "present": 8703,
-    "retrieved_at": "2026-09-14T19:53:22.394391775+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.090353012+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3317,7 +3317,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2022-calendar.gz",
     "hours": 8760,
     "present": 8757,
-    "retrieved_at": "2026-09-14T19:53:25.057776928+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.094629765+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3333,7 +3333,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2023-calendar.gz",
     "hours": 8760,
     "present": 8735,
-    "retrieved_at": "2026-09-14T19:53:27.775698185+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.097683430+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3349,7 +3349,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2024-calendar.gz",
     "hours": 8784,
     "present": 8745,
-    "retrieved_at": "2026-09-14T19:53:30.470470190+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.100593090+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3365,7 +3365,7 @@
     "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2025-calendar.gz",
     "hours": 8760,
     "present": 8727,
-    "retrieved_at": "2026-09-14T19:53:33.155617237+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.102381468+00:00"
   },
   {
     "series": "loisach_beuerberg",
@@ -3377,11 +3377,11 @@
       "beginn": "01.01.2026",
       "ende": "14.09.2026"
     },
-    "sha256": "43d003084cb8ade432c6d9f6f8dc5a76a152cc7d3b81f0ef65021c88c3a6e412",
-    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2026-calendar-through-20260914T19.gz",
-    "hours": 6165,
-    "present": 6148,
-    "retrieved_at": "2026-09-14T19:53:35.746938705+00:00"
+    "sha256": "6960d28c41b24f8cb383800444abfccab21ec6c59091b91c46ce8b7e4d4253e5",
+    "raw_path": "data/archive/covariates/raw/beuerberg-16408504/2026-calendar-through-20260914T21.gz",
+    "hours": 6167,
+    "present": 6150,
+    "retrieved_at": "2026-09-14T21:08:39.621440887+00:00"
   },
   {
     "series": "eisbach",
@@ -3397,7 +3397,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2004-calendar.gz",
     "hours": 72,
     "present": 54,
-    "retrieved_at": "2026-09-14T19:53:37.392905474+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.106655121+00:00"
   },
   {
     "series": "eisbach",
@@ -3413,7 +3413,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2005-calendar.gz",
     "hours": 0,
     "present": 0,
-    "retrieved_at": "2026-09-14T19:53:37.584221363+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.107281208+00:00"
   },
   {
     "series": "eisbach",
@@ -3429,7 +3429,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2006-calendar.gz",
     "hours": 0,
     "present": 0,
-    "retrieved_at": "2026-09-14T19:53:37.755806923+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.107281208+00:00"
   },
   {
     "series": "eisbach",
@@ -3445,7 +3445,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2007-calendar.gz",
     "hours": 0,
     "present": 0,
-    "retrieved_at": "2026-09-14T19:53:37.918524742+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.107281208+00:00"
   },
   {
     "series": "eisbach",
@@ -3461,7 +3461,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2008-calendar.gz",
     "hours": 0,
     "present": 0,
-    "retrieved_at": "2026-09-14T19:53:38.085748911+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.107281208+00:00"
   },
   {
     "series": "eisbach",
@@ -3477,7 +3477,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2009-calendar.gz",
     "hours": 0,
     "present": 0,
-    "retrieved_at": "2026-09-14T19:53:38.246286392+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.107281208+00:00"
   },
   {
     "series": "eisbach",
@@ -3493,7 +3493,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2010-calendar.gz",
     "hours": 4296,
     "present": 4214,
-    "retrieved_at": "2026-09-14T19:53:38.711503506+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.108658791+00:00"
   },
   {
     "series": "eisbach",
@@ -3509,7 +3509,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2011-calendar.gz",
     "hours": 8760,
     "present": 8555,
-    "retrieved_at": "2026-09-14T19:53:40.398938417+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.110179663+00:00"
   },
   {
     "series": "eisbach",
@@ -3525,7 +3525,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2012-calendar.gz",
     "hours": 2280,
     "present": 2265,
-    "retrieved_at": "2026-09-14T19:53:42.698342085+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.112226248+00:00"
   },
   {
     "series": "eisbach",
@@ -3541,7 +3541,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2013-calendar.gz",
     "hours": 24,
     "present": 0,
-    "retrieved_at": "2026-09-14T19:53:43.464225769+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.112226248+00:00"
   },
   {
     "series": "eisbach",
@@ -3557,7 +3557,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2014-calendar.gz",
     "hours": 7224,
     "present": 6925,
-    "retrieved_at": "2026-09-14T19:53:44.103260756+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.114253283+00:00"
   },
   {
     "series": "eisbach",
@@ -3573,7 +3573,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2015-calendar.gz",
     "hours": 8760,
     "present": 8749,
-    "retrieved_at": "2026-09-14T19:53:46.423184156+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.117519140+00:00"
   },
   {
     "series": "eisbach",
@@ -3589,7 +3589,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2016-calendar.gz",
     "hours": 8784,
     "present": 8774,
-    "retrieved_at": "2026-09-14T19:53:49.148215532+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.120679855+00:00"
   },
   {
     "series": "eisbach",
@@ -3605,7 +3605,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2017-calendar.gz",
     "hours": 8760,
     "present": 8716,
-    "retrieved_at": "2026-09-14T19:53:51.878962040+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.122373819+00:00"
   },
   {
     "series": "eisbach",
@@ -3621,7 +3621,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2018-calendar.gz",
     "hours": 8760,
     "present": 8739,
-    "retrieved_at": "2026-09-14T19:53:54.604767084+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.126368523+00:00"
   },
   {
     "series": "eisbach",
@@ -3637,7 +3637,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2019-calendar.gz",
     "hours": 8760,
     "present": 8756,
-    "retrieved_at": "2026-09-14T19:53:57.318998814+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.129567385+00:00"
   },
   {
     "series": "eisbach",
@@ -3653,7 +3653,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2020-calendar.gz",
     "hours": 8784,
     "present": 8743,
-    "retrieved_at": "2026-09-14T19:53:59.999266624+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.133481503+00:00"
   },
   {
     "series": "eisbach",
@@ -3669,7 +3669,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2021-calendar.gz",
     "hours": 8760,
     "present": 8716,
-    "retrieved_at": "2026-09-14T19:54:02.704599857+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.134353161+00:00"
   },
   {
     "series": "eisbach",
@@ -3685,7 +3685,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2022-calendar.gz",
     "hours": 8760,
     "present": 8720,
-    "retrieved_at": "2026-09-14T19:54:05.435121059+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.138353109+00:00"
   },
   {
     "series": "eisbach",
@@ -3701,7 +3701,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2023-calendar.gz",
     "hours": 8760,
     "present": 8757,
-    "retrieved_at": "2026-09-14T19:54:08.178895235+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.142353058+00:00"
   },
   {
     "series": "eisbach",
@@ -3717,7 +3717,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2024-calendar.gz",
     "hours": 8784,
     "present": 8781,
-    "retrieved_at": "2026-09-14T19:54:10.913220167+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.146353006+00:00"
   },
   {
     "series": "eisbach",
@@ -3733,7 +3733,7 @@
     "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2025-calendar.gz",
     "hours": 8760,
     "present": 8756,
-    "retrieved_at": "2026-09-14T19:54:13.648315191+00:00"
+    "retrieved_at": "2026-09-14T20:41:43.148564577+00:00"
   },
   {
     "series": "eisbach",
@@ -3745,10 +3745,10 @@
       "beginn": "01.01.2026",
       "ende": "14.09.2026"
     },
-    "sha256": "85966a2ad63fe0f597249fd075662f89788d7827894abb22980f842030ed301f",
-    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2026-calendar-through-20260914T19.gz",
-    "hours": 6165,
-    "present": 6164,
-    "retrieved_at": "2026-09-14T19:54:16.230176210+00:00"
+    "sha256": "0b26c171ae0e71f10c2890bd6a05f970d75fe8faf9e61d1bf71f537816867944",
+    "raw_path": "data/archive/covariates/raw/muenchen-himmelreichbruecke-16515005/2026-calendar-through-20260914T21.gz",
+    "hours": 6167,
+    "present": 6166,
+    "retrieved_at": "2026-09-14T21:09:44.815840244+00:00"
   }
 ]
