@@ -13,7 +13,7 @@ from eisbach import archive
 def legacy_reader():
     """Make the documented legacy anchor fallback explicit on in-memory copies.
 
-    Production's empty Series for a missing column does not expand on fillna;
+    Production's one-row NaT Series for a missing column does not expand on fillna;
     consequently old partitions otherwise return only row zero. No archive writes.
     """
     read = archive._read_partition

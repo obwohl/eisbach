@@ -164,6 +164,24 @@ def main():
               'Munich-to-south error transfer, not confidence in real southern forecast skill.\n',
               table(['Method', 'Metric', 'Windows', 'Score °C', 'Δ vs two-air oracle % [95% CI]',
                      'Across-draw Δ SD (percentage points)', 'Cost vs partial replay °C'], rows)]
+    contrast_rows = []
+    for metric in ('mae', 'crps'):
+        matrices = {method: np.stack([bench.per_run(g, metric)[method].to_numpy() for g in sim])
+                    for method in ('block24', 'trace96')}
+        rng = np.random.default_rng(0)
+        boot = []
+        for _ in range(8000):
+            wi = rng.integers(len(anchors), size=len(anchors))
+            da = rng.integers(20, size=20)
+            db = rng.integers(20, size=20)
+            boot.append(matrices['trace96'][np.ix_(db, wi)].mean()
+                        - matrices['block24'][np.ix_(da, wi)].mean())
+        delta = matrices['trace96'].mean() - matrices['block24'].mean()
+        lo, hi = np.percentile(boot, [2.5, 97.5])
+        contrast_rows.append([metric, f'{delta:+.6f}', f'[{lo:+.6f}, {hi:+.6f}]'])
+    parts += ['### Whole-trace versus original-block simulation\n',
+              'Paired windows, independently resampled Monte Carlo realizations for each method.\n',
+              table(['Metric', 'Trace96 minus block24 °C', '95% conditional CI °C'], contrast_rows)]
     solar = load_scores('exp16_solar')
     solar_main = scores[scores.reference_time.isin(solar.reference_time.unique()) &
                         scores.label.isin(['Muenchen Orakel', 'Muenchen Replay'])]
@@ -175,6 +193,10 @@ def main():
                            'Luft Solar Orakel'),
               block_table(solar[solar.label.isin(['Luft Solar Orakel', 'Luft Solar Replay'])],
                           'Luft Solar Orakel')]
+    solar_contrast = solar[solar.label.isin(['Luft Replay Solar Orakel', 'Luft Solar Replay'])]
+    parts += ['### Solar forecast substitution with air replay held fixed\n',
+              paired_table(solar_contrast, 'Luft Replay Solar Orakel'),
+              block_table(solar_contrast, 'Luft Replay Solar Orakel')]
     parts += [(bench.CACHE / 'exp16_diagnostics.md').read_text()]
     marker = '\n<!-- generated tables -->\n'
     narrative = OUT.read_text().split(marker)[0] if OUT.exists() else ''
