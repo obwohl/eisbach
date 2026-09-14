@@ -5,10 +5,10 @@ was the only series it was asked to forecast. TimesFM 3.0 is natively multivaria
 the same gauges can instead be additional **targets** — forecast alongside the Eisbach,
 with variate attention running between them.
 
-Two guesses point opposite ways, which is why this is worth measuring rather than
-arguing. As targets the gauges get the full attention path rather than the covariate
-path, which might carry more. But they also spend model capacity and horizon patches on
-series nobody asked about, which in a zero-shot model could pull focus off the Eisbach.
+The installed TimesFM 3.0.2 MLX decoder actually reconstructs targets AND past-only covariates
+through the same path. Thus identical prepared series should give identical Eisbach
+forecasts. Keep this empirical check, but do not confuse role-dependent missing-value
+trimming with a framing effect.
 
 The Eisbach is always variate 0, and only its forecast is scored.
 """
@@ -25,6 +25,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bench  # noqa: E402
+from checkpoint import bind, resume, save  # noqa: E402
 from exp6_upstream import TARGET, pick_anchors  # noqa: E402
 from exp8_catchment_weather import load_all  # noqa: E402
 
@@ -45,6 +46,25 @@ CONFIRM_CONTEXT = 8760
 #: gone from this design, and the question is asked of the series that actually carry.
 UPSTREAM = ["isar_toelz", "isar_lenggries"]
 WEATHER = ["airtemp", "t_catchment"]
+
+
+def prepare_framing(target, past_only, past_future):
+    """Prepare the Eisbach and auxiliary series once, independently of their role.
+
+    Only the Eisbach determines the time trim, as in the covariate reference. Otherwise
+    an upstream NaN at the first step shortens the entire window only in target mode.
+    """
+    n_targets = 1 if target.ndim == 1 else target.shape[0]
+    stacked = np.atleast_2d(target)
+    extra = [stacked[1:]] if n_targets > 1 else []
+    if past_only is not None:
+        extra.append(past_only)
+    auxiliary = np.concatenate(extra, axis=0) if extra else None
+    eisbach, auxiliary, future = bench.prepare_inputs(stacked[0], auxiliary, past_future)
+    prepared_target = (np.concatenate([eisbach[None], auxiliary[:n_targets - 1]], axis=0)
+                       if n_targets > 1 else eisbach)
+    prepared_past = auxiliary[n_targets - 1:] if past_only is not None else None
+    return prepared_target, prepared_past, future
 
 
 def evaluate(fc, df, anchors, truth, *, label: str, targets: list[str],
@@ -71,7 +91,7 @@ def evaluate(fc, df, anchors, truth, *, label: str, targets: list[str],
         # Per window. A no-op on PyTorch, which does this internally; on MLX it is the
         # difference between a forecast and a column of NaN.
         for j in range(len(contexts)):
-            contexts[j], po_list[j], pf_list[j] = bench.prepare_inputs(
+            contexts[j], po_list[j], pf_list[j] = prepare_framing(
                 contexts[j], po_list[j], pf_list[j])
         outs = list(fc.predict_batch(contexts, horizon=bench.HORIZON,
                                      past_only_covariates=po_list,
@@ -114,12 +134,16 @@ def main() -> None:
     ]
 
     def sweep(context: int, subset, path: pathlib.Path) -> pd.DataFrame:
-        rows = []
+        bind(path, df, anchors, context, subset)
+        rows = resume(path, [v[0] for v in subset], anchors)
+        done = {r["label"] for r in rows}
         for label, targets, past_only, future in subset:
+            if label in done:
+                continue
             t0 = time.time()
             rows += evaluate(fc, df, anchors, truth, label=label, targets=targets,
                              past_only=past_only, future=future, context=context)
-            pd.DataFrame(rows).to_csv(path, index=False)
+            save(path, rows)
             logger.info("ctx=%d %-38s %d targets  %.0fs",
                         context, label, 1 + len(targets), time.time() - t0)
         return pd.DataFrame(rows)
@@ -141,11 +165,10 @@ def main() -> None:
         return out
 
     screened = sweep(SCREEN_CONTEXT, variants, bench.CACHE / "exp9_targets.csv")
-    ranked = show(screened, f"screen at {SCREEN_CONTEXT} h, {len(anchors)} windows")
+    show(screened, f"screen at {SCREEN_CONTEXT} h, {len(anchors)} windows")
 
-    keep = ["upstream as covariates"] + [lab for lab in ranked.label
-                                         if lab != "baseline: air only"][:2]
-    subset = [v for v in variants if v[0] in keep]
+    # Both one- and two-gauge framing pairs must survive selection to answer exp9.
+    subset = [v for v in variants if v[0] != "baseline: air only"]
     confirmed = sweep(CONFIRM_CONTEXT, subset, bench.CACHE / "exp9_confirm.csv")
     show(confirmed, f"confirmation at {CONFIRM_CONTEXT} h, {len(anchors)} windows")
 
