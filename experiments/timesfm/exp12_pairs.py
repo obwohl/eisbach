@@ -58,7 +58,8 @@ GAUGES = [
 
 
 def evaluate(fc, df, anchors, truth, *, label: str, past_only: list[str],
-             context: int) -> list[dict]:
+             context: int, future: list[str] | None = None) -> list[dict]:
+    future = FUTURE if future is None else future
     idx = df.index
     rows = []
     for i in range(0, len(anchors), BATCH):
@@ -73,7 +74,7 @@ def evaluate(fc, df, anchors, truth, *, label: str, past_only: list[str],
                 if past_only else None)
             pf_list.append(np.stack([
                 df[c].iloc[lo:pos + 1 + bench.HORIZON].to_numpy(dtype=np.float32)
-                for c in FUTURE]))
+                for c in future]))
             metas.append((ts, idx[pos + 1: pos + 1 + bench.HORIZON]))
         outs = list(fc.predict_batch(contexts, horizon=bench.HORIZON,
                                      past_only_covariates=po_list,
@@ -101,6 +102,27 @@ def report(scores: pd.DataFrame, title: str) -> pd.DataFrame:
     return out["mae"]
 
 
+def _resume(path: Path, wanted: list[str]) -> list[dict]:
+    """Rows for variants a previous run finished, so a restart does not redo them.
+
+    A variant is only taken from the checkpoint if it is one we still want *and* it is
+    not the last label in the file: the run may have been killed mid-variant, and a
+    half-scored variant is worse than no variant at all.
+    """
+    if not path.exists():
+        return []
+    prev = pd.read_csv(path, parse_dates=["reference_time"])
+    if prev.empty:
+        return []
+    order = list(dict.fromkeys(prev["label"]))
+    complete = [lab for lab in order[:-1] if lab in wanted]
+    kept = prev[prev["label"].isin(complete)]
+    if complete:
+        logger.info("resuming %s: %d variants already done (%s)",
+                    path.name, len(complete), ", ".join(complete))
+    return kept.to_dict("records")
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     from timesfm3 import TimesFM3Forecaster
@@ -118,12 +140,16 @@ def main() -> None:
     for name, t, q in GAUGES:
         variants += [(f"{name} T", [t]), (f"{name} Q", [q]), (f"{name} T+Q", [t, q])]
 
-    # Checkpoint after every variant. The first attempt at this experiment was killed
+    # Checkpoint after every variant, and resume from it. The first attempt was killed
     # silently after six of nineteen and lost all of them, because results were only
-    # written at the end.
+    # written at the end; the second lost eight more to a restart, because writing a
+    # checkpoint nobody reads back only records the loss.
     path = bench.CACHE / "exp12_pairs.csv"
-    rows = []
+    rows = _resume(path, [label for label, _ in variants])
+    done = {r["label"] for r in rows}
     for label, cols in variants:
+        if label in done:
+            continue
         t0 = time.time()
         rows += evaluate(fc, df, anchors, truth, label=label, past_only=cols,
                          context=SCREEN_CONTEXT)
@@ -153,9 +179,12 @@ def main() -> None:
     # rather than asserting.
     shortlist = [lab for lab in ranked.label if lab != "weather only"][:4]
     print(f"\nConfirming at {CONFIRM_CONTEXT} h of context: {', '.join(shortlist)}")
-    confirm_rows = []
     confirm_path = bench.CACHE / "exp12_confirm.csv"
+    confirm_rows = _resume(confirm_path, ["weather only", *shortlist])
+    confirm_done = {r["label"] for r in confirm_rows}
     for label in ["weather only", *shortlist]:
+        if label in confirm_done:
+            continue
         cols = dict(variants)[label]
         t0 = time.time()
         confirm_rows += evaluate(fc, df, anchors, truth, label=label, past_only=cols,

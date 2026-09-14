@@ -22,11 +22,19 @@ reason.
 
 What remains is **covariate selection** — which raw series to hand over, and as what.
 
-Two constructed series survive and should be named as such rather than pretended away:
-`t_catchment` is the plain mean of four air-temperature stations, `rain_catchment_24h` a
-24-hour rolling sum. Both are aggregations rather than fitted weightings, and both were
-measured as helping. The cleaner alternative — hand over the four raw stations and let the
-model weight them — is a covariate-selection question and is on the open list below.
+One constructed series survives and should be named as such rather than pretended away:
+`rain_catchment_24h`, the 24-hour rolling sum of a four-station rain mean. Those four rain
+series are genuinely four measurements — pairwise r between 0.14 and 0.53 on wet hours —
+so the mean really is an aggregation, and it is on the open list to try the raw four
+instead.
+
+`t_catchment` was on this list too, described as the mean of four air-temperature
+stations. **It is not.** Bright Sky answers for a *coordinate*, from whichever station is
+nearest and reporting, and all four of my southern coordinates resolve to the same
+station: pairwise mean absolute difference 0.002–0.004 °C, r = 0.9999. `t_catchment` is
+one southern station, averaged with three copies of itself. That makes it a raw series
+rather than a constructed one — but I had been describing it wrongly, and the same lookup
+is why `solar_*` had to be rebuilt by station id (see below).
 
 ## Settled: method
 
@@ -42,6 +50,7 @@ model weight them — is a covariate-selection question and is on the open list 
 |---|---|---|---|
 | `airtemp` (Munich) | known-future | water-only 0.684 → 0.380 MAE | exp6 |
 | `t_catchment` | known-future | −4.1 % MAE, −4.3 % CRPS, significant | exp8, decomposed |
+| | | *One southern station despite the name — see above. Munich's own air differs from it by 2.7 °C on average, so the two are not redundant.* |
 | `rain_catchment_24h` | known-future | −3.0 % MAE, −3.1 % CRPS, significant, **on top of everything else** | exp8, decomposed |
 
 Rain is the instructive one: alone against the baseline it was never significant, and it
@@ -69,11 +78,29 @@ against. A covariate that is useless in isolation can still be worth having.
 2. **Covariate or target.** TimesFM 3.0 is natively multivariate, so the upstream gauges
    can be forecast alongside the Eisbach instead of handed over as covariates. Only the
    Eisbach is scored. `exp9_targets.py`. *Queued behind exp12.*
-3. **Solar radiation.** One station, chosen for coverage and for representing the
-   catchment, tested inside the full combination rather than alone — the rain result says
-   testing a covariate in isolation can give the wrong answer. *Data being refetched.*
-4. **The raw catchment stations** instead of their mean, letting the model do the
-   weighting. Cheap, and it removes one of the two constructed series.
+3. **Solar radiation.** `exp13_solar.py`, *queued behind exp12*. Tested inside the full
+   combination rather than alone, because the rain result says isolation gives the wrong
+   answer. Two candidate stations, because reliability and catchment membership point in
+   opposite directions and the data can settle it:
+
+   | station | coverage 2019→now | thin months | in the catchment? |
+   |---|---|---|---|
+   | Hohenpeißenberg (02290), 977 m | 99.9 % | **0 of 93** | no — Ammer watershed, joins the Isar at Moosburg, below Munich |
+   | Garmisch-Partenkirchen (01550), 719 m | 97.3 % | 4 of 93 | yes — Loisach valley |
+   | ~~Kreuth (02738)~~, 776 m | 59.3 % | 37 of 73 | no — Tegernsee/Mangfall, drains to the Inn |
+
+   Kreuth is excluded on reliability, and it matters that it is: it is the nearest
+   radiation station to Lenggries, so it is what a coordinate lookup reaches for after it
+   came online in September 2020. Mittenwald, Jachenau-Tannern and Holzkirchen carry
+   radiation in under 0.5 % of hours — the DWD's radiation network is simply sparse here.
+
+   **The old solar columns were never six stations.** `weather_south.csv` has
+   `solar_toelz`, `solar_lenggries`, `solar_kochel` and `solar_garmisch` bit-identical
+   across the entire record, and the one series behind them switches source in September
+   2020, from Garmisch to Kreuth — a seam in the middle of a covariate. `build_solar.py`
+   now fetches by DWD station id, so the source cannot move.
+4. **The raw catchment rain stations** instead of their mean, letting the model do the
+   weighting. Cheap, and it removes the last constructed series.
 5. **The tributary and canal gauges** fetched after reading the hydrology — Loisach-Isar
    canal, Jachen, Walchen, Gaißach, Ellbach, Sylvenstein outflow — none yet tested.
 
