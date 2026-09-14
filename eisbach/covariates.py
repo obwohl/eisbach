@@ -424,7 +424,18 @@ def refresh(*, root: Path = STORE, now=None) -> None:
         write_json(cursor_path, cursors)
     # Persist automated decisions for *all* covariates, even those not yet model channels.
     for name in SPECS:
-        model_values(name, root=root, start=now - pd.Timedelta(days=4), end=now)
+        try:
+            model_values(name, root=root, start=now - pd.Timedelta(days=4), end=now)
+        except ImplausibleGaugeData:
+            # Ingestion records what happened; it does not get to refuse. `model_values`
+            # raises so a *forecast* is never built on a broken instrument, and that is
+            # right there — but aborting the archive write would lose the evidence that
+            # the instrument broke, which is the one thing this store exists to keep.
+            # Today the four-day window is under the budget's minimum sample size and
+            # this cannot fire; it is guarded so that widening the window later does not
+            # quietly turn a bad gauge into a failed ingestion.
+            logger.exception("%s: too many implausible readings to judge; "
+                             "archived anyway, decisions not recorded for this pass", name)
 
 
 def prepare_live(*, root: Path = STORE):

@@ -289,3 +289,29 @@ def test_rain_keeps_its_downpours(tmp_path):
     raw = frame([0.0, 0.0, 0.0, 0.0, 30.6, 0.0, 0.0, 0.0])
     write_hourly("rain_kochel", raw, root=tmp_path)
     assert model_values("rain_kochel", root=tmp_path).notna().all()
+
+
+def test_ingestion_records_a_broken_gauge_instead_of_refusing(tmp_path, mocker):
+    """`model_values` raises so no forecast is built on a broken instrument. Ingestion
+    must still write: losing the evidence that the gauge broke defeats the archive.
+
+    Today the decision pass uses a four-day window, below the budget's minimum sample
+    size, so this cannot fire. The guard exists so widening that window later does not
+    quietly turn a bad gauge into a failed ingestion.
+    """
+    for name in SPECS:
+        raw = frame([12.0] * 24)
+        raw.index = pd.date_range("2026-09-13", periods=24, freq="h", tz="UTC")
+        write_hourly(name, raw, root=tmp_path)
+    response = mocker.Mock(content=b"source", text="source")
+    response.json.return_value = {}
+    mocker.patch("eisbach.covariates.request", return_value=response)
+    mocker.patch("eisbach.covariates.hourly_weather", return_value=pd.DataFrame())
+    mocker.patch("eisbach.covariates.hourly_gkd", return_value=(pd.DataFrame(), []))
+    mocker.patch("eisbach.covariates.model_values",
+                 side_effect=ImplausibleGaugeData("gauge is broken, not spiky"))
+
+    refresh(root=tmp_path, now=pd.Timestamp("2026-09-14 12:00", tz="UTC"))
+
+    # The cursors were still written: the pass completed rather than aborting.
+    assert (tmp_path / "cursors.json").exists()
