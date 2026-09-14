@@ -269,3 +269,54 @@ def load_forecaster(checkpoint: str = "google/timesfm-3.0-pytorch"):
 
     logger.info("TimesFM on the PyTorch backend")
     return TimesFM3Forecaster.from_pretrained(checkpoint)
+
+
+def prepare_inputs(target: np.ndarray, past_only: np.ndarray | None,
+                   past_future: np.ndarray | None, *, force: bool = False):
+    """Fill missing model inputs the way the PyTorch backend does internally.
+
+    PyTorch trims leading missing target values and linearly interpolates gaps before the
+    network sees anything. MLX 3.0.2 does not: it passes NaN through, and the forecast
+    comes back all NaN. Found by the local run of exp11, whose first attempt produced
+    nothing but NaN quantiles.
+
+    Off by default, and deliberately so. On PyTorch the backend already does this, and
+    doing it here instead changes the numbers slightly — measured at 1.8e-5 °C hourly and
+    4.6e-3 °C quarter-hourly on one window — which would silently break comparability with
+    every score already recorded in ``data/experiments``. It switches on for MLX, where it
+    is the difference between a forecast and a NaN, or with ``force``.
+
+    Never touches the arrays it is given, and never the truth used for scoring.
+    """
+    import os
+
+    if not force and os.environ.get("TIMESFM_BACKEND", "torch").lower() != "mlx":
+        return target, past_only, past_future
+
+    target = np.array(target, dtype=np.float32, copy=True)
+    past_only = None if past_only is None else np.array(past_only, dtype=np.float32, copy=True)
+    past_future = (None if past_future is None
+                   else np.array(past_future, dtype=np.float32, copy=True))
+
+    valid = ~np.isnan(target)
+    if valid.any():
+        first = int(np.argmax(valid))
+        target = target[first:]
+        if past_only is not None:
+            past_only = past_only[:, first:]
+        if past_future is not None:
+            past_future = past_future[:, first:]
+    else:
+        target[:] = 0.0
+
+    for arr in (target, past_only, past_future):
+        if arr is None:
+            continue
+        for row in np.atleast_2d(arr):
+            missing = np.isnan(row)
+            if not missing.any():
+                continue
+            present = ~missing
+            row[missing] = (np.interp(np.flatnonzero(missing), np.flatnonzero(present),
+                                      row[present]) if present.any() else 0.0)
+    return target, past_only, past_future

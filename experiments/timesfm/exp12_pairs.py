@@ -41,6 +41,8 @@ from exp8_catchment_weather import load_all  # noqa: E402
 logger = logging.getLogger(__name__)
 
 SCREEN_CONTEXT = 1024
+#: Where the screen's survivors are re-measured. exp1 found this the best hourly context.
+CONFIRM_CONTEXT = 8760
 BATCH = 16
 FUTURE = ["airtemp", "t_catchment"]
 
@@ -116,15 +118,19 @@ def main() -> None:
     for name, t, q in GAUGES:
         variants += [(f"{name} T", [t]), (f"{name} Q", [q]), (f"{name} T+Q", [t, q])]
 
+    # Checkpoint after every variant. The first attempt at this experiment was killed
+    # silently after six of nineteen and lost all of them, because results were only
+    # written at the end.
+    path = bench.CACHE / "exp12_pairs.csv"
     rows = []
     for label, cols in variants:
         t0 = time.time()
         rows += evaluate(fc, df, anchors, truth, label=label, past_only=cols,
                          context=SCREEN_CONTEXT)
+        pd.DataFrame(rows).to_csv(path, index=False)
         logger.info("%-22s %.0fs", label, time.time() - t0)
 
     scores = pd.DataFrame(rows)
-    scores.to_csv(bench.CACHE / "exp12_pairs.csv", index=False)
     ranked = report(scores, f"screen at {SCREEN_CONTEXT} h of context, {len(anchors)} windows")
 
     print("\n--- does the discharge earn its place next to the temperature? ---")
@@ -141,8 +147,39 @@ def main() -> None:
         print(f"   {name:<20} T+Q vs T: {d.mean():+.4f} "
               f"({100 * d.mean() / per[b].mean():+5.1f} %)  CI [{lo:+.4f},{hi:+.4f}]  {verdict}")
 
-    print("\nShortlist for confirmation at a full year of context:")
-    print("   " + ", ".join(ranked.head(4).label))
+    # Confirmation, and a test of the screen itself. exp11 measured a year of context as
+    # worth 16 % MAE over 160 days, independently of exp1 — so context dominates, and the
+    # assumption that a short-context ranking survives at full context is worth checking
+    # rather than asserting.
+    shortlist = [lab for lab in ranked.label if lab != "weather only"][:4]
+    print(f"\nConfirming at {CONFIRM_CONTEXT} h of context: {', '.join(shortlist)}")
+    confirm_rows = []
+    confirm_path = bench.CACHE / "exp12_confirm.csv"
+    for label in ["weather only", *shortlist]:
+        cols = dict(variants)[label]
+        t0 = time.time()
+        confirm_rows += evaluate(fc, df, anchors, truth, label=label, past_only=cols,
+                                 context=CONFIRM_CONTEXT)
+        pd.DataFrame(confirm_rows).to_csv(confirm_path, index=False)
+        logger.info("confirm %-22s %.0fs", label, time.time() - t0)
+
+    confirmed = pd.DataFrame(confirm_rows)
+    report(confirmed, f"confirmation at {CONFIRM_CONTEXT} h, {len(anchors)} windows")
+
+    print("\n--- did the ranking survive the change of context? ---")
+    a = bench.paired(scores, "weather only").set_index("label")["pct"]
+    b = bench.paired(confirmed, "weather only").set_index("label")["pct"]
+    common = [c for c in shortlist if c in b.index]
+    print(f"{'Variante':<22}{'Screen %':>11}{'Voll %':>10}")
+    for lab in common:
+        print(f"{lab:<22}{a[lab]:>+10.1f}%{b[lab]:>+9.1f}%")
+    if len(common) > 2:
+        rank_screen = a[common].rank()
+        rank_full = b[common].rank()
+        rho = rank_screen.corr(rank_full, method="spearman")
+        print(f"\n   Spearman der Rangfolge über {len(common)} Varianten: {rho:+.2f}")
+        print("   (bei so wenigen Varianten grob; ein negativer Wert widerlegt das "
+              "Screen-Protokoll, ein positiver bestätigt es nicht.)")
 
 
 if __name__ == "__main__":

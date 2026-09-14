@@ -90,33 +90,18 @@ def window(df: pd.DataFrame, anchor: pd.Timestamp, *, steps_per_hour: int,
 
 
 def model_inputs(ctx: pd.DataFrame, hor: pd.DataFrame):
-    """Match PyTorch's missing-input preparation on MLX 3.0.2 as well.
+    """Model inputs for one window, with missing values filled as PyTorch fills them.
 
-    PyTorch trims leading missing target values and interpolates input gaps; MLX
-    currently passes NaNs through to the network. Work on copies of model inputs,
-    never on the truth used for scoring. Past-only inputs stop at the anchor.
+    Forced on regardless of backend: this experiment was run and reported on MLX, where
+    the preparation is the difference between a forecast and a column of NaN, and the
+    numbers in REPORT_exp11.md are the prepared ones. See ``bench.prepare_inputs``.
     """
-    target = ctx[TARGET].to_numpy(dtype=np.float32, copy=True)
+    target = ctx[TARGET].to_numpy(dtype=np.float32)
     po = np.stack([ctx[c].to_numpy(dtype=np.float32) for c in PAST_ONLY])
     pf = np.stack([
         np.concatenate([ctx[c].to_numpy(dtype=np.float32),
                         hor[c].to_numpy(dtype=np.float32)]) for c in FUTURE])
-    valid = ~np.isnan(target)
-    if valid.any():
-        first = int(np.argmax(valid))
-        target, po, pf = target[first:], po[:, first:], pf[:, first:]
-    else:
-        target[:] = 0
-
-    for arr in (target, po, pf):
-        for row in np.atleast_2d(arr):
-            missing = np.isnan(row)
-            if missing.any():
-                present = ~missing
-                row[missing] = (np.interp(np.flatnonzero(missing),
-                                         np.flatnonzero(present), row[present])
-                                if present.any() else 0.0)
-    return target, po, pf
+    return bench.prepare_inputs(target, po, pf, force=True)
 
 
 def evaluate(fc, df: pd.DataFrame, anchors, *, label: str, steps_per_hour: int,
