@@ -148,8 +148,9 @@ all three with instrument failure. Ingestion files provide the DST/raw evidence.
   though the trained channel order remains water, air+96h, pressure+96h.
 - The workflow commits archive changes even if subsequent model validation fails.
   Forecast, weather, observations and verification stores were not used as backfill
-  destinations. Production observation writes exclude existing timestamps, preserving
-  their old first-sample values and retractions; new observations use hourly means.
+  destinations. Production observation writes preserve existing water values and retractions, while
+  allowing late observed weather to fill missing fields at existing hours. Already
+  recorded weather values remain unchanged; new water observations use hourly means.
 - Single-writer operation follows the existing archive pattern and the workflow's
   concurrency group. Writes are atomic per partition, not a transaction over all stations.
   A resumed run can therefore reuse successful earlier station updates.
@@ -174,7 +175,7 @@ claim is made by this archive task.
 
 ## Validation recorded for this delivery
 
-Final validation: `pytest -q` — **212 passed, 2 skipped**; `ruff check .` — **all checks passed**.
+Final validation: `pytest -q` — **214 passed, 2 skipped**; `ruff check .` — **all checks passed**.
 All 226 manifest entries passed SHA-256 verification. The archive contains 1,620,209
 non-null hourly values, 5,328 flagged intervals and 10,449 gap intervals. The four
 pre-existing archive stores have no diff against the checked-out source branch. Tests cover strict station identity, forecast exclusion,
