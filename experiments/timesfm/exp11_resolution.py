@@ -158,14 +158,12 @@ def pick_anchors(df: pd.DataFrame, n: int) -> list[pd.Timestamp]:
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
-    from timesfm3 import TimesFM3Forecaster
-
     df = load_fine()
     anchors = pick_anchors(df, 120)
     logger.info("%d anchors, %s .. %s", len(anchors), anchors[0], anchors[-1])
     logger.info("per year: %s", pd.Series(anchors).dt.year.value_counts().sort_index().to_dict())
 
-    fc = TimesFM3Forecaster.from_pretrained("google/timesfm-3.0-pytorch")
+    fc = bench.load_forecaster()
 
     variants = [
         ("hourly, 1 year of context", 1, HOURLY_BEST),

@@ -243,3 +243,29 @@ def paired(scores: pd.DataFrame, reference: str, *, metric: str = "mae",
             "n_tested": len(others),
         })
     return pd.DataFrame(rows).sort_values("delta").reset_index(drop=True)
+
+
+def load_forecaster(checkpoint: str = "google/timesfm-3.0-pytorch"):
+    """The TimesFM forecaster, on MLX where that is available and asked for.
+
+    ``TIMESFM_BACKEND=mlx`` selects the Apple-silicon backend, which mirrors the PyTorch
+    interface — ``predict`` / ``predict_batch``, univariate or multivariate, both kinds of
+    covariate — and is numerically matched to it on this checkpoint to within about 2e-6
+    on the quantiles. On a MacBook it is several times faster than PyTorch on CPU, which
+    is the whole reason the switch exists.
+
+    Anything else, including no setting at all, loads the PyTorch backend.
+    """
+    import os
+
+    backend = os.environ.get("TIMESFM_BACKEND", "torch").lower()
+    if backend == "mlx":
+        from timesfm3.mlx import TimesFM3Forecaster as MlxForecaster
+
+        logger.info("TimesFM on the MLX backend")
+        return MlxForecaster.from_pretrained(checkpoint)
+
+    from timesfm3 import TimesFM3Forecaster
+
+    logger.info("TimesFM on the PyTorch backend")
+    return TimesFM3Forecaster.from_pretrained(checkpoint)
