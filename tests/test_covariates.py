@@ -311,7 +311,51 @@ def test_ingestion_records_a_broken_gauge_instead_of_refusing(tmp_path, mocker):
     mocker.patch("eisbach.covariates.model_values",
                  side_effect=ImplausibleGaugeData("gauge is broken, not spiky"))
 
+    # Completes rather than aborting; the decision pass swallows the refusal.
     refresh(root=tmp_path, now=pd.Timestamp("2026-09-14 12:00", tz="UTC"))
 
-    # The cursors were still written: the pass completed rather than aborting.
-    assert (tmp_path / "cursors.json").exists()
+
+def test_an_empty_response_does_not_advance_the_cursor(tmp_path, mocker):
+    """A provider can answer HTTP 200 with nothing in it during an outage.
+
+    Advancing on that moves the cursor past hours nobody fetched, and the next refresh
+    reaches back only 72 hours — so an outage longer than that leaves a permanent hole
+    in a store whose sources serve only a rolling window.
+    """
+    for name in SPECS:
+        raw = frame([12.0] * 24)
+        raw.index = pd.date_range("2026-09-01", periods=24, freq="h", tz="UTC")
+        write_hourly(name, raw, root=tmp_path)
+    response = mocker.Mock(content=b"source", text="source")
+    response.json.return_value = {}
+    mocker.patch("eisbach.covariates.request", return_value=response)
+    mocker.patch("eisbach.covariates.hourly_weather", return_value=pd.DataFrame())
+    mocker.patch("eisbach.covariates.hourly_gkd", return_value=(pd.DataFrame(), []))
+
+    refresh(root=tmp_path, now=pd.Timestamp("2026-09-14 12:00", tz="UTC"))
+
+    assert not (tmp_path / "cursors.json").exists()
+
+
+def test_the_cursor_follows_the_newest_stored_hour(tmp_path, mocker):
+    """Not `now`: only hours that actually reached the archive may be checkpointed."""
+    stored = pd.date_range("2026-09-01", periods=24, freq="h", tz="UTC")
+    for name in SPECS:
+        raw = frame([12.0] * 24)
+        raw.index = stored
+        write_hourly(name, raw, root=tmp_path)
+    arrived = frame([13.0] * 3)
+    arrived.index = pd.date_range("2026-09-02", periods=3, freq="h", tz="UTC")
+    response = mocker.Mock(content=b"source", text="source")
+    response.json.return_value = {}
+    mocker.patch("eisbach.covariates.request", return_value=response)
+    mocker.patch("eisbach.covariates.hourly_weather", return_value=arrived)
+    mocker.patch("eisbach.covariates.hourly_gkd", return_value=(arrived, []))
+
+    now = pd.Timestamp("2026-09-14 12:00", tz="UTC")
+    refresh(root=tmp_path, now=now)
+
+    cursors = json.loads((tmp_path / "cursors.json").read_text())
+    for value in cursors.values():
+        assert pd.Timestamp(value) == arrived.index.max()
+        assert pd.Timestamp(value) < now

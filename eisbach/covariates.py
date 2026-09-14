@@ -392,6 +392,7 @@ def refresh(*, root: Path = STORE, now=None) -> None:
             last = _read_partition(paths[-1]).timestamp.max()
         start = min(last, now) - pd.Timedelta(hours=72)
         zone = "Europe/Berlin" if water else "UTC"
+        newest = None
         for year in range(start.tz_convert(zone).year, now.tz_convert(zone).year + 1):
             begin = max(start, pd.Timestamp(f"{year}-01-01", tz=zone).tz_convert("UTC"))
             end = min(now, (pd.Timestamp(f"{year + 1}-01-01", tz=zone)
@@ -417,16 +418,34 @@ def refresh(*, root: Path = STORE, now=None) -> None:
                     frame = hourly_weather(response.json(), station, SPECS[name].field)
                 if not frame.empty:
                     frame = frame.loc[begin:end]
-                    write_hourly(name, frame, root=root)
+                    if not frame.empty:
+                        write_hourly(name, frame, root=root)
+                        newest = max(newest or frame.index.max(), frame.index.max())
             write_json(path.with_suffix(".json"), {"url": url, "params": params, "fetched_at": now,
                                                    "sha256": digest})
-        cursors[station] = now.isoformat()
-        write_json(cursor_path, cursors)
+        # Checkpoint to the newest hour actually stored, never to `now`. A provider can
+        # answer HTTP 200 with an empty table during an outage — a valid empty GKD page,
+        # or Bright Sky's `weather: []` — and advancing on that would move the cursor
+        # past hours nobody ever fetched. The next refresh reaches back only 72 hours, so
+        # an outage longer than that would leave a permanent hole: GKD serves a rolling
+        # window, and what is not captured is eventually unrecoverable.
+        #
+        # Leaving the cursor where it is means a genuinely dead station keeps being
+        # re-requested from its last good hour. That is the right way round: the gap is
+        # real, the requests stay chunked by calendar year, and they stop growing the
+        # moment data comes back.
+        if newest is not None:
+            cursors[station] = max(pd.Timestamp(cursors[station]), newest).isoformat() \
+                if station in cursors else newest.isoformat()
+            write_json(cursor_path, cursors)
+        else:
+            logger.warning("%s: nothing parsed from a successful request; cursor stays at %s",
+                           station, cursors.get(station, "the archive's last hour"))
     # Persist automated decisions for *all* covariates, even those not yet model channels.
     for name in SPECS:
         try:
             model_values(name, root=root, start=now - pd.Timedelta(days=4), end=now)
-        except ImplausibleGaugeData:
+        except (ImplausibleGaugeData, RuntimeError):
             # Ingestion records what happened; it does not get to refuse. `model_values`
             # raises so a *forecast* is never built on a broken instrument, and that is
             # right there — but aborting the archive write would lose the evidence that
@@ -434,8 +453,14 @@ def refresh(*, root: Path = STORE, now=None) -> None:
             # Today the four-day window is under the budget's minimum sample size and
             # this cannot fire; it is guarded so that widening the window later does not
             # quietly turn a bad gauge into a failed ingestion.
-            logger.exception("%s: too many implausible readings to judge; "
-                             "archived anyway, decisions not recorded for this pass", name)
+            # Two ways this refuses: too many implausible readings, or nothing in the
+            # window at all after an outage. Both are right where `model_values` guards
+            # a forecast, and wrong here. This pass only records decisions, and it runs
+            # inside `prepare_live`, so letting it through would take down the whole
+            # thrice-daily run — including the DUET forecast, which does not read these
+            # series — because one covariate's gauge went quiet.
+            logger.exception("%s: cannot record decisions this pass; "
+                             "the archive write already stands", name)
 
 
 def prepare_live(*, root: Path = STORE):
