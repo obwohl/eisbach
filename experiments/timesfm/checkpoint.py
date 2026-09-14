@@ -12,14 +12,23 @@ import pandas as pd
 
 def bind(path: Path, df: pd.DataFrame, anchors, context: int, variants) -> None:
     """Refuse stale results after data, windows, backend or variant changes."""
-    from importlib.metadata import version
+    from importlib.metadata import PackageNotFoundError, version
+
+    def installed(package: str) -> str:
+        # MLX exists only on Apple silicon. Recording its absence keeps a Linux run from
+        # crashing here, and still binds the result to a different environment than a
+        # MacBook run, which is the point of the manifest.
+        try:
+            return version(package)
+        except PackageNotFoundError:
+            return "absent"
 
     spec = {
         'data': hashlib.sha256(pd.util.hash_pandas_object(df, index=True).values.tobytes()).hexdigest(),
         'columns': list(df.columns), 'anchors': [str(t) for t in anchors],
         'context': context, 'variants': variants,
         'backend': os.environ.get('TIMESFM_BACKEND', 'torch'),
-        'timesfm': version('timesfm'), 'mlx': version('mlx'),
+        'timesfm': installed('timesfm'), 'mlx': installed('mlx'),
     }
     encoded = json.dumps(spec, sort_keys=True, indent=2)
     manifest = path.with_suffix('.json')

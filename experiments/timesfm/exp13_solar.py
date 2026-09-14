@@ -45,9 +45,10 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bench  # noqa: E402
+from checkpoint import bind, resume, save  # noqa: E402
 from exp6_upstream import TARGET, pick_anchors  # noqa: E402
 from exp8_catchment_weather import load_all  # noqa: E402
-from exp12_pairs import SCREEN_CONTEXT, _resume, evaluate  # noqa: E402
+from exp12_pairs import SCREEN_CONTEXT, evaluate  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -213,7 +214,15 @@ def main() -> None:
 
 
 def sweep(fc, df, truth, anchors, variants, path, *, context: int) -> list[dict]:
-    rows = _resume(path, [label for label, _, _ in variants])
+    """Run what is not already cached, checkpointing after each variant.
+
+    The checkpoint validates rather than trusts: a variant comes back only if it covers
+    every window and lead bucket with finite scores. The previous version simply dropped
+    whatever label came last, on the theory that it might be half-written — which threw
+    away finished work every time and still could not catch a corrupt one.
+    """
+    bind(path, df, anchors, context, [list(v) for v in variants])
+    rows = resume(path, [label for label, _, _ in variants], anchors)
     done = {r["label"] for r in rows}
     for label, future, past_only in variants:
         if label in done:
@@ -221,7 +230,7 @@ def sweep(fc, df, truth, anchors, variants, path, *, context: int) -> list[dict]
         t0 = time.time()
         rows += evaluate(fc, df, anchors, truth, label=label, past_only=past_only,
                          context=context, future=future)
-        pd.DataFrame(rows).to_csv(path, index=False)
+        save(path, rows)
         logger.info("ctx=%d %-46s %.0fs", context, label, time.time() - t0)
     return rows
 
