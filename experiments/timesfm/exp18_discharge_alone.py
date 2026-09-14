@@ -29,9 +29,25 @@ that is an answer — redundancy, not irrelevance — and a different one from e
 Names, because they matter here: `isar_toelz` is the **water temperature** at the Bad Tölz
 measuring point; `q_toelz_kw` is the **discharge**, from the Bad Tölz power-station gauge.
 
+The heat flux `Q × T` is in here too, as the one exception to the no-invented-features
+rule. It is not an invented weighting: it is a physical quantity with a unit, the heat
+arriving per second relative to 0 °C, and it is exactly what the intuition above is
+about. If the model cannot combine two raw series into it but can use it when handed it
+ready-made, that is worth knowing. The deleted `t_mix` was a different animal — a
+discharge-weighted *mixture* with coefficients nobody could justify.
+
 Scored twice: pooled, and split by how much the river actually moved. A covariate can be
 worth nothing on a plateau and everything across a cold snap, and the pooled mean, which
 is mostly plateaus, would hide it. The swing classification is exp5's.
+
+**Escalation, not grinding.** Every variant starts on 100 windows at a short context,
+which costs under a minute, and only what is still *undecided* goes on to 250 windows and
+then to a year of context. Undecided has a definition here rather than a feeling: an
+interval that excludes zero has answered, and so has an interval that lies entirely
+within ±1 %, because that is a tight null — the effect is measured and it is negligible.
+Escalation is for intervals that are wide, meaning the sample is too small to tell, not
+for intervals that are narrow and centred on nothing. Grinding a null down to another
+decimal place buys nothing.
 """
 from __future__ import annotations
 
@@ -55,6 +71,36 @@ logger = logging.getLogger(__name__)
 WEATHER = ["airtemp", "t_catchment"]
 T = "isar_toelz"
 Q = "q_toelz_kw"
+FLUX = "flux_toelz"
+
+#: (windows, context) in the order they are tried. Cheap and wide first; a year of
+#: context only for what the cheap stages could not settle.
+LADDER = [(100, SCREEN_CONTEXT), (250, SCREEN_CONTEXT), (250, CONFIRM_CONTEXT)]
+
+#: An interval lying entirely inside ±this is a settled null, not an open question.
+#: A covariate whose true effect is under a percent does not deserve a variate slot,
+#: so measuring it more precisely changes no decision.
+NEGLIGIBLE_PCT = 1.0
+
+
+def verdict(subset: pd.DataFrame, candidate: str, reference: str,
+            metric: str) -> tuple[str, float, float, float]:
+    """Decided how, and by how much — in percent of the reference's own score."""
+    p = bench.paired(subset[subset.label.isin([candidate, reference])], reference,
+                     metric=metric)
+    row = p[p.label == candidate]
+    if row.empty:
+        return "fehlt", float("nan"), float("nan"), float("nan")
+    r = row.iloc[0]
+    base = bench.pool(subset[subset.label == reference])[metric].iloc[0]
+    lo, hi = 100 * r["ci_lo"] / base, 100 * r["ci_hi"] / base
+    if hi < 0:
+        return "hilft", r["pct"], lo, hi
+    if lo > 0:
+        return "schadet", r["pct"], lo, hi
+    if lo > -NEGLIGIBLE_PCT and hi < NEGLIGIBLE_PCT:
+        return "sicher belanglos", r["pct"], lo, hi
+    return "unentschieden", r["pct"], lo, hi
 
 
 def sweep(fc, df, truth, anchors, variants, path, *, context: int) -> list[dict]:
@@ -113,6 +159,8 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 
     df = load_all()
+    # Heat flux relative to 0 °C: m³/s x °C. A physical quantity, not a fitted weight.
+    df[FLUX] = df[Q] * df[T]
     truth = df[TARGET]
     anchors = pick_anchors(df, [*WEATHER, T, Q, TARGET], n=250)
     if not anchors:
@@ -136,27 +184,69 @@ def main() -> None:
         ("T", [], [T]),
         ("Q", [], [Q]),
         ("T+Q", [], [T, Q]),
+        ("T×Q (Wärmestrom)", [], [FLUX]),
+        ("T+Q+T×Q", [], [T, Q, FLUX]),
     ]
     with_weather = [
         ("Wetter", WEATHER, []),
         ("Wetter + T", WEATHER, [T]),
         ("Wetter + Q", WEATHER, [Q]),
         ("Wetter + T+Q", WEATHER, [T, Q]),
+        ("Wetter + T×Q", WEATHER, [FLUX]),
     ]
-    pairs = [("T+Q", "T"), ("Q", "nur Eisbach"),
-             ("Wetter + T+Q", "Wetter + T"), ("Wetter + Q", "Wetter")]
+    variants = [*bare, *with_weather]
 
-    rows = sweep(fc, df, truth, anchors, [*bare, *with_weather],
-                 bench.CACHE / "exp18_discharge.csv", context=SCREEN_CONTEXT)
-    report(pd.DataFrame(rows), truth,
-           f"Screen bei {SCREEN_CONTEXT} h Kontext, {len(anchors)} Fenster", pairs)
+    #: (candidate, reference) — the comparisons that actually decide something.
+    pairs = [
+        ("T+Q", "T"),
+        ("Q", "nur Eisbach"),
+        ("T×Q (Wärmestrom)", "T"),
+        ("T+Q+T×Q", "T+Q"),
+        ("Wetter + T+Q", "Wetter + T"),
+        ("Wetter + Q", "Wetter"),
+        ("Wetter + T×Q", "Wetter + T"),
+    ]
 
-    # Confirm only the stripped-down quartet: that is the question exp12 never asked.
-    confirm_rows = sweep(fc, df, truth, anchors, bare,
-                         bench.CACHE / "exp18_confirm.csv", context=CONFIRM_CONTEXT)
-    report(pd.DataFrame(confirm_rows), truth,
-           f"Bestätigung ohne Wetter bei {CONFIRM_CONTEXT} h, {len(anchors)} Fenster",
-           [("T+Q", "T"), ("Q", "nur Eisbach")])
+    open_pairs = list(pairs)
+    for stage, (n_windows, context) in enumerate(LADDER, start=1):
+        if not open_pairs:
+            logger.info("alles entschieden — Stufe %d entfällt", stage)
+            break
+        # A nested subset, so a stage never changes which windows an earlier one used.
+        step = max(1, len(anchors) // n_windows)
+        subset_anchors = anchors[::step][:n_windows]
+        needed = {lab for pair in open_pairs for lab in pair}
+        stage_variants = [v for v in variants if v[0] in needed]
+        logger.info("Stufe %d: %d Fenster, %d h Kontext, %d Varianten, %d offene Fragen",
+                    stage, len(subset_anchors), context, len(stage_variants),
+                    len(open_pairs))
+
+        rows = sweep(fc, df, truth, subset_anchors, stage_variants,
+                     bench.CACHE / f"exp18_stage{stage}.csv", context=context)
+        scores = pd.DataFrame(rows)
+        report(scores, truth,
+               f"Stufe {stage}: {len(subset_anchors)} Fenster, {context} h Kontext",
+               open_pairs)
+
+        still_open = []
+        print(f"\n--- Stufe {stage}: was ist entschieden? ---")
+        for candidate, reference in open_pairs:
+            calls = {m: verdict(scores, candidate, reference, m) for m in ("mae", "crps")}
+            line = "  ".join(f"{m.upper()} {v[0]} ({v[1]:+.2f} % "
+                             f"[{v[2]:+.2f},{v[3]:+.2f}])" for m, v in calls.items())
+            print(f"   {candidate:20s} vs {reference:16s} {line}")
+            if any(v[0] == "unentschieden" for v in calls.values()):
+                still_open.append((candidate, reference))
+        open_pairs = still_open
+
+    if open_pairs:
+        print("\nNach der letzten Stufe noch unentschieden: "
+              + ", ".join(f"{c} vs {r}" for c, r in open_pairs))
+        print("Das heißt: der Effekt ist zu klein, um ihn mit diesem Aufwand von null zu "
+              "trennen, und zu groß, um ihn belanglos zu nennen. Mehr Fenster würden das "
+              "ändern; ob die Antwort eine Entscheidung ändert, ist eine andere Frage.")
+    else:
+        print("\nAlles entschieden.")
 
 
 if __name__ == "__main__":
