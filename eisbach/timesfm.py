@@ -351,7 +351,7 @@ def observed_weather(reference_time, *, root: Path = STORE) -> pd.DataFrame | No
 
 def backtests(anchor, *, root: Path = DEFAULT_ROOT, covariates: Path = STORE,
               offsets=BACKTEST_OFFSETS_HOURS, forecaster=None,
-              issued_at=None) -> dict[int, Backtest]:
+              issued_at=None) -> tuple[dict[int, Backtest], list[int]]:
     """The candidate at each offset before `anchor`, resolved the way DUET resolves its own.
 
     A forecast already in this archive is reused as it stands — no model run, and the
@@ -363,10 +363,15 @@ def backtests(anchor, *, root: Path = DEFAULT_ROOT, covariates: Path = STORE,
     only ever reached for reference times before that, and this picture gets more honest
     by itself over the next two weeks rather than needing to be revisited.
 
-    An offset whose context is unusable is left out rather than guessed at.
+    Returns the backtests it could build and the offsets it could not, so the picture can
+    say which window is missing instead of quietly showing one curve fewer. The usual
+    reason is a gauge that has not reported the tail of that window yet: a hole at the
+    end is not a gap — there is nothing to its right to interpolate towards — and holding
+    the last reading flat across it would be inventing weather.
     """
     anchor = pd.Timestamp(anchor).tz_convert("UTC")
     found: dict[int, Backtest] = {}
+    absent: list[int] = []
     for offset in offsets:
         reference_time = anchor - pd.Timedelta(hours=offset)
         stored = archived_forecast(reference_time, root=root)
@@ -383,12 +388,14 @@ def backtests(anchor, *, root: Path = DEFAULT_ROOT, covariates: Path = STORE,
         if weather is None:
             logger.warning("Backtest -%dh: no usable weather for %s; leaving it out",
                            offset, reference_time)
+            absent.append(offset)
             continue
         try:
             context = context_frame(reference_time, root=covariates)
         except (RuntimeError, ImplausibleGaugeData):
             logger.warning("Backtest -%dh: context at %s is unusable; leaving it out",
                            offset, reference_time)
+            absent.append(offset)
             continue
         quantiles = predict(context, weather, forecaster=forecaster)
         write_forecast(quantiles, reference_time=reference_time, kind=kind,
@@ -399,7 +406,7 @@ def backtests(anchor, *, root: Path = DEFAULT_ROOT, covariates: Path = STORE,
                        root=root, store=ARCHIVE_STORE)
         found[offset] = Backtest(offset, reference_time, quantiles, kind)
         logger.info("Backtest -%dh: %s from %s", offset, kind, reference_time)
-    return found
+    return found, absent
 
 
 def write_csv(quantiles: pd.DataFrame, path: str = CSV_NAME) -> None:

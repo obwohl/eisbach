@@ -38,7 +38,32 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-PLOT_COLORS = ['#1771F1', '#F85C50', '#35D073', '#FFC11E', '#8E44AD']
+#: Series colours in fixed order — forecast first, then backtests oldest-last. Not a
+#: cycle: a fourth series takes the fourth slot, never a generated hue. Validated rather
+#: than chosen by eye (`scripts/validate_palette.js`, light surface, adjacent pairs):
+#: worst colour-vision-deficient separation ΔE 9.1, worst normal-vision ΔE 22.9, both
+#: clear of the floors. The palette this replaced failed: its yellow sat outside the
+#: lightness band and was ΔE 6.3 from its green under protanopia — two lines a red-blind
+#: reader could not tell apart. Aqua and yellow fall below 3:1 contrast on white, which
+#: obliges visible labels; every series here is named in the legend.
+PLOT_COLORS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100']
+
+#: Ink, for everything that is not a series. Text and the measured line wear these, never
+#: a series colour.
+INK = '#1a1a19'
+INK_MUTED = '#6f6e66'
+
+#: How much history both models draw before the forecast starts. One constant, because
+#: the two pictures sit under one switch and a reader flipping between them is comparing
+#: forecasts, not axes — they used to show 24 h and 96 h. Two days is the shortest window
+#: that still shows two whole day/night cycles, which is the rhythm the forecast continues.
+HISTORY_HOURS = 48
+
+#: The air temperature gets its own panel rather than sharing the water axis. Same unit,
+#: but three to four times the range: on one axis it set the y-limits, squashed the water
+#: forecast into the middle third, and crossed every band on the way. This is the
+#: "two measures of different scale" case, and the answer is two panels, not two y-axes.
+AIR_PANEL_RATIO = 0.28
 
 #: The channel this module plots. The model also emits ``airtemp_96`` and
 #: ``pressure_96`` quantiles, but those are inputs, not the thing anyone came to see.
@@ -71,6 +96,11 @@ TIMESFM_BACKTEST_PNG = 'Prediction_Backtest_timesfm.png'
 HONEST_LINESTYLE = '-'
 ORACLE_LINESTYLE = '--'
 
+#: Said on the picture rather than left as a curve that silently is not there. A gauge
+#: that has not reported the tail of a window cannot be interpolated across — there is
+#: nothing on the right to interpolate towards — so the backtest waits for the data.
+MISSING_NOTE = 'No backtest at {offsets}: the weather for it is not fully measured yet.'
+
 ORACLE_NOTE = (
     'Dashed = oracle backtest: computed with the weather that actually occurred, '
     'so it flatters the model.'
@@ -90,7 +120,10 @@ PRIMER_STYLE = {
     "ytick.major.size": 2, "ytick.minor.size": 1, "ytick.major.width": 0.8,
     "ytick.minor.width": 0.6, "ytick.color": "#231F20", "ytick.major.left": True,
     "ytick.major.right": True, "ytick.minor.left": True, "ytick.minor.right": True,
-    "grid.color": "#231F20", "grid.linestyle": ":", "grid.linewidth": 0.4,
+    # A solid hairline, one shade off the surface. Dashing a grid adds noise and reads
+    # as "threshold" or "projection" — and in these pictures dashed already means
+    # something: an oracle backtest. One meaning per dash.
+    "grid.color": "#D8D7D2", "grid.linestyle": "-", "grid.linewidth": 0.6,
     "grid.alpha": 1.0, "legend.frameon": False, "legend.edgecolor": "#231F20",
     "figure.figsize": [12, 10], "figure.dpi": 96, "figure.facecolor": "#FFFFFF",
     "figure.edgecolor": "#FFFFFF",
@@ -146,6 +179,41 @@ def _prepare_backtests(backtests: dict[int, Backtest]) -> list[tuple[Backtest, p
 # Drawing primitives
 # --------------------------------------------------------------------------------------
 
+def _split_figure():
+    """One figure, water above and air below, sharing the time axis.
+
+    The air temperature is drawn here because it explains the shape of the water
+    forecast, not because anyone came to read it, so it gets a quarter of the height, a
+    muted line and no legend of its own — a single series in its own panel is named by
+    its axis label. Everything the reader is actually looking at keeps the big panel and
+    a y-range fitted to water alone.
+    """
+    fig, (water, air) = plt.subplots(
+        2, 1, sharex=True, height_ratios=[1, AIR_PANEL_RATIO],
+        gridspec_kw={'hspace': 0.08})
+    # Adaptive, not a fixed 2.5 °C step: with the air temperature out of the way the
+    # water range is a few degrees, and a fixed step that used to give five ticks now
+    # gives two. Restricted to steps a reader adds up in their head.
+    water.yaxis.set_major_locator(ticker.MaxNLocator(nbins=7, steps=[1, 2, 2.5, 5, 10]))
+    air.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4, steps=[1, 2, 2.5, 5, 10]))
+    water.set_ylabel('Water temperature (°C)')
+    air.set_ylabel('Air (°C)', color=INK_MUTED, fontsize=9)
+    air.tick_params(labelcolor=INK_MUTED, labelsize=8)
+    for spine in ('top', 'right'):
+        water.spines[spine].set_visible(False)
+        air.spines[spine].set_visible(False)
+    return fig, water, air
+
+
+def _draw_air(ax, series, start, end) -> None:
+    """The DWD air temperature, quietly, in its own panel."""
+    ax.plot(series.index, series, color=INK_MUTED, linewidth=1.0)
+    span = _span(_clip(series, start, end))
+    if span is not None:
+        ax.set_ylim(span[0] - 1, span[1] + 1)
+    ax.set_xlabel('')
+
+
 def _plot_fan(ax, df_forecast: pd.DataFrame, label: str, color: str,
               linestyle: str = HONEST_LINESTYLE, *, pairs=None, alphas=None) -> None:
     """Draw one forecast: its median line plus the nested quantile bands."""
@@ -199,8 +267,20 @@ def _annotate_peaks(ax, df_forecast: pd.DataFrame) -> list:
 
 
 def _refresh_legend(ax) -> None:
+    """Put the legend below the figure, never on top of the data.
+
+    Inside the axes it had nowhere to go: a backtest starts at the left edge and the
+    forecast ends at the right, so every corner is occupied at some point in the day and
+    `upper left` was sitting on a curve. Outside, it cannot collide with anything, and
+    `bbox_inches='tight'` at save time keeps it in frame.
+    """
     lines, labels = ax.get_legend_handles_labels()
-    ax.legend(lines, labels, loc='upper left')
+    if getattr(ax, '_legend_artist', None) is not None:
+        ax._legend_artist.remove()
+    columns = 3 if len(labels) > 4 else max(1, len(labels))
+    ax._legend_artist = ax.figure.legend(
+        lines, labels, loc='upper center', bbox_to_anchor=(0.5, 0.06), ncol=columns,
+        frameon=False, fontsize=9)
 
 
 def _save(fig, path: str) -> None:
@@ -251,10 +331,8 @@ def plot_forecasts(df_long, df_weather, df_inference, backtests=None, issued_at=
         backtests = {}
 
     plt.rcParams.update(PRIMER_STYLE)
-    colors = PRIMER_STYLE['axes.prop_cycle'].by_key()['color']
 
-    fig, ax = plt.subplots()
-    ax.yaxis.set_major_locator(ticker.MultipleLocator(2.5))
+    fig, ax, ax_air = _split_figure()
 
     # Everything is plotted in naive local time; see _to_local_naive.
     df_long_plot = df_long.copy()
@@ -264,35 +342,44 @@ def plot_forecasts(df_long, df_weather, df_inference, backtests=None, issued_at=
     prepared_backtests = _prepare_backtests(backtests)
 
     historical = df_long_plot[df_long_plot['cols'] == CHANNEL]
-    ax.plot(historical['date'], historical['data'], label='Measured water temperature',
-            color='black', linestyle='--')
-    _add_band_legend_entries(ax)
+    air = df_weather_plot['lufttemperatur_c']
+    forecast_end = df_inference_plot.index.max()
+
+    def draw_history():
+        ax.plot(historical['date'], historical['data'], label='Measured water temperature',
+                color=INK, linewidth=1.2)
+        _add_band_legend_entries(ax)
+
+    def fit(forecast_frame, backtest_frames, start):
+        """The forecast sets the range with its full band; backtests only with their medians.
+
+        A backtest is context — you read its median against the measured line — and one
+        damaged run must not decide the axis for the other three. The -96h live backtest
+        on this picture is a forecast really published on 11 September, while the
+        154.4 °C reading was still poisoning production, and its q0.01-q0.99 runs from
+        0 to 31 °C. Fitted to that, every other curve collapses into a stripe. Its band
+        now runs off the frame instead, which is the honest signal that it is that wide.
+        """
+        span = (forecast_frame[f'{CHANNEL}_q0.01'].min(),
+                forecast_frame[f'{CHANNEL}_q0.99'].max())
+        for frame in backtest_frames:
+            span = _widen(span, (frame[MEDIAN_COL].min(), frame[MEDIAN_COL].max()))
+        visible = historical.loc[(historical['date'] >= start)
+                                 & (historical['date'] <= forecast_end), 'data']
+        span = _widen(span, _span(visible))
+        ax.set_xlim(left=start, right=forecast_end)
+        ax.set_ylim(span[0] - 0.5, span[1] + 0.5)
+        _draw_air(ax_air, air, start, forecast_end)
 
     # ------------------------------------------------------------------
     # Image 1: the forecast on its own.
     # ------------------------------------------------------------------
-    _plot_fan(ax, df_inference_plot, 'Forecast', colors[0])
-    ax.plot(df_weather_plot.index, df_weather_plot['lufttemperatur_c'], label='Air Temp (DWD)',
-            color='purple', linestyle=':', linewidth=1.5, alpha=0.6)
-
-    forecast_start = df_inference_plot.index.min() - pd.Timedelta(days=1)  # 1 day of history
-    forecast_end = df_inference_plot.index.max()
-    ax.set_xlim(left=forecast_start, right=forecast_end)
-
-    inference_span = (df_inference[f'{CHANNEL}_q0.01'].min(), df_inference[f'{CHANNEL}_q0.99'].max())
-
-    visible_weather = _clip(df_weather_plot['lufttemperatur_c'], forecast_start, forecast_end)
-    visible_history = historical.loc[
-        (historical['date'] >= forecast_start) & (historical['date'] <= forecast_end), 'data'
-    ]
-    y_span = _widen(inference_span, _span(visible_weather))
-    y_span = _widen(y_span, _span(visible_history))
-    ax.set_ylim(y_span[0] - 0.5, y_span[1] + 0.5)
+    draw_history()
+    _plot_fan(ax, df_inference_plot, 'Forecast', PLOT_COLORS[0])
+    fit(df_inference, [], df_inference_plot.index.min() - pd.Timedelta(hours=HISTORY_HOURS))
 
     ax.set_title(f'Eisbach water temperature forecast\n'
                  f'Issued {_issued_label(issued_at)} · all times Europe/Berlin')
-    ax.set_xlabel('')
-    ax.set_ylabel('Temperature (°C)')
     _refresh_legend(ax)
 
     annotations = _annotate_peaks(ax, df_inference_plot)
@@ -304,28 +391,16 @@ def plot_forecasts(df_long, df_weather, df_inference, backtests=None, issued_at=
     for annotation in annotations:
         annotation.remove()
 
+    drawn = []
+    start = df_inference_plot.index.min() - pd.Timedelta(hours=HISTORY_HOURS)
     for i, (backtest, df_bt) in enumerate(prepared_backtests):
-        color = colors[i + 1] if i + 1 < len(colors) else colors[-1]
+        color = PLOT_COLORS[i + 1] if i + 1 < len(PLOT_COLORS) else PLOT_COLORS[-1]
         linestyle = HONEST_LINESTYLE if backtest.is_honest else ORACLE_LINESTYLE
         _plot_fan(ax, df_bt, backtest.label, color, linestyle)
-
-    backtest_start = min(
-        (df_bt.index.min() for _bt, df_bt in prepared_backtests),
-        default=df_inference_plot.index.min(),
-    )
-    backtest_end = df_inference_plot.index.max()  # the last point of the main forecast
-    ax.set_xlim(left=backtest_start, right=backtest_end)
-
-    y_span_bt = inference_span
-    for _bt, df_bt in prepared_backtests:
-        if f'{CHANNEL}_q0.01' in df_bt.columns and f'{CHANNEL}_q0.99' in df_bt.columns:
-            y_span_bt = _widen(
-                y_span_bt, (df_bt[f'{CHANNEL}_q0.01'].min(), df_bt[f'{CHANNEL}_q0.99'].max()),
-            )
-    y_span_bt = _widen(
-        y_span_bt, _span(_clip(df_weather_plot['lufttemperatur_c'], backtest_start, backtest_end)),
-    )
-    ax.set_ylim(y_span_bt[0] - 0.5, y_span_bt[1] + 0.5)
+        if MEDIAN_COL in df_bt.columns:
+            drawn.append(df_bt)
+        start = min(start, df_bt.index.min())
+    fit(df_inference, drawn, start)
 
     title = (f'Eisbach water temperature: forecast and backtests\n'
              f'Issued {_issued_label(issued_at)} · all times Europe/Berlin')
@@ -344,74 +419,72 @@ def plot_forecasts(df_long, df_weather, df_inference, backtests=None, issued_at=
 # --------------------------------------------------------------------------------------
 
 def plot_timesfm(context: pd.DataFrame, future: pd.DataFrame, df_forecast: pd.DataFrame,
-                 *, issued_at=None, backtests=None, history_hours: int = 96) -> list[str]:
+                 *, issued_at=None, backtests=None, missing=()) -> list[str]:
     """Write the candidate's two images and return the paths written.
 
-    The same pair the production model gets: the forecast alone, then the forecast with
-    its backtests laid over it. ``context`` is the frame `eisbach.timesfm.context_frame`
-    built the forecast from, of which only the last few days are drawn, and ``future``
-    the weather forecast it was handed. ``backtests`` maps an offset in hours to an
-    `eisbach.timesfm.Backtest`.
+    The same pair, the same layout and the same history window as the production model:
+    the two pictures sit under one switch, and a reader flipping between them is
+    comparing forecasts, not axes.
+
+    ``context`` is the frame `eisbach.timesfm.context_frame` built the forecast from, of
+    which only the last days are drawn, and ``future`` the weather forecast it was handed.
+    ``backtests`` maps an offset in hours to an `eisbach.timesfm.Backtest`; ``missing``
+    names the offsets that could not be built, which the second image says out loud
+    rather than quietly showing one curve fewer.
 
     Only the target, the air temperature and the forecast are drawn. The past-only
-    covariates are what the model reads, not what anyone came to see, and on the picture
-    they were two grey lines nobody asked about that widened the y-axis for nothing.
+    covariates are what the model reads, not what anyone came to see.
     """
     from eisbach.timesfm import KNOWN_FUTURE, TARGET
 
     backtests = backtests or {}
     plt.rcParams.update(PRIMER_STYLE)
-    colors = PRIMER_STYLE['axes.prop_cycle'].by_key()['color']
 
-    fig, ax = plt.subplots()
-    ax.yaxis.set_major_locator(ticker.MultipleLocator(2.5))
+    fig, ax, ax_air = _split_figure()
 
     forecast = _localized_copy(df_forecast)
     # Reach back far enough to cover the earliest backtest as well. A backtest drawn over
     # a stretch with no measured line beside it cannot be judged against anything, which
-    # is the one thing the second image exists for. Image 1 crops back to `history_hours`
+    # is the one thing the second image exists for. Image 1 crops back to HISTORY_HOURS
     # through its x-limits, so this costs it nothing.
-    needed = max([history_hours, *(b.offset_hours + history_hours for b in backtests.values())])
+    needed = max([HISTORY_HOURS,
+                  *(b.offset_hours + HISTORY_HOURS for b in backtests.values())])
     recent = _localized_copy(context.tail(needed))
     # The air temperature the model was told: measured before the anchor, forecast after
     # it — the same line the production image draws, from the same source.
     air = pd.concat([recent[KNOWN_FUTURE[0]],
                      _localized_copy(future)[KNOWN_FUTURE[0]]]).sort_index()
+    forecast_end = forecast.index.max()
 
     def draw_history():
         ax.plot(recent.index, recent[TARGET], label='Measured water temperature',
-                color='black', linestyle='--')
+                color=INK, linewidth=1.2)
         _add_band_legend_entries(ax, alphas=TIMESFM_BAND_ALPHAS,
                                  labels=TIMESFM_QUANTILE_LABELS)
-        ax.plot(air.index, air, label='Air Temp (DWD)', color='purple', linestyle=':',
-                linewidth=1.5, alpha=0.6)
 
     def fan(frame, label, color, linestyle=HONEST_LINESTYLE):
         _plot_fan(ax, frame, label, color, linestyle,
                   pairs=TIMESFM_QUANTILE_PAIRS, alphas=TIMESFM_BAND_ALPHAS)
 
-    def limits(frames, start):
-        """Fit the axes around every band drawn, plus the history and air actually visible."""
-        end = forecast.index.max()
-        span = None
-        for frame in frames:
-            band = (float(frame[f'{CHANNEL}_q0.1'].min()), float(frame[f'{CHANNEL}_q0.9'].max()))
-            span = band if span is None else _widen(span, band)
-        for series in (recent[TARGET], air):
-            span = _widen(span, _span(_clip(series, start, end)))
-        ax.set_xlim(left=start, right=end)
+    def fit(backtest_frames, start):
+        """As on the production image: the forecast's band, the backtests' medians."""
+        span = (float(forecast[f'{CHANNEL}_q0.1'].min()),
+                float(forecast[f'{CHANNEL}_q0.9'].max()))
+        for frame in backtest_frames:
+            span = _widen(span, (float(frame[MEDIAN_COL].min()), float(frame[MEDIAN_COL].max())))
+        span = _widen(span, _span(_clip(recent[TARGET], start, forecast_end)))
+        ax.set_xlim(left=start, right=forecast_end)
         ax.set_ylim(span[0] - 0.5, span[1] + 0.5)
+        _draw_air(ax_air, air, start, forecast_end)
 
     # ------------------------------------------------------------------
     # Image 1: the forecast on its own.
     # ------------------------------------------------------------------
     draw_history()
-    fan(forecast, 'TimesFM forecast', colors[0])
-    limits([forecast], forecast.index.min() - pd.Timedelta(hours=history_hours))
+    fan(forecast, 'TimesFM forecast', PLOT_COLORS[0])
+    fit([], forecast.index.min() - pd.Timedelta(hours=HISTORY_HOURS))
     ax.set_title('Eisbach water temperature — TimesFM\n'
                  f'Issued {_issued_label(issued_at)} · all times Europe/Berlin')
-    ax.set_xlabel('')
-    ax.set_ylabel('Temperature (°C)')
     _refresh_legend(ax)
     annotations = _annotate_peaks(ax, forecast)
     _save(fig, TIMESFM_PNG)
@@ -422,22 +495,25 @@ def plot_timesfm(context: pd.DataFrame, future: pd.DataFrame, df_forecast: pd.Da
     for annotation in annotations:
         annotation.remove()
 
-    drawn = [forecast]
-    start = forecast.index.min() - pd.Timedelta(hours=history_hours)
+    drawn = []
+    start = forecast.index.min() - pd.Timedelta(hours=HISTORY_HOURS)
     for i, offset in enumerate(sorted(backtests)):
         backtest = backtests[offset]
         frame = _localized_copy(backtest.forecast)
-        color = colors[i + 1] if i + 1 < len(colors) else colors[-1]
+        color = PLOT_COLORS[i + 1] if i + 1 < len(PLOT_COLORS) else PLOT_COLORS[-1]
         fan(frame, backtest.label, color,
             HONEST_LINESTYLE if backtest.is_honest else ORACLE_LINESTYLE)
         drawn.append(frame)
         start = min(start, frame.index.min())
-    limits(drawn, start)
+    fit(drawn, start)
 
     title = ('Eisbach water temperature — TimesFM with backtests\n'
              f'Issued {_issued_label(issued_at)} · all times Europe/Berlin')
     if any(not b.is_honest for b in backtests.values()):
         title += f'\n{ORACLE_NOTE}'
+    if missing:
+        title += ('\n' + MISSING_NOTE.format(
+            offsets=', '.join(f'-{h}h' for h in sorted(missing))))
     ax.set_title(title)
     _refresh_legend(ax)
     _save(fig, TIMESFM_BACKTEST_PNG)

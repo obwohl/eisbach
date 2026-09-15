@@ -211,9 +211,9 @@ def test_a_real_earlier_forecast_is_reused_rather_than_recomputed(store, tmp_pat
     timesfm.run(root=archive, covariates=root, now=earlier, forecaster=Stub())
 
     refuses = mocker.Mock(side_effect=AssertionError("should not have run the model"))
-    found = timesfm.backtests(anchor, root=archive, covariates=root, offsets=(96,),
-                              forecaster=refuses)
-    assert set(found) == {96}
+    found, missing = timesfm.backtests(anchor, root=archive, covariates=root,
+                                       offsets=(96,), forecaster=refuses)
+    assert set(found) == {96} and missing == []
     assert found[96].kind == "live"
     assert found[96].is_honest
     assert len(found[96].forecast) == timesfm.HORIZON_HOURS
@@ -226,8 +226,9 @@ def test_an_archived_weather_forecast_makes_a_replay_not_an_oracle(store, tmp_pa
     earlier = anchor - pd.Timedelta(hours=96)
     timesfm.write_covariate_forecast(future(earlier), reference_time=earlier,
                                      issued_at=earlier, root=archive)
-    found = timesfm.backtests(anchor, root=archive, covariates=root, offsets=(96,),
-                              forecaster=Stub())
+    found, missing = timesfm.backtests(anchor, root=archive, covariates=root,
+                                       offsets=(96,), forecaster=Stub())
+    assert missing == []
     assert found[96].kind == "replay"
     assert found[96].is_honest
     # And it was archived, so the next run reuses it instead of running the model again.
@@ -237,19 +238,25 @@ def test_an_archived_weather_forecast_makes_a_replay_not_an_oracle(store, tmp_pa
 def test_without_an_archived_forecast_the_backtest_is_an_oracle_and_says_so(store, tmp_path):
     """Only reachable for reference times before the candidate went live."""
     root, anchor = store
-    found = timesfm.backtests(anchor, root=tmp_path / "archive", covariates=root,
-                              offsets=(96,), forecaster=Stub())
+    found, missing = timesfm.backtests(anchor, root=tmp_path / "archive", covariates=root,
+                                       offsets=(96,), forecaster=Stub())
+    assert missing == []
     assert found[96].kind == "oracle"
     assert not found[96].is_honest
     assert "perfect weather" in found[96].label
 
 
 def test_a_backtest_whose_weather_never_happened_is_left_out(store, tmp_path):
-    """The horizon runs past the archive, so there is no oracle weather either."""
+    """The horizon runs past the archive, so there is no oracle weather either.
+
+    The offset is reported rather than dropped: the picture says which window is
+    missing instead of quietly showing one curve fewer.
+    """
     root, anchor = store
-    found = timesfm.backtests(anchor, root=tmp_path / "archive", covariates=root,
-                              offsets=(24,), forecaster=Stub())
+    found, missing = timesfm.backtests(anchor, root=tmp_path / "archive", covariates=root,
+                                       offsets=(24,), forecaster=Stub())
     assert found == {}
+    assert missing == [24]
 
 
 def test_a_forecast_hour_is_kept_and_labelled_as_one():

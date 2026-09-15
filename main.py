@@ -76,9 +76,9 @@ def run_candidate(issued_at) -> None:
         write_csv(quantiles)
         # After the forecast and its archive write, never before: a backtest that fails
         # must not cost the forecast people actually read.
-        backtests = resolve_backtests(context.index[-1], issued_at=issued_at)
+        backtests, missing = resolve_backtests(context.index[-1], issued_at=issued_at)
         written = plot_timesfm(context, future, quantiles, issued_at=issued_at,
-                               backtests=backtests)
+                               backtests=backtests, missing=missing)
         logger.info("Candidate wrote %s", ", ".join(written))
     except Exception:
         logger.exception("TimesFM candidate failed; the published DUET forecast stands")
