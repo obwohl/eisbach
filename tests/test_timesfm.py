@@ -200,7 +200,8 @@ def test_the_weather_it_was_told_is_archived_with_it(store, tmp_path, mocker):
     assert set(timesfm.KNOWN_FUTURE) <= set(kept.columns)
 
 
-def test_backtests_come_from_the_candidates_own_archive(store, tmp_path, mocker):
+def test_a_real_earlier_forecast_is_reused_rather_than_recomputed(store, tmp_path, mocker):
+    """The honest `live` row wins, and costs no model run."""
     root, anchor = store
     archive = tmp_path / "archive"
     mocker.patch("eisbach.timesfm.fetch_future",
@@ -208,14 +209,47 @@ def test_backtests_come_from_the_candidates_own_archive(store, tmp_path, mocker)
                                                               - pd.Timedelta(hours=1)))
     earlier = anchor - pd.Timedelta(hours=96)
     timesfm.run(root=archive, covariates=root, now=earlier, forecaster=Stub())
-    found = timesfm.backtests(anchor, root=archive)
+
+    refuses = mocker.Mock(side_effect=AssertionError("should not have run the model"))
+    found = timesfm.backtests(anchor, root=archive, covariates=root, offsets=(96,),
+                              forecaster=refuses)
     assert set(found) == {96}
-    assert len(found[96]) == timesfm.HORIZON_HOURS
-    assert "wassertemp_q0.5" in found[96].columns
+    assert found[96].kind == "live"
+    assert found[96].is_honest
+    assert len(found[96].forecast) == timesfm.HORIZON_HOURS
 
 
-def test_an_empty_archive_yields_no_backtests(tmp_path):
-    assert timesfm.backtests(pd.Timestamp("2026-09-01", tz="UTC"), root=tmp_path) == {}
+def test_an_archived_weather_forecast_makes_a_replay_not_an_oracle(store, tmp_path, mocker):
+    """A replay saw only what was knowable then, so it is drawn solid like a real run."""
+    root, anchor = store
+    archive = tmp_path / "archive"
+    earlier = anchor - pd.Timedelta(hours=96)
+    timesfm.write_covariate_forecast(future(earlier), reference_time=earlier,
+                                     issued_at=earlier, root=archive)
+    found = timesfm.backtests(anchor, root=archive, covariates=root, offsets=(96,),
+                              forecaster=Stub())
+    assert found[96].kind == "replay"
+    assert found[96].is_honest
+    # And it was archived, so the next run reuses it instead of running the model again.
+    assert timesfm.archived_forecast(earlier, root=archive)[1] == "replay"
+
+
+def test_without_an_archived_forecast_the_backtest_is_an_oracle_and_says_so(store, tmp_path):
+    """Only reachable for reference times before the candidate went live."""
+    root, anchor = store
+    found = timesfm.backtests(anchor, root=tmp_path / "archive", covariates=root,
+                              offsets=(96,), forecaster=Stub())
+    assert found[96].kind == "oracle"
+    assert not found[96].is_honest
+    assert "perfect weather" in found[96].label
+
+
+def test_a_backtest_whose_weather_never_happened_is_left_out(store, tmp_path):
+    """The horizon runs past the archive, so there is no oracle weather either."""
+    root, anchor = store
+    found = timesfm.backtests(anchor, root=tmp_path / "archive", covariates=root,
+                              offsets=(24,), forecaster=Stub())
+    assert found == {}
 
 
 def test_a_forecast_hour_is_kept_and_labelled_as_one():
@@ -252,8 +286,8 @@ def quantile_frame(anchor, hours=None, base=15.0):
                         index=index)
 
 
-def test_the_backtest_image_is_only_written_once_there_is_one(store, tmp_path, monkeypatch):
-    """The candidate's archive starts empty; an empty picture is worse than no picture."""
+def test_the_candidate_always_writes_both_images(store, tmp_path, monkeypatch):
+    """The same pair the production model gets, with or without backtests to draw."""
     import matplotlib
 
     matplotlib.use("Agg")
@@ -264,14 +298,14 @@ def test_the_backtest_image_is_only_written_once_there_is_one(store, tmp_path, m
     context = timesfm.context_frame(anchor, root=root)
     predicted, quantiles = future(anchor), quantile_frame(anchor)
 
-    written = plot_timesfm(context, predicted, quantiles, issued_at=anchor)
-    assert written == ["Prediction_timesfm.png"]
-    assert not (tmp_path / "Prediction_Backtest_timesfm.png").exists()
+    assert plot_timesfm(context, predicted, quantiles, issued_at=anchor) == [
+        "Prediction_timesfm.png", "Prediction_Backtest_timesfm.png"]
 
-    written = plot_timesfm(context, predicted, quantiles, issued_at=anchor,
-                           backtests={96: quantile_frame(anchor - pd.Timedelta(hours=96))})
-    assert written == ["Prediction_timesfm.png", "Prediction_Backtest_timesfm.png"]
-    assert (tmp_path / "Prediction_Backtest_timesfm.png").stat().st_size > 0
+    earlier = anchor - pd.Timedelta(hours=96)
+    backtest = timesfm.Backtest(96, earlier, quantile_frame(earlier), "oracle")
+    plot_timesfm(context, predicted, quantiles, issued_at=anchor, backtests={96: backtest})
+    for name in ("Prediction_timesfm.png", "Prediction_Backtest_timesfm.png"):
+        assert (tmp_path / name).stat().st_size > 0
 
 
 def test_the_csv_is_local_time_like_the_production_one(tmp_path, monkeypatch):

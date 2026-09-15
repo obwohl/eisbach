@@ -28,13 +28,24 @@ happened, with neither having seen the future.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from eisbach.archive import DEFAULT_ROOT, KIND_LIVE, read_forecasts, write_forecast
+from eisbach.archive import (
+    DEFAULT_ROOT,
+    KIND_LIVE,
+    KIND_ORACLE,
+    KIND_REPLAY,
+    _partition_path,
+    _read_partition,
+    read_forecasts,
+    write_forecast,
+)
 from eisbach.covariates import STORE, fetch_future, model_values
+from eisbach.data import ImplausibleGaugeData
 
 logger = logging.getLogger(__name__)
 
@@ -262,30 +273,132 @@ def predict(context: pd.DataFrame, future: pd.DataFrame, forecaster=None) -> pd.
                         columns=[f"wassertemp_q{q}" for q in DECILES]).rename_axis("target_time")
 
 
-def backtests(anchor, *, root: Path = DEFAULT_ROOT,
-              offsets=BACKTEST_OFFSETS_HOURS, tolerance_hours: float = 4) -> dict:
-    """Earlier TimesFM forecasts from this archive, by offset from `anchor`.
+@dataclass(frozen=True)
+class Backtest:
+    """One backtest of the candidate, together with how trustworthy it is.
 
-    Not a re-run: these are forecasts the candidate really published, read back. A
-    candidate has no oracle track and never will — the whole point of running it live is
-    that its weather was a forecast at the time — so an offset with nothing archived is
-    simply absent, and on the first runs that is all of them.
+    The same three tracks the production model uses, resolved in the same order.
+    ``live`` is a forecast this page really published; ``replay`` is rebuilt from the
+    weather forecast as it was issued, read back from `covariate_forecasts/`; ``oracle``
+    used the weather that actually occurred and therefore flatters the model.
     """
+
+    offset_hours: int
+    reference_time: pd.Timestamp
+    forecast: pd.DataFrame
+    kind: str
+
+    @property
+    def is_honest(self) -> bool:
+        return self.kind != KIND_ORACLE
+
+    @property
+    def label(self) -> str:
+        suffix = "" if self.is_honest else ", perfect weather"
+        return f"Backtest -{self.offset_hours}h ({self.kind}{suffix})"
+
+
+def archived_forecast(reference_time, *, root: Path = DEFAULT_ROOT,
+                      tolerance_hours: float = 4) -> tuple[pd.DataFrame, str] | None:
+    """A forecast this candidate already made near `reference_time`, best kind first."""
     stored = read_forecasts(root=root, store=ARCHIVE_STORE)
     if stored.empty:
-        return {}
+        return None
+    wanted = pd.Timestamp(reference_time).tz_convert("UTC")
+    near = stored[(stored.reference_time - wanted).abs() <= pd.Timedelta(hours=tolerance_hours)]
+    if near.empty:
+        return None
+    ranked = near.assign(_rank=near.kind.map({KIND_ORACLE: 0, KIND_REPLAY: 1, KIND_LIVE: 2}))
+    best = ranked.sort_values("_rank").iloc[-1]
+    chosen = near[near.reference_time.eq(best.reference_time) & near.kind.eq(best.kind)]
+    columns = [c for c in chosen.columns if c.startswith("wassertemp_q")]
+    return chosen.set_index("target_time")[columns].sort_index(), str(best.kind)
+
+
+def replayed_weather(reference_time, *, root: Path = DEFAULT_ROOT,
+                     tolerance_hours: float = 4) -> pd.DataFrame | None:
+    """The known-future covariates as they were forecast at `reference_time`.
+
+    Only ever a snapshot issued *for* that reference time. Widening this to a later
+    snapshot would leak the future into a backtest, which is the whole thing the three
+    tracks exist to keep apart.
+    """
+    path = _partition_path(root, "covariate_forecasts", pd.Timestamp(reference_time))
+    stored = _read_partition(path)
+    if stored.empty:
+        return None
+    wanted = pd.Timestamp(reference_time).tz_convert("UTC")
+    near = stored[(stored.reference_time - wanted).abs() <= pd.Timedelta(hours=tolerance_hours)]
+    if near.empty:
+        return None
+    chosen = near[near.reference_time.eq(near.reference_time.max())]
+    frame = chosen.set_index("target_time")[list(KNOWN_FUTURE)].sort_index()
+    return frame if len(frame) == HORIZON_HOURS and not frame.isna().any().any() else None
+
+
+def observed_weather(reference_time, *, root: Path = STORE) -> pd.DataFrame | None:
+    """The known-future covariates as they actually turned out. An oracle, and marked one."""
+    start = pd.Timestamp(reference_time).tz_convert("UTC") + pd.Timedelta(hours=1)
+    end = start + pd.Timedelta(hours=HORIZON_HOURS - 1)
+    try:
+        frame = pd.concat([model_values(n, root=root, start=start, end=end, record=False)
+                           for n in KNOWN_FUTURE], axis=1)
+    except (RuntimeError, ImplausibleGaugeData):
+        return None
+    frame = frame.reindex(pd.date_range(start, end, freq="h")).rename_axis("target_time")
+    return frame if not frame.isna().any().any() else None
+
+
+def backtests(anchor, *, root: Path = DEFAULT_ROOT, covariates: Path = STORE,
+              offsets=BACKTEST_OFFSETS_HOURS, forecaster=None,
+              issued_at=None) -> dict[int, Backtest]:
+    """The candidate at each offset before `anchor`, resolved the way DUET resolves its own.
+
+    A forecast already in this archive is reused as it stands — no model run, and the
+    honest `live` row wins over anything regenerable. Otherwise the model is run again on
+    the context as it stood, with the weather forecast that was issued at the time where
+    one was archived (`replay`) and the weather that occurred where none was (`oracle`).
+
+    `covariate_forecasts/` starts the day the candidate went live, so the oracle track is
+    only ever reached for reference times before that, and this picture gets more honest
+    by itself over the next two weeks rather than needing to be revisited.
+
+    An offset whose context is unusable is left out rather than guessed at.
+    """
     anchor = pd.Timestamp(anchor).tz_convert("UTC")
-    found = {}
+    found: dict[int, Backtest] = {}
     for offset in offsets:
-        wanted = anchor - pd.Timedelta(hours=offset)
-        near = stored[(stored.reference_time - wanted).abs()
-                      <= pd.Timedelta(hours=tolerance_hours)]
-        if near.empty:
+        reference_time = anchor - pd.Timedelta(hours=offset)
+        stored = archived_forecast(reference_time, root=root)
+        if stored is not None:
+            frame, kind = stored
+            found[offset] = Backtest(offset, reference_time, frame, kind)
+            logger.info("Backtest -%dh: reusing an archived %s forecast", offset, kind)
             continue
-        chosen = near[near.reference_time.eq(
-            near.reference_time.iloc[(near.reference_time - wanted).abs().argmin()])]
-        quantile_columns = [c for c in chosen.columns if c.startswith("wassertemp_q")]
-        found[offset] = chosen.set_index("target_time")[quantile_columns].sort_index()
+        weather = replayed_weather(reference_time, root=root)
+        kind = KIND_REPLAY
+        if weather is None:
+            weather = observed_weather(reference_time, root=covariates)
+            kind = KIND_ORACLE
+        if weather is None:
+            logger.warning("Backtest -%dh: no usable weather for %s; leaving it out",
+                           offset, reference_time)
+            continue
+        try:
+            context = context_frame(reference_time, root=covariates)
+        except (RuntimeError, ImplausibleGaugeData):
+            logger.warning("Backtest -%dh: context at %s is unusable; leaving it out",
+                           offset, reference_time)
+            continue
+        quantiles = predict(context, weather, forecaster=forecaster)
+        write_forecast(quantiles, reference_time=reference_time, kind=kind,
+                       covariate_source=("brightsky_mosmix_archived" if kind == KIND_REPLAY
+                                         else "brightsky_observed"),
+                       issued_at=issued_at or pd.Timestamp.now(tz="UTC"),
+                       model_id=f"{CHECKPOINT}@{MODEL_REVISION[:12]}",
+                       root=root, store=ARCHIVE_STORE)
+        found[offset] = Backtest(offset, reference_time, quantiles, kind)
+        logger.info("Backtest -%dh: %s from %s", offset, kind, reference_time)
     return found
 
 

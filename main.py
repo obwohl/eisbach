@@ -67,15 +67,18 @@ def run_candidate(issued_at) -> None:
     try:
         # Imported here, not at module scope: this pulls in the TimesFM checkpoint loader
         # and a 1.3 GB download, and nothing else in the run should wait on that.
-        from eisbach.timesfm import backtests as past_forecasts
+        from eisbach.timesfm import backtests as resolve_backtests
         from eisbach.timesfm import run as run_timesfm
         from eisbach.timesfm import write_csv
 
         logger.info("Running the TimesFM candidate...")
         quantiles, context, future = run_timesfm(issued_at=issued_at)
         write_csv(quantiles)
+        # After the forecast and its archive write, never before: a backtest that fails
+        # must not cost the forecast people actually read.
+        backtests = resolve_backtests(context.index[-1], issued_at=issued_at)
         written = plot_timesfm(context, future, quantiles, issued_at=issued_at,
-                               backtests=past_forecasts(context.index[-1]))
+                               backtests=backtests)
         logger.info("Candidate wrote %s", ", ".join(written))
     except Exception:
         logger.exception("TimesFM candidate failed; the published DUET forecast stands")
