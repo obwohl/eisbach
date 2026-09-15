@@ -222,6 +222,80 @@ def hourly_weather(payload: dict, station: str, field: str) -> pd.DataFrame:
     return out
 
 
+# The hourly partitions are the bulk of this archive — 1.9 million rows across eleven
+# series — so they store only what varies from one hour to the next. Two rules, applied
+# on write by `_encode_partition` and undone on read by `_decode_partition`:
+#
+#   1. Columns that describe the *series* rather than the hour are not written.
+#      `station` and `unit` come from `SPECS`, and both `write_hourly` and `read_hourly`
+#      already overwrote whatever a file said with the `SPECS` value — the stored copy
+#      never carried information. Which physical station a reading came from is kept
+#      immutably by the payload store (`raw/<station>/`) and per backfilled year in
+#      `manifest.json`; repinning a series means a new directory there, not a silent
+#      edit here.
+#
+#   2. A blank cell means the column's documented default. `raw_min` and `raw_max`
+#      default to `raw_value` — the ordinary case of one Bright Sky row, or four
+#      identical GKD quarter-hours — and `duplicate_count` and `conflict` default to 0.
+#      Only departures from the ordinary case cost bytes, which is the point.
+#
+# Timestamps are written as `2013-07-01T00Z`. `write_hourly` refuses anything that is not
+# a unique UTC hour, so minutes, seconds and the offset were constant by construction.
+# Partitions written before this carry the full spelling; `_read_partition` parses per
+# row with `format="mixed"`, so the two mix freely and no migration is required to read.
+#
+# CSV, not Parquet, on purpose: this store is committed three times a day and git deltas
+# a text partition that grew by three rows down to almost nothing, where a re-encoded
+# Parquet file is a whole new blob every run.
+SERIES_COLUMNS = ("station", "unit")
+DEFAULTS_FROM = {"raw_min": "raw_value", "raw_max": "raw_value"}
+DEFAULTS_ZERO = ("duplicate_count", "conflict")
+HOUR_FORMAT = "%Y-%m-%dT%HZ"
+
+
+def _encode_partition(frame: pd.DataFrame) -> pd.DataFrame:
+    """Leave out what is constant per series and blank what equals its default."""
+    out = frame.drop(columns=[c for c in SERIES_COLUMNS if c in frame.columns])
+    for col, source in DEFAULTS_FROM.items():
+        if col in out.columns and source in out.columns:
+            values = pd.to_numeric(out[col], errors="coerce")
+            default = pd.to_numeric(out[source], errors="coerce")
+            # `eq` is False where either side is NaN, so a value present without its
+            # default — a conflicting hour blanks `raw_value` but keeps the spread —
+            # stays written out instead of being read back as missing.
+            out[col] = values.where(~values.eq(default))
+    for col in DEFAULTS_ZERO:
+        if col in out.columns:
+            values = pd.to_numeric(out[col], errors="coerce").fillna(0)
+            # Nullable, so the survivors write as `1` rather than `1.0`.
+            out[col] = values.where(values.ne(0)).astype("Int64")
+    if "timestamp" in out.columns:
+        stamps = pd.to_datetime(out["timestamp"], utc=True, errors="coerce", format="mixed")
+        out["timestamp"] = stamps.dt.strftime(HOUR_FORMAT)
+    return out
+
+
+def _decode_partition(frame: pd.DataFrame, name: str) -> pd.DataFrame:
+    """Put back what `_encode_partition` left out. A no-op on the older full schema."""
+    if frame.empty:
+        return frame
+    out = frame.copy()
+    for col, source in DEFAULTS_FROM.items():
+        if col in out.columns and source in out.columns:
+            out[col] = pd.to_numeric(out[col], errors="coerce").fillna(
+                pd.to_numeric(out[source], errors="coerce"))
+    for col in DEFAULTS_ZERO:
+        if col in out.columns:
+            out[col] = pd.to_numeric(out[col], errors="coerce").fillna(0)
+    out["station"] = SPECS[name].station
+    out["unit"] = SPECS[name].unit
+    return out
+
+
+def _read_hourly_partition(path: Path, name: str) -> pd.DataFrame:
+    return _decode_partition(_read_partition(path), name)
+
+
 def write_hourly(name: str, incoming: pd.DataFrame, *, root: Path = STORE) -> None:
     if incoming.empty:
         return
@@ -237,10 +311,10 @@ def write_hourly(name: str, incoming: pd.DataFrame, *, root: Path = STORE) -> No
         frame["source_id"] = frame.source_id.astype("string")
     for month, group in frame.groupby(frame.index.strftime("%Y-%m")):
         path = root / "hourly" / name / f"{month}.csv"
-        old = _read_partition(path)
+        # Decoded, so an old full-schema partition and a new slim one merge identically.
+        old = _read_hourly_partition(path, name)
         if not old.empty:
             old = old.set_index("timestamp")
-            old["station"] = SPECS[name].station
             old["conflict"] = old.conflict.astype(str).str.lower().isin(["true", "1", "1.0"]).astype(int)
             if "source_id" in old:
                 old["source_id"] = old.source_id.astype("string")
@@ -253,7 +327,7 @@ def write_hourly(name: str, incoming: pd.DataFrame, *, root: Path = STORE) -> No
             group.loc[retained, old.columns] = old.loc[retained]
         group["station"] = SPECS[name].station
         group["conflict"] = group.conflict.astype(str).str.lower().isin(["true", "1", "1.0"]).astype(int)
-        _write_partition(path, group.sort_index().reset_index())
+        _write_partition(path, _encode_partition(group.sort_index().reset_index()))
 
 
 def read_hourly(name: str, *, root: Path = STORE, start=None, end=None) -> pd.DataFrame:
@@ -264,12 +338,12 @@ def read_hourly(name: str, *, root: Path = STORE, start=None, end=None) -> pd.Da
         paths = [p for p in paths if p.stem >= pd.Timestamp(start).strftime("%Y-%m")]
     if end is not None:
         paths = [p for p in paths if p.stem <= pd.Timestamp(end).strftime("%Y-%m")]
-    frames = [_read_partition(p) for p in paths]
+    frames = [_read_hourly_partition(p, name) for p in paths]
+    frames = [f for f in frames if not f.empty]
     if not frames:
         return pd.DataFrame()
     frame = pd.concat(frames).set_index("timestamp").sort_index()
     frame["conflict"] = frame.conflict.astype(str).str.lower().isin(["true", "1", "1.0"])
-    frame["station"] = SPECS[name].station
     frame = frame.loc[start:end]
     if frame.empty:
         return frame

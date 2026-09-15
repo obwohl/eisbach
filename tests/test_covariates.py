@@ -359,3 +359,59 @@ def test_the_cursor_follows_the_newest_stored_hour(tmp_path, mocker):
     for value in cursors.values():
         assert pd.Timestamp(value) == arrived.index.max()
         assert pd.Timestamp(value) < now
+
+
+def test_a_slim_partition_stores_only_what_varies(tmp_path):
+    """Half of this archive was `station`, `unit` and cells equal to their default."""
+    write_hourly("airtemp", frame([12.0, 13.5]), root=tmp_path)
+    text = (tmp_path / "hourly/airtemp/2026-09.csv").read_text()
+    assert text.splitlines()[0] == "timestamp,raw_value,raw_min,raw_max,samples,duplicate_count,conflict"
+    assert text.splitlines()[1] == "2026-09-01T00Z,12.0,,,1,,"
+    # Nothing of it is lost: the reader hands back the full frame either way.
+    stored = read_hourly("airtemp", root=tmp_path)
+    assert (stored.station == "03379").all()
+    assert (stored.unit == "degC").all()
+    assert stored.raw_min.tolist() == [12.0, 13.5]
+    assert stored.raw_max.tolist() == [12.0, 13.5]
+    assert stored.duplicate_count.tolist() == [0, 0]
+    assert not stored.conflict.any()
+
+
+def test_a_departure_from_the_default_is_still_written(tmp_path):
+    """A blank means `raw_value`, so a genuine spread has to survive the round trip."""
+    raw = frame([12.0])
+    raw.loc[raw.index[0], ["raw_min", "raw_max", "samples", "duplicate_count", "conflict"]] = \
+        [11.0, 14.0, 4, 2, True]
+    write_hourly("eisbach", raw, root=tmp_path)
+    stored = read_hourly("eisbach", root=tmp_path)
+    assert stored.raw_min.iloc[0] == 11.0
+    assert stored.raw_max.iloc[0] == 14.0
+    assert stored.duplicate_count.iloc[0] == 2
+    assert bool(stored.conflict.iloc[0])
+
+
+def test_a_conflicting_hour_keeps_its_spread_without_a_value(tmp_path):
+    """`hourly_weather` blanks `raw_value` on a conflict; the spread must not follow it."""
+    raw = frame([np.nan])
+    raw.loc[raw.index[0], ["raw_min", "raw_max", "conflict"]] = [11.0, 14.0, True]
+    write_hourly("airtemp", raw, root=tmp_path)
+    stored = read_hourly("airtemp", root=tmp_path)
+    assert pd.isna(stored.raw_value.iloc[0])
+    assert stored.raw_min.iloc[0] == 11.0
+    assert stored.raw_max.iloc[0] == 14.0
+
+
+def test_the_older_full_schema_still_reads_and_merges(tmp_path):
+    """Partitions written before the slim schema are not migrated on the way in."""
+    path = tmp_path / "hourly/airtemp/2026-09.csv"
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        "timestamp,raw_value,raw_min,raw_max,samples,duplicate_count,conflict,station,unit\n"
+        "2026-09-01 00:00:00+00:00,12.0,12.0,12.0,1,0,0,03379,degC\n")
+    assert read_hourly("airtemp", root=tmp_path).raw_value.iloc[0] == 12.0
+    # A later fetch of the next hour rewrites the partition without losing the first.
+    later = frame([np.nan, 13.0])
+    write_hourly("airtemp", later, root=tmp_path)
+    stored = read_hourly("airtemp", root=tmp_path)
+    assert stored.raw_value.tolist() == [12.0, 13.0]
+    assert "station" not in path.read_text().splitlines()[0]

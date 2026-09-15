@@ -10,6 +10,7 @@ main.py               orchestration only — keep logic out of it
 eisbach/data.py       GKD scraping, Bright Sky fetch, feature assembly
 eisbach/inference.py  forecast + the three-track backtest resolution
 eisbach/archive.py    provenance-tracked storage
+eisbach/covariates.py station-pinned covariate store: fetch, quality gate, model view
 eisbach/validate.py   post-run plausibility gate
 eisbach/verification.py  scores past runs against what happened — see docs/verification.md
 eisbach/plotting.py   matplotlib output
@@ -17,6 +18,7 @@ eisbach/model/        vendored inference code — see below
 tests/                the whole suite; must not touch the network
 data/archive/         every forecast ever made — tracked, irreplaceable, append-only
 data/archive/verification/  derived scores, but written once per closed window
+data/archive/covariates/    raw/ is the irreplaceable payload store; hourly/ is derived
 data/model/           checkpoint cache, fetched on demand and gitignored
 research/             unmaintained research code, never imported or run
 docs/PRD.md           what this is for, what it guarantees, what is still open
@@ -61,6 +63,15 @@ replayed and, historical DWD forecasts being a paid product, never refetched. By
 `2026-07-08T22:03:22`, `2026-07-13T22:03:31`, `2026-07-18T22:02:52`, `2026-07-23T22:03:05`.
 Do not spend time trying to recover them, and do not read a replay gap in that window as a
 bug in the lookup.
+
+**Not all of `data/archive/` is irreplaceable in the same way.** `forecasts/`,
+`weather/`, `observations/` and `covariates/raw/` are: nothing else holds them, and GKD
+and Bright Sky serve only a rolling window. `covariates/hourly/` is not — it is derived
+from `covariates/raw/`, whose payloads are kept compressed with their SHA256, so it can
+be rebuilt. That is what made the slim partition schema (`_encode_partition`) safe to
+migrate to: `scripts/slim_hourly_partitions.py` rewrote all 2560 partitions and checked
+all 1.86 million rows back through the reader before replacing anything. The same freedom
+does not extend to the other four.
 
 **Generated outputs do not belong in git.** The PNGs and CSV are deployed to GitHub Pages
 via `actions/upload-pages-artifact`, which bypasses git entirely, so republishing them
