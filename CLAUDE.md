@@ -9,6 +9,7 @@ fetches, forecasts, validates and plots; everything else supports that.
 main.py               orchestration only — keep logic out of it
 eisbach/data.py       GKD scraping, Bright Sky fetch, feature assembly
 eisbach/inference.py  forecast + the three-track backtest resolution
+eisbach/timesfm.py    the TimesFM candidate, published beside DUET and never above it
 eisbach/archive.py    provenance-tracked storage
 eisbach/covariates.py station-pinned covariate store: fetch, quality gate, model view
 eisbach/validate.py   post-run plausibility gate
@@ -19,6 +20,7 @@ tests/                the whole suite; must not touch the network
 data/archive/         every forecast ever made — tracked, irreplaceable, append-only
 data/archive/verification/  derived scores, but written once per closed window
 data/archive/covariates/    raw/ is the irreplaceable payload store; hourly/ is derived
+data/archive/timesfm/       the candidate's own forecasts, kept apart from production's
 data/model/           checkpoint cache, fetched on demand and gitignored
 research/             unmaintained research code, never imported or run
 docs/PRD.md           what this is for, what it guarantees, what is still open
@@ -63,6 +65,15 @@ replayed and, historical DWD forecasts being a paid product, never refetched. By
 `2026-07-08T22:03:22`, `2026-07-13T22:03:31`, `2026-07-18T22:02:52`, `2026-07-23T22:03:05`.
 Do not spend time trying to recover them, and do not read a replay gap in that window as a
 bug in the lookup.
+
+**Two models run, and only one is load-bearing.** DUET is the production forecast;
+`eisbach/timesfm.py` is a candidate published beside it. `main.py` runs the candidate
+last, inside a `try`, and logs rather than raises: a candidate that breaks costs the page
+one of its two graphs, never the forecast. Its dependencies are the optional `candidate`
+extra and its CI steps are `continue-on-error`, for the same reason. It writes to
+`data/archive/timesfm/`, never to `data/archive/forecasts/` — rows there are unique on
+`(reference_time, target_time)` alone, so a candidate row would not sit beside the
+production row for that hour, it would replace it.
 
 **Not all of `data/archive/` is irreplaceable in the same way.** `forecasts/`,
 `weather/`, `observations/` and `covariates/raw/` are: nothing else holds them, and GKD

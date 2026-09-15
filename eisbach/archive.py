@@ -227,6 +227,7 @@ def write_forecast(
     model_id: str = "",
     version: str | None = None,
     root: Path = DEFAULT_ROOT,
+    store: str = "forecasts",
 ) -> Path:
     """Store one forecast with its provenance and return the partition written.
 
@@ -236,6 +237,12 @@ def write_forecast(
     A row that is already present at a higher precedence is left alone, so replaying an
     oracle backtest over a moment we hold a live forecast for is a no-op rather than a
     silent loss of real data.
+
+    ``store`` names the directory under ``root``. A second model writes to a second store
+    rather than sharing this one: rows are unique on ``(reference_time, target_time)``
+    alone, so a candidate forecast written here would not sit beside the production row
+    for the same hour — it would replace it, and the archive would lose the forecast we
+    actually published. ``eisbach.timesfm`` uses ``"timesfm"`` for exactly that reason.
     """
     if kind not in KIND_PRECEDENCE:
         raise ValueError(f"unknown kind {kind!r}, expected one of {sorted(KIND_PRECEDENCE)}")
@@ -267,7 +274,7 @@ def write_forecast(
     quantile_columns = [c for c in incoming.columns if c not in METADATA_COLUMNS]
     incoming = incoming[METADATA_COLUMNS + quantile_columns]
 
-    path = _partition_path(root, "forecasts", reference_time)
+    path = _partition_path(root, store, reference_time)
     existing = _read_partition(path)
     combined = pd.concat([existing, incoming], ignore_index=True) if not existing.empty else incoming
     _write_partition(path, _resolve_precedence(combined))
@@ -279,9 +286,10 @@ def write_forecast(
     return path
 
 
-def read_forecasts(root: Path = DEFAULT_ROOT, kinds: list[str] | None = None) -> pd.DataFrame:
+def read_forecasts(root: Path = DEFAULT_ROOT, kinds: list[str] | None = None, *,
+                   store: str = "forecasts") -> pd.DataFrame:
     """Load every archived forecast, optionally filtered to certain kinds."""
-    partitions = sorted(Path(root).glob("forecasts/*.csv"))
+    partitions = sorted(Path(root).glob(f"{store}/*.csv"))
     frames = [df for df in (_read_partition(p) for p in partitions) if not df.empty]
     if not frames:
         return pd.DataFrame(columns=METADATA_COLUMNS)

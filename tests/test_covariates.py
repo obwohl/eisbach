@@ -415,3 +415,18 @@ def test_the_older_full_schema_still_reads_and_merges(tmp_path):
     stored = read_hourly("airtemp", root=tmp_path)
     assert stored.raw_value.tolist() == [12.0, 13.0]
     assert "station" not in path.read_text().splitlines()[0]
+
+
+def test_a_long_read_can_decline_to_write_a_year_of_findings(tmp_path):
+    """Same verdicts, no log. The candidate reads 8760 hours three times a day."""
+    raw = frame([12.0, 154.4, 12.1])
+    write_hourly("eisbach", raw, root=tmp_path)
+    quiet = model_values("eisbach", root=tmp_path, record=False)
+    assert pd.isna(quiet.iloc[1])
+    assert not (tmp_path / "quality").exists()
+    assert not (tmp_path / "decisions").exists()
+    # The recording read reaches the same verdict and does write it down.
+    loud = model_values("eisbach", root=tmp_path)
+    assert pd.isna(loud.iloc[1])
+    assert (tmp_path / "quality/eisbach/2026-09.csv").exists()
+    assert (tmp_path / "decisions/eisbach/2026-09.csv").exists()

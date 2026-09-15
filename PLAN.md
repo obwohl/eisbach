@@ -1,49 +1,53 @@
 # Wie es weitergeht
 
-Stand nach PR #42. Die Produktion ist repariert — der erste Lauf nach dem Merge
-(14.09. 22:00) liefert wieder Median 17,30 °C bei 3,84 °C Bandbreite, gegen 14,19 °C
-bei 24,07 °C im Lauf davor. Das Gate wirkt.
+Stand: TimesFM läuft live mit, DUET bleibt die Produktion. Das Archiv ist verschlankt.
+Was hier steht, ist der Rest.
 
-## 1. TimesFM in die Produktion — die große Sache
+## Erledigt
 
-Alles andere hängt daran. Der Umschalter auf der Seite wartet, das Archiv liefert die
-Historie, der Workflow kopiert die Dateien schon. Es fehlt:
+**Das Archiv.** 174 MB → 110 MB. Die stündlichen Partitionen speichern nur noch, was sich
+ändert: `station` und `unit` standen ohnehin in `SPECS` und wurden beim Lesen überschrieben,
+eine leere Zelle heißt jetzt „Standardwert", und ein Zeitstempel ist `2013-07-01T00Z` statt
+`2013-07-01 00:00:00+00:00`. Alle 2560 Partitionen umgeschrieben, alle 1.856.658 Zeilen
+danach gegen die committeten Blobs geprüft: null Unterschiede. Ging nur, weil `hourly/`
+aus `raw/` ableitbar ist — die vier anderen Stores sind es nicht.
 
-- ein Inferenzmodul für TimesFM 3.0 mit dem gesetzten Satz: Ziel `eisbach`, past-only
-  `isar_toelz` und `loisach_beuerberg`, known-future `airtemp`, `t_catchment`, die vier
-  Regenreihen und `solar_hohenpeissenberg`; 8760 h Kontext, 96 h Horizont;
-- Plots und CSV mit **Median + 20–80 + 10–90** — TimesFM liefert nur Dezile, 25/75 und
-  5/95 gibt es nicht;
-- die Abhängigkeit im CI: 1,3 GB Checkpoint in einem Job, der heute mit 10 MB auskommt.
+**TimesFM in der Produktion.** `eisbach/timesfm.py`: Ziel `eisbach`, past-only
+`isar_toelz` und `loisach_beuerberg`, known-future die sieben Wetterreihen, 8760 h
+Kontext, 96 h Horizont. Dezil-Plots mit Median + 20–80 + 10–90. Fehlertolerant an drei
+Stellen — optionale Abhängigkeit, `continue-on-error` im CI, `try` um den Lauf —, damit
+ein kaputter Kandidat die dreimal tägliche Vorhersage nie mitnimmt.
 
-**Fehlertolerant einhängen.** Schlägt der TimesFM-Teil fehl, läuft DUET wie bisher durch
-und die Seite zeigt ein Modell. Die dreimal tägliche Vorhersage darf an einem Kandidaten
-nicht sterben.
+**Der Schattenlauf** (der alte Punkt 4) fällt damit ab: der Kandidat schreibt seine
+eigenen Vorhersagen nach `data/archive/timesfm/` und das Wetter, das er dafür bekam, nach
+`data/archive/covariate_forecasts/`. In ein paar Monaten steht damit der ehrliche
+Vergleich zur Verfügung, den keine Orakel-Messung ersetzen kann.
 
-## 2. Das Archiv verschlanken — bevor es wächst
+## 1. Den Schattenlauf auswerten — in ein paar Monaten
 
-151 MB in 2560 Dateien, und `git add data/archive` committet den laufenden Monat bei
-jedem Lauf neu. Je Stunde elf Spalten, davon sind `samples`, `duplicate_count`,
-`conflict`, `station` und `unit` über die ganze Datei konstant. 20 KB wo 10 KB reichen.
+Nicht früher. Es braucht genug geschlossene 96-Stunden-Fenster, in denen beide Modelle
+live liefen. Dann: dieselben Fenster, dasselbe Dezil-Gitter, gepaarter Block-Bootstrap.
+`eisbach/verification.py` kennt den Kandidaten-Store noch nicht — das ist die Arbeit.
 
-Das ist eine Stunde Arbeit jetzt und ein Ärgernis in einem Jahr.
+Erst diese Zahl entscheidet, ob TimesFM die Produktion wird. Die 32 % aus exp20 sind eine
+Orakel-gegen-Orakel-Messung auf überlappenden Sommerfenstern und beweisen das nicht.
 
-## 3. `rain_lenggries` nachprüfen
+## 2. `rain_lenggries` nachprüfen
 
-Stationsgebunden fehlen die 575 Stunden, die die Koordinatenabfrage aus
-Kreuth-Glashütte nachgeliefert hat. Ehrlichere Lücken, aber **eine andere Reihe** als
-die, auf der exp15 die Regen-Auswahl gemessen hat. Einmal nachmessen.
+Stationsgebunden fehlen die 575 Stunden, die die Koordinatenabfrage aus Kreuth-Glashütte
+nachgeliefert hat. Ehrlichere Lücken, aber **eine andere Reihe** als die, auf der exp15
+die Regen-Auswahl gemessen hat. Einmal nachmessen.
 
-## 4. Schattenlauf statt Orakel
+## 3. Die Live-Payloads beschneiden
 
-Jede Kovariablen-Zahl im Forschungsbaum benutzt das Wetter, das eintrat. Gemessen kostet
-das ~4,8 % des Vorteils für die Münchner Luft; für Süd-Luft, Regen und Strahlung gibt es
-gar keine archivierte Prognose, und für die Vergangenheit wird es nie eine geben.
+Der eigentliche Wachstumstreiber, und größer als alles, was Punkt „Archiv" eingespart hat:
+`raw/<station>/live/` legt bei jedem Lauf für jede der neun Stationen die volle
+72-Stunden-Antwort ab. **~50 KB pro Lauf, ~55 MB und ~10.000 Dateien pro Jahr**, bei etwa
+90 % Überlappung — jede Stunde wird rund neunmal abgelegt.
 
-Der billige Weg ist der, den du selbst vorgeschlagen hast: TimesFM live mitlaufen lassen
-und **seine eigenen Vorhersagen archivieren**. Nach ein paar Monaten ist die Bewertung
-ehrlich, ohne dass irgendeine Wetterprognose aufgehoben werden muss. Das fällt als
-Nebenprodukt von Punkt 1 ab.
+Diese Payloads sind aber die **unersetzliche** Hälfte: `hourly/` wird aus ihnen
+rekonstruiert. Sie zu beschneiden heißt zu entscheiden, wann eine Live-Antwort durch einen
+späteren Jahres-Backfill abgelöst ist. Das ist Design-Arbeit, keine Aufräumarbeit.
 
 ## Nicht jetzt
 
