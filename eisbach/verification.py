@@ -36,12 +36,13 @@ from __future__ import annotations
 
 import argparse
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from eisbach import archive
+from eisbach import archive, timesfm
 from eisbach.data import COVARIATE_SHIFT_HOURS
 from eisbach.model import QUANTILES
 
@@ -51,33 +52,85 @@ logger = logging.getLogger(__name__)
 #: forecast store (PRD R4) and nothing reads them; water is what the product forecasts.
 SCORED_CHANNEL = "wassertemp"
 
-QUANTILE_COLUMNS = tuple(f"{SCORED_CHANNEL}_q{q}" for q in QUANTILES)
 
-#: Fraction of observations at or below each predicted quantile.
-PIT_COLUMNS = tuple(f"pit_le_q{q}" for q in QUANTILES)
+@dataclass(frozen=True)
+class Scheme:
+    """One model's scoring: which quantiles it emits, read from where, written to where.
 
-#: One scored row, in the order it is stored. Named from :data:`QUANTILES` so the store
-#: cannot drift from what the model emits, which is why this lives here rather than in
-#: ``archive``: that module stores what it is handed and never imports the model.
-SCORE_COLUMNS = (
-    "reference_time",
-    "kind",
-    "model_id",
-    "code_version",
-    "lead_lo",
-    "lead_hi",
-    "n",
-    "n_forecast",
-    "mae",
-    "rmse",
-    "bias",
-    "crps",
-    "mae_persistence",
-    "mae_diurnal",
-    "pit_mean",
-    *PIT_COLUMNS,
-    "scored_at",
+    Two models run here and they do not report the same quantiles. DUET emits seven,
+    TimesFM exactly nine deciles, and a CRPS integrated over [0.1, 0.9] is a smaller
+    number than one integrated over [0.01, 0.99] for the same forecast — it omits more
+    of the tails. So each model is scored on its own grid, into its own store, and the
+    two `crps` columns are **not comparable**. Comparing them is what `compare` is for,
+    and it does the interpolation onto a shared grid that makes it honest.
+
+    Everything derived from the quantiles is derived here, so a store cannot drift from
+    what its model emits.
+    """
+
+    name: str
+    quantiles: tuple[float, ...]
+    forecasts: str = "forecasts"
+    verification: str = "verification"
+    #: Intervals :func:`read_scores` materialises, as (name, lower, upper). Differences
+    #: of PIT knots, so exact rather than re-derived from data.
+    intervals: tuple[tuple[str, float, float], ...] = ()
+
+    @property
+    def quantile_columns(self) -> tuple[str, ...]:
+        return tuple(f"{SCORED_CHANNEL}_q{q}" for q in self.quantiles)
+
+    @property
+    def pit_columns(self) -> tuple[str, ...]:
+        return tuple(f"pit_le_q{q}" for q in self.quantiles)
+
+    @property
+    def columns(self) -> tuple[str, ...]:
+        """One scored row, in the order it is stored."""
+        return (
+            "reference_time",
+            "kind",
+            "model_id",
+            "code_version",
+            "lead_lo",
+            "lead_hi",
+            "n",
+            "n_forecast",
+            "mae",
+            "rmse",
+            "bias",
+            "crps",
+            "mae_persistence",
+            "mae_diurnal",
+            "pit_mean",
+            *self.pit_columns,
+            "scored_at",
+        )
+
+
+#: The production model. Every default in this module is this one, so nothing about
+#: DUET's series changed when the candidate arrived.
+PRODUCTION = Scheme(
+    name="duet",
+    quantiles=tuple(QUANTILES),
+    intervals=(("cov_50", 0.25, 0.75), ("cov_90", 0.05, 0.95), ("cov_98", 0.01, 0.99)),
 )
+
+#: The candidate. Deciles only, so its widest stored interval covers 80 % where the
+#: production model's covers 98 %.
+CANDIDATE = Scheme(
+    name="timesfm",
+    quantiles=timesfm.DECILES,
+    forecasts=timesfm.ARCHIVE_STORE,
+    verification=f"verification_{timesfm.ARCHIVE_STORE}",
+    intervals=(("cov_60", 0.2, 0.8), ("cov_80", 0.1, 0.9)),
+)
+
+SCHEMES = (PRODUCTION, CANDIDATE)
+
+QUANTILE_COLUMNS = PRODUCTION.quantile_columns
+PIT_COLUMNS = PRODUCTION.pit_columns
+SCORE_COLUMNS = PRODUCTION.columns
 
 #: Width of one lead bucket. The horizon divides into four of these.
 LEAD_BUCKET_HOURS = 24
@@ -91,14 +144,6 @@ PERSISTENCE_ANCHOR_TOLERANCE = pd.Timedelta(hours=3)
 #: leads is the day/night cycle, and a baseline that cannot reproduce it is too weak to
 #: prove anything against.
 DIURNAL_PERIOD_HOURS = 24
-
-#: Intervals :func:`read_scores` materialises, as (name, lower quantile, upper quantile).
-#: These are differences of PIT knots, so they are exact rather than re-derived from data.
-COVERAGE_INTERVALS = (
-    ("cov_50", 0.25, 0.75),
-    ("cov_90", 0.05, 0.95),
-    ("cov_98", 0.01, 0.99),
-)
 
 #: Kinds whose scores may be read as evidence about the real world. An oracle backtest
 #: is excluded by default rather than by convention — see the module docstring.
@@ -117,17 +162,17 @@ def lead_buckets() -> list[tuple[int, int]]:
     return list(zip(edges[:-1], edges[1:], strict=True))
 
 
-def _quantile_matrix(forecast: pd.DataFrame) -> np.ndarray:
+def _quantile_matrix(forecast: pd.DataFrame, scheme: Scheme = PRODUCTION) -> np.ndarray:
     """The quantile columns as a sorted array, one row per target hour.
 
     Sorting repairs quantile crossing — a predicted q0.75 below its own q0.5. The
     checkpoint in use has never produced one (0 of 5 398 scored rows), but PIT
     interpolation reads the columns as a CDF, and a CDF that goes backwards is not one.
     """
-    return np.sort(forecast[list(QUANTILE_COLUMNS)].to_numpy(dtype=float), axis=1)
+    return np.sort(forecast[list(scheme.quantile_columns)].to_numpy(dtype=float), axis=1)
 
 
-def crps(values: np.ndarray, truth: np.ndarray) -> np.ndarray:
+def crps(values: np.ndarray, truth: np.ndarray, levels=None) -> np.ndarray:
     """CRPS per observation, from the quantiles the model emits.
 
     The continuous ranked probability score is twice the integral of the pinball loss
@@ -136,19 +181,21 @@ def crps(values: np.ndarray, truth: np.ndarray) -> np.ndarray:
     spaced (0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99), and an equal-weight mean would give
     the two tails the same say as the whole middle.
 
-    The integral covers [0.01, 0.99] because that is what the model reports, so the value
-    is a slight under-estimate of the true CRPS — it omits the two tails beyond. That is
-    a constant of the method, not of the forecast, so the series stays comparable with
-    itself.
+    The integral covers the levels the model reports — [0.01, 0.99] for DUET — so the
+    value is a slight under-estimate of the true CRPS: it omits the two tails beyond.
+    That is a constant of the method, not of the forecast, so the series stays comparable
+    **with itself**. It is not comparable across models that report different levels: the
+    candidate's deciles stop at 0.1 and 0.9, which omits far more tail and would hand it
+    a smaller number for the same forecast. See :func:`compare`.
     """
-    levels = np.asarray(QUANTILES, dtype=float)
+    levels = np.asarray(QUANTILES if levels is None else levels, dtype=float)
     residual = truth[:, None] - values
     pinball = np.where(residual >= 0, levels * residual, (levels - 1) * residual)
     widths = np.diff(levels)
     return 2.0 * ((pinball[:, :-1] + pinball[:, 1:]) * widths / 2.0).sum(axis=1)
 
 
-def pit(values: np.ndarray, truth: np.ndarray) -> np.ndarray:
+def pit(values: np.ndarray, truth: np.ndarray, levels=None) -> np.ndarray:
     """Probability integral transform, interpolated between the reported quantiles.
 
     An observation outside the reported range is clamped to the outermost level rather
@@ -157,7 +204,7 @@ def pit(values: np.ndarray, truth: np.ndarray) -> np.ndarray:
     uniform on [0, 1], so a mean near 0.5 says the median is unbiased and says nothing at
     all about the spread — that is what the PIT knots are for.
     """
-    levels = np.asarray(QUANTILES, dtype=float)
+    levels = np.asarray(QUANTILES if levels is None else levels, dtype=float)
     return np.array([np.interp(y, row, levels) for y, row in zip(truth, values, strict=True)])
 
 
@@ -199,15 +246,16 @@ def score_forecast(
     model_id: str = "",
     code_version: str = "",
     scored_at=None,
+    scheme: Scheme = PRODUCTION,
 ) -> pd.DataFrame:
     """Score one forecast against measured water temperature, one row per lead bucket.
 
-    ``forecast`` is indexed by target time and carries the seven water-temperature
+    ``forecast`` is indexed by target time and carries ``scheme``'s water-temperature
     quantile columns; ``actuals`` is the measured series. A bucket with no observation to
     compare against yields no row at all — an empty row would be indistinguishable from a
     perfect one once pooled.
     """
-    missing = [c for c in QUANTILE_COLUMNS if c not in forecast.columns]
+    missing = [c for c in scheme.quantile_columns if c not in forecast.columns]
     if missing:
         raise ValueError(f"cannot score a forecast missing {', '.join(missing)}")
 
@@ -226,9 +274,9 @@ def score_forecast(
         if len(overlap) == 0:
             continue
 
-        values = _quantile_matrix(in_bucket.loc[overlap])
+        values = _quantile_matrix(in_bucket.loc[overlap], scheme)
         truth = truth_all.loc[overlap].to_numpy(dtype=float)
-        median = values[:, QUANTILES.index(0.5)]
+        median = values[:, scheme.quantiles.index(0.5)]
         error = median - truth
         diurnal = _diurnal(
             truth_all, overlap, (overlap - reference_time).total_seconds() / 3600.0
@@ -249,7 +297,7 @@ def score_forecast(
             "mae": float(np.abs(error).mean()),
             "rmse": float(np.sqrt((error**2).mean())),
             "bias": float(error.mean()),
-            "crps": float(crps(values, truth).mean()),
+            "crps": float(crps(values, truth, scheme.quantiles).mean()),
             "mae_persistence": (
                 float(np.abs(baseline - truth).mean()) if np.isfinite(baseline) else float("nan")
             ),
@@ -259,27 +307,31 @@ def score_forecast(
                 float(np.nanmean(np.abs(diurnal - truth))) if np.isfinite(diurnal).any()
                 else float("nan")
             ),
-            "pit_mean": float(pit(values, truth).mean()),
+            "pit_mean": float(pit(values, truth, scheme.quantiles).mean()),
         }
-        for level, column in enumerate(PIT_COLUMNS):
+        for level, column in enumerate(scheme.pit_columns):
             row[column] = float((truth <= values[:, level]).mean())
         row["scored_at"] = scored_at
         rows.append(row)
 
-    return pd.DataFrame(rows, columns=list(SCORE_COLUMNS))
+    return pd.DataFrame(rows, columns=list(scheme.columns))
 
 
-def score_archive(root: Path = archive.DEFAULT_ROOT, *, scored_at=None) -> pd.DataFrame:
+def score_archive(root: Path = archive.DEFAULT_ROOT, *, scored_at=None,
+                  scheme: Scheme = PRODUCTION) -> pd.DataFrame:
     """Score every archived run whose window has closed and that has no score yet.
 
     Returns the rows written, so a caller can log how much the series grew. Reads the
     whole forecast store — a few tens of MB of CSV — which is cheap next to a model run
     and keeps this correct when a partition is backfilled out of order.
+
+    Both models are scored against the same measured series: the candidate forecasts the
+    same river, so anything else would make the two incomparable before they started.
     """
-    forecasts = archive.read_forecasts(root=root)
+    forecasts = archive.read_forecasts(root=root, store=scheme.forecasts)
     if forecasts.empty:
-        logger.info("No archived forecasts to score")
-        return pd.DataFrame(columns=list(SCORE_COLUMNS))
+        logger.info("No archived %s forecasts to score", scheme.name)
+        return pd.DataFrame(columns=list(scheme.columns))
 
     observations = archive.read_observations(root=root)
     actuals = (
@@ -289,10 +341,10 @@ def score_archive(root: Path = archive.DEFAULT_ROOT, *, scored_at=None) -> pd.Da
     )
     if actuals.empty:
         logger.info("No archived %s observations, so nothing can be scored yet", SCORED_CHANNEL)
-        return pd.DataFrame(columns=list(SCORE_COLUMNS))
+        return pd.DataFrame(columns=list(scheme.columns))
     last_measured = actuals.index.max()
 
-    existing = archive.read_verification(root=root)
+    existing = archive.read_verification(root=root, store=scheme.verification)
     already_scored = set()
     if not existing.empty:
         already_scored = set(zip(existing["reference_time"], existing["kind"], strict=True))
@@ -317,22 +369,23 @@ def score_archive(root: Path = archive.DEFAULT_ROOT, *, scored_at=None) -> pd.Da
             model_id=_single(group, "model_id"),
             code_version=_single(group, "code_version"),
             scored_at=scored_at,
+            scheme=scheme,
         )
         if not rows.empty:
             scored.append(rows)
 
     if not scored:
         logger.info(
-            "Nothing new to score (%d runs already scored, %d still open)",
-            skipped_done, skipped_open,
+            "Nothing new to score for %s (%d runs already scored, %d still open)",
+            scheme.name, skipped_done, skipped_open,
         )
-        return pd.DataFrame(columns=list(SCORE_COLUMNS))
+        return pd.DataFrame(columns=list(scheme.columns))
 
     fresh = pd.concat(scored, ignore_index=True)
-    archive.write_verification(fresh, root=root)
+    archive.write_verification(fresh, root=root, store=scheme.verification)
     logger.info(
-        "Scored %d runs (%d rows); %d already scored, %d still open",
-        fresh["reference_time"].nunique(), len(fresh), skipped_done, skipped_open,
+        "Scored %d %s runs (%d rows); %d already scored, %d still open",
+        fresh["reference_time"].nunique(), scheme.name, len(fresh), skipped_done, skipped_open,
     )
     return fresh
 
@@ -352,7 +405,8 @@ def _single(group: pd.DataFrame, column: str) -> str:
 
 
 def read_scores(root: Path = archive.DEFAULT_ROOT,
-                kinds: tuple[str, ...] | None = HONEST_KINDS) -> pd.DataFrame:
+                kinds: tuple[str, ...] | None = HONEST_KINDS,
+                *, scheme: Scheme = PRODUCTION) -> pd.DataFrame:
     """The verification table, with interval coverage materialised.
 
     Defaults to the honest kinds. An oracle backtest saw the weather that actually
@@ -364,7 +418,7 @@ def read_scores(root: Path = archive.DEFAULT_ROOT,
     overlap in time, so a difference between them is code change perfectly confounded
     with season — see the PRD.
     """
-    df = archive.read_verification(root=root)
+    df = archive.read_verification(root=root, store=scheme.verification)
     if df.empty:
         return df
     # 77 of the live runs in this archive predate `model_id` being recorded and carry a
@@ -376,14 +430,16 @@ def read_scores(root: Path = archive.DEFAULT_ROOT,
             df[column] = df[column].fillna("")
     if kinds is not None:
         df = df[df["kind"].isin(kinds)].reset_index(drop=True)
-    for name, low, high in COVERAGE_INTERVALS:
+    for name, low, high in scheme.intervals:
         df[name] = df[f"pit_le_q{high}"] - df[f"pit_le_q{low}"]
     return df
 
 
-#: Columns that pool as an ``n``-weighted mean.
+#: Columns that pool as an ``n``-weighted mean. Both schemes' PIT knots are listed:
+#: `pool` keeps only the ones a given table actually carries.
 _MEAN_COLUMNS = (
-    "mae", "bias", "crps", "mae_persistence", "mae_diurnal", "pit_mean", *PIT_COLUMNS,
+    "mae", "bias", "crps", "mae_persistence", "mae_diurnal", "pit_mean",
+    *dict.fromkeys(PRODUCTION.pit_columns + CANDIDATE.pit_columns),
 )
 
 
@@ -394,7 +450,8 @@ _MEAN_COLUMNS = (
 DEFAULT_POOL_KEYS = ["model_id", "kind", "lead_lo"]
 
 
-def pool(df: pd.DataFrame, by: list[str] | None = None) -> pd.DataFrame:
+def pool(df: pd.DataFrame, by: list[str] | None = None, *,
+         scheme: Scheme = PRODUCTION) -> pd.DataFrame:
     """Aggregate scored rows correctly, weighting each by the hours it covers.
 
     A plain ``groupby.mean()`` is wrong twice over: it weights a bucket with two
@@ -439,9 +496,100 @@ def pool(df: pd.DataFrame, by: list[str] | None = None) -> pd.DataFrame:
     out.insert(0, "n", totals["n"])
     out.insert(1, "n_forecast", totals["n_forecast"])
     out["runs"] = grouped["reference_time"].nunique()
-    for name, low, high in COVERAGE_INTERVALS:
+    for name, low, high in scheme.intervals:
         out[name] = out[f"pit_le_q{high}"] - out[f"pit_le_q{low}"]
     return out.reset_index(drop=not by)
+
+
+#: The grid the two models are compared on. TimesFM emits exactly these; DUET's seven
+#: quantiles are interpolated onto them. Every decile lies inside [0.01, 0.99], so the
+#: interpolation never extrapolates — which is why the shared grid is the candidate's and
+#: not the union of both.
+SHARED_GRID = CANDIDATE.quantiles
+
+
+def to_grid(values: np.ndarray, levels, grid=SHARED_GRID) -> np.ndarray:
+    """Interpolate a quantile function reported at ``levels`` onto ``grid``.
+
+    Linear in the quantile level, which is what makes the two CRPS numbers mean the same
+    thing. Integrating each model over its own range instead would hand the candidate a
+    smaller number for free: its levels stop at 0.1 and 0.9 and omit far more of the
+    tails than DUET's 0.01 and 0.99.
+    """
+    levels = np.asarray(levels, dtype=float)
+    grid = np.asarray(grid, dtype=float)
+    return np.array([np.interp(grid, levels, row) for row in np.sort(values, axis=1)])
+
+
+def compare(root: Path = archive.DEFAULT_ROOT, *, kind: str = archive.KIND_LIVE,
+            schemes: tuple[Scheme, ...] = SCHEMES) -> pd.DataFrame:
+    """Both models on the hours where both really forecast, scored on one grid.
+
+    This is the measurement the whole research programme had to caveat. Every covariate
+    number in ``experiments/timesfm/`` used the weather that actually occurred, because
+    archived DWD forecasts began in May 2026 and only for Munich. Here both models saw
+    only what was knowable at the time, and they are compared on identical hours: an
+    inner join on ``(reference_time, target_time)``, so a run where the two picked
+    different anchors drops out of both sides rather than being compared against a
+    different window.
+
+    Nothing is stored. The forecast archives are kept forever and this is a pure function
+    of them, so it can be recomputed whenever the question is asked — and a change to the
+    scoring cannot quietly rewrite a history it disagrees with.
+
+    Returns one row per (model, lead bucket). It will be empty until both models have
+    published over the same closed windows, which is the point: the candidate's archive
+    starts the day it went live.
+    """
+    observations = archive.read_observations(root=root)
+    actuals = (observations[SCORED_CHANNEL].dropna() if SCORED_CHANNEL in observations.columns
+               else pd.Series(dtype=float))
+    if actuals.empty:
+        return pd.DataFrame()
+
+    frames = {}
+    for scheme in schemes:
+        stored = archive.read_forecasts(root=root, store=scheme.forecasts, kinds=[kind])
+        if stored.empty:
+            logger.info("No %s forecasts of kind %s to compare", scheme.name, kind)
+            return pd.DataFrame()
+        frames[scheme.name] = stored.set_index(["reference_time", "target_time"]).sort_index()
+
+    shared = None
+    for indexed in frames.values():
+        keys = indexed.index.unique()
+        shared = keys if shared is None else shared.intersection(keys)
+    shared = shared[shared.get_level_values(1).isin(actuals.index)]
+    if len(shared) == 0:
+        logger.info("No hour has been forecast by every model and then measured")
+        return pd.DataFrame()
+
+    truth = actuals.reindex(shared.get_level_values(1)).to_numpy(dtype=float)
+    leads = ((shared.get_level_values(1) - shared.get_level_values(0))
+             .total_seconds().to_numpy() / 3600.0)
+    rows = []
+    for scheme in schemes:
+        indexed = frames[scheme.name].loc[shared]
+        values = to_grid(indexed[list(scheme.quantile_columns)].to_numpy(dtype=float),
+                         scheme.quantiles)
+        median = values[:, SHARED_GRID.index(0.5)]
+        for low, high in lead_buckets():
+            sel = (leads > low) & (leads <= high)
+            if not sel.any():
+                continue
+            error = median[sel] - truth[sel]
+            rows.append({
+                "model": scheme.name,
+                "lead_lo": low,
+                "lead_hi": high,
+                "n": int(sel.sum()),
+                "runs": shared[sel].get_level_values(0).nunique(),
+                "mae": float(np.abs(error).mean()),
+                "rmse": float(np.sqrt((error ** 2).mean())),
+                "bias": float(error.mean()),
+                "crps": float(crps(values[sel], truth[sel], SHARED_GRID).mean()),
+            })
+    return pd.DataFrame(rows)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -452,17 +600,43 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--report", action="store_true",
                         help="print the scores for the honest kinds, by era, kind and "
                              "lead bucket, and exit")
+    parser.add_argument("--compare", action="store_true",
+                        help="print both models on the hours both really forecast, "
+                             "scored on one shared decile grid, and exit")
+    parser.add_argument("--model", choices=[s.name for s in SCHEMES],
+                        help="score or report only this model (default: all of them)")
     args = parser.parse_args(argv)
+    schemes = tuple(s for s in SCHEMES if args.model in (None, s.name))
 
-    if args.report:
-        scores = read_scores(root=args.root)
-        if scores.empty:
-            logger.info("No scores stored yet")
+    if args.compare:
+        head_to_head = compare(root=args.root)
+        if head_to_head.empty:
+            logger.info("Nothing both models have forecast and that has since been measured")
             return 0
-        print(pool(scores).to_string())
+        print(head_to_head.to_string(index=False))
         return 0
 
-    score_archive(root=args.root)
+    if args.report:
+        for scheme in schemes:
+            scores = read_scores(root=args.root, scheme=scheme)
+            if scores.empty:
+                logger.info("No %s scores stored yet", scheme.name)
+                continue
+            print(f"== {scheme.name} ==")
+            print(pool(scores, scheme=scheme).to_string())
+        return 0
+
+    for scheme in schemes:
+        try:
+            score_archive(root=args.root, scheme=scheme)
+        except Exception:
+            if scheme is PRODUCTION:
+                raise
+            # Same rule as the forecast itself: the candidate never takes the run down.
+            # This step runs before `main.py` in the scheduled workflow, so raising here
+            # would cost a forecast cycle over a model nobody is relying on yet.
+            logger.exception("Scoring the %s candidate failed; the production scores stand",
+                             scheme.name)
     return 0
 
 

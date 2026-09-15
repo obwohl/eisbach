@@ -624,7 +624,8 @@ def read_observations(root: Path = DEFAULT_ROOT) -> pd.DataFrame:
     return df.set_index("timestamp").sort_index()
 
 
-def write_verification(df_scores: pd.DataFrame, root: Path = DEFAULT_ROOT) -> list[Path]:
+def write_verification(df_scores: pd.DataFrame, root: Path = DEFAULT_ROOT, *,
+                       store: str = "verification") -> list[Path]:
     """Store scored runs, and never restate one that is already stored.
 
     A run is only scored once the last hour it forecast has been measured, so its score
@@ -637,6 +638,10 @@ def write_verification(df_scores: pd.DataFrame, root: Path = DEFAULT_ROOT) -> li
 
     Unlike the other stores this one is *derived* — forecasts and observations can
     rebuild it exactly — so a lost partition is a rerun, not a hole in the record.
+
+    ``store`` names the directory, for the same reason ``write_forecast`` takes one: a
+    second model is scored on its own quantiles, and its rows are no more poolable with
+    the production ones than its forecasts are.
     """
     if df_scores.empty:
         return []
@@ -653,7 +658,7 @@ def write_verification(df_scores: pd.DataFrame, root: Path = DEFAULT_ROOT) -> li
     written = []
     months = incoming["reference_time"].dt.tz_convert(None).dt.to_period("M")
     for period, group in incoming.groupby(months):
-        path = _partition_path(root, "verification", period.to_timestamp())
+        path = _partition_path(root, store, period.to_timestamp())
         existing = _read_partition(path)
         fresh = group
         if not existing.empty:
@@ -672,14 +677,15 @@ def write_verification(df_scores: pd.DataFrame, root: Path = DEFAULT_ROOT) -> li
     return written
 
 
-def read_verification(root: Path = DEFAULT_ROOT) -> pd.DataFrame:
+def read_verification(root: Path = DEFAULT_ROOT, *,
+                      store: str = "verification") -> pd.DataFrame:
     """Load every scored row, oldest first.
 
     Returns them exactly as stored, including oracle rows. Read them through
     ``eisbach.verification.read_scores`` unless you have a reason not to: it drops the
     kinds that flatter the model and materialises interval coverage.
     """
-    partitions = sorted(Path(root).glob("verification/*.csv"))
+    partitions = sorted(Path(root).glob(f"{store}/*.csv"))
     frames = [df for df in (_read_partition(p) for p in partitions) if not df.empty]
     if not frames:
         return pd.DataFrame(columns=VERIFICATION_KEY)

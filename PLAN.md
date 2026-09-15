@@ -23,14 +23,25 @@ eigenen Vorhersagen nach `data/archive/timesfm/` und das Wetter, das er dafür b
 `data/archive/covariate_forecasts/`. In ein paar Monaten steht damit der ehrliche
 Vergleich zur Verfügung, den keine Orakel-Messung ersetzen kann.
 
+**Die Bewertung.** `eisbach/verification.py` kennt den Kandidaten jetzt. Ein `Scheme`
+trägt Quantile, Store-Namen und Abdeckungsintervalle, jedes Modell wird auf **seinem
+eigenen** Gitter in **seinen eigenen** Store bewertet, und `compare()` macht den
+Vergleich auf einem gemeinsamen Dezil-Gitter. Das ist keine Spitzfindigkeit: derselbe
+Punktvorhersage-Fehler ergibt auf den Dezilen einen um 18 % kleineren CRPS als auf DUETs
+sieben Quantilen, einfach weil weniger Verteilungsschwanz integriert wird. Die beiden
+gespeicherten `crps`-Spalten nebeneinander zu lesen wäre genau der Fehler.
+
 ## 1. Den Schattenlauf auswerten — in ein paar Monaten
 
-Nicht früher. Es braucht genug geschlossene 96-Stunden-Fenster, in denen beide Modelle
-live liefen. Dann: dieselben Fenster, dasselbe Dezil-Gitter, gepaarter Block-Bootstrap.
-`eisbach/verification.py` kennt den Kandidaten-Store noch nicht — das ist die Arbeit.
+Die Mechanik steht, es fehlen die Daten. `python -m eisbach.verification --compare`
+liefert die Zahl, sobald beide Modelle über dieselben geschlossenen Fenster gelaufen
+sind; heute ist die Tabelle leer, und das ist richtig so.
 
 Erst diese Zahl entscheidet, ob TimesFM die Produktion wird. Die 32 % aus exp20 sind eine
 Orakel-gegen-Orakel-Messung auf überlappenden Sommerfenstern und beweisen das nicht.
+
+Was noch fehlt, wenn genug da ist: ein gepaarter Block-Bootstrap über die Fenster, damit
+neben der Differenz auch ein Intervall steht.
 
 ## 2. `rain_lenggries` nachprüfen
 

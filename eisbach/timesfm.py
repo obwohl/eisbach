@@ -145,22 +145,41 @@ def context_frame(anchor, *, root: Path = STORE) -> pd.DataFrame:
     return frame[names]
 
 
-def future_frame(anchor) -> pd.DataFrame:
+def future_frame(anchor, *, now=None) -> pd.DataFrame:
     """The DWD forecast for the known-future covariates over the horizon.
 
-    Complete or nothing. A hole in a MOSMIX forecast is not a late report that will turn
-    up next run — it is a station that is not being forecast — and interpolating across
-    it would put an invented number where the model expects to be told the truth.
+    The horizon starts at the anchor, which is the last hour the Eisbach was measured, so
+    its first hours have usually already happened by the time this runs. Bright Sky
+    serves those as measurements and the rest as MOSMIX, and the two kinds of hole mean
+    opposite things:
+
+    *After now* the answer is a forecast, and MOSMIX does not have gaps. A hole there is
+    a station that is not being forecast, and interpolating across it would put an
+    invented number where the model expects to be told the truth. Refuse.
+
+    *At or before now* a hole is a gauge that has not reported yet — the same thing that
+    happens ~34 times per series per 180 days inside the context, where it is tolerated
+    and left to the backend to interpolate. Refusing here as well would be inconsistent
+    (it is one array: `past_future_covariates` spans context and horizon together) and
+    expensive: measured over 180 days of the archive, a late rain gauge in the last few
+    hours would have blocked **2 % of runs**, about one every three weeks. The complete
+    forecast to its right guarantees the interpolation always has something to reach.
     """
     anchor = pd.Timestamp(anchor).tz_convert("UTC")
+    now = pd.Timestamp(now or pd.Timestamp.now(tz="UTC")).tz_convert("UTC").floor("h")
     frame = fetch_future(list(KNOWN_FUTURE),
                          anchor + pd.Timedelta(hours=1),
                          anchor + pd.Timedelta(hours=HORIZON_HOURS))
-    missing = frame.isna().sum()
+    predicted = frame.loc[frame.index > now, list(KNOWN_FUTURE)]
+    missing = predicted.isna().sum()
     if missing.any():
         raise RuntimeError("Incomplete weather forecast: "
                            + ", ".join(f"{name} missing {int(n)} h"
                                        for name, n in missing[missing > 0].items()))
+    late = frame.loc[frame.index <= now, list(KNOWN_FUTURE)].isna().sum()
+    if late.any():
+        logger.warning("Not yet reported at the start of the horizon, left to the model: %s",
+                       ", ".join(f"{name} {int(n)} h" for name, n in late[late > 0].items()))
     return frame
 
 
@@ -245,7 +264,7 @@ def run(*, root: Path = DEFAULT_ROOT, covariates: Path = STORE, now=None,
     logger.info("TimesFM anchor %s, %d h of context, %d h horizon",
                 anchor, CONTEXT_HOURS, HORIZON_HOURS)
     context = context_frame(anchor, root=covariates)
-    future = future_frame(anchor)
+    future = future_frame(anchor, now=now)
     quantiles = predict(context, future, forecaster=forecaster)
     issued_at = pd.Timestamp(issued_at or pd.Timestamp.now(tz="UTC"))
     # The weather first: a forecast whose inputs were not kept can never be re-examined,

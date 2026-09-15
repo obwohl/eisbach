@@ -147,14 +147,29 @@ def test_non_finite_quantiles_are_refused(store):
                         forecaster=Stub(values))
 
 
-def test_an_incomplete_weather_forecast_is_refused(store, mocker):
+def test_a_hole_in_the_forecast_is_refused(store, mocker):
     """A hole in MOSMIX is a station that is not being forecast, not a late report."""
     _root, anchor = store
     holed = future(anchor)
     holed.loc[holed.index[3], "rain_toelz"] = np.nan
     mocker.patch("eisbach.timesfm.fetch_future", return_value=holed)
     with pytest.raises(RuntimeError, match="Incomplete weather forecast.*rain_toelz"):
-        timesfm.future_frame(anchor)
+        timesfm.future_frame(anchor, now=anchor)
+
+
+def test_a_gauge_that_has_not_reported_yet_does_not_block_the_run(store, mocker, caplog):
+    """Measured over 180 days, refusing here too would have blocked 2 % of runs."""
+    import logging
+
+    _root, anchor = store
+    holed = future(anchor)
+    holed.loc[holed.index[0], "rain_toelz"] = np.nan
+    mocker.patch("eisbach.timesfm.fetch_future", return_value=holed)
+    with caplog.at_level(logging.WARNING):
+        # The hour is already past: the horizon starts at the last *measurement*.
+        frame = timesfm.future_frame(anchor, now=holed.index[1])
+    assert pd.isna(frame.rain_toelz.iloc[0])
+    assert "rain_toelz 1 h" in caplog.text
 
 
 def test_the_candidate_writes_to_its_own_store(store, tmp_path, mocker):

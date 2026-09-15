@@ -79,6 +79,9 @@ jobs:
       # the weather snapshot to disk before anything downstream can fail. A scorer that
       # raised after that point would skip the commit below and take an irreplaceable
       # snapshot with it. Failing here costs one forecast cycle instead.
+      # Scores both models, each on its own quantile grid and into its own store.
+      # A failure scoring the candidate is logged and swallowed there; only the
+      # production model can fail this step.
       - name: Score the runs whose window has closed
         run: python -m eisbach.verification
 

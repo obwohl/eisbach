@@ -55,8 +55,41 @@ and knows that RMSE averages in squares; a plain `groupby().mean()` gets both wr
 groups by era and kind unless told otherwise, so the default cannot quietly produce the
 two numbers the next section says must not be quoted.
 
-`python -m eisbach.verification` scores whatever is newly scorable; `--report` prints the
-pooled table. The scheduled workflow runs the first form before each forecast.
+`python -m eisbach.verification` scores whatever is newly scorable, for **both models**;
+`--report` prints a pooled table per model and `--model duet` narrows either form to one.
+The scheduled workflow runs the bare form before each forecast.
+
+## Two models, two grids, and one comparison
+
+DUET reports seven quantiles, the TimesFM candidate exactly nine deciles. That is not a
+detail: the stored `crps` is an integral over the levels a model reports, so DUET's runs
+over [0.01, 0.99] and the candidate's over [0.1, 0.9]. For the *same* forecast against
+the *same* truth the candidate's number is smaller, because it omits more of the tails —
+about 18 % smaller on a point forecast. Reading the two stored columns side by side would
+hand the candidate an advantage it has not earned.
+
+So each model is scored on its own grid into its own store, `verification/` and
+`verification_timesfm/`, and a `Scheme` carries the quantiles, the store names and the
+coverage intervals so a store cannot drift from what its model emits.
+
+The comparison is a separate thing:
+
+```python
+from eisbach.verification import compare
+
+compare()      # or: python -m eisbach.verification --compare
+```
+
+It inner-joins the two forecast archives on `(reference_time, target_time)`, so a run
+where the two picked different anchors drops out of both sides rather than being scored
+against a different window, interpolates both onto the shared decile grid, and scores
+them against the same measurements. Nothing is stored: the forecast archives are kept
+forever and this is a pure function of them, so a change to the scoring cannot quietly
+rewrite a history it disagrees with.
+
+It is empty until both models have published over the same closed windows. That is the
+point — every covariate number in `experiments/timesfm/` used the weather that actually
+occurred, and this is the first measurement where neither model saw the future.
 
 ## Four ways to get a wrong number out of it
 
@@ -74,10 +107,15 @@ pooled row beside them, because with one there the obvious `scores["mae"].mean()
 count every observation twice. Use `pool`.
 
 **Reading `crps` as a textbook CRPS.** It is twice the integral of the pinball loss over
-the quantile level, trapezoidal across the seven levels the model reports — so the
+the quantile level, trapezoidal across the levels the model reports — so for DUET the
 integral runs over [0.01, 0.99] and omits the tails beyond. That understates the true
 CRPS by a constant of the method, not of the forecast, so the series stays comparable
 with itself but not necessarily with someone else's.
+
+**Comparing the two models' stored `crps` columns.** The worst version of the mistake
+above, because both numbers look like the same quantity. They are not: the candidate
+integrates over [0.1, 0.9] and the production model over [0.01, 0.99]. Use `compare`,
+which puts both on one grid first — see the section below.
 
 ## What counts as a measurement
 
