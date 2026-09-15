@@ -31,6 +31,16 @@ dependencies = [
 Homepage = "https://github.com/obwohl/eisbach"
 
 [project.optional-dependencies]
+# The TimesFM candidate, published beside the production DUET forecast. Optional on
+# purpose: `main.py` imports it inside a try/except and logs a failure rather than
+# raising, so a machine without these still produces the forecast that matters. The
+# three packages are small — the 1.3 GB is the checkpoint, fetched and cached at
+# runtime — and torch is already a hard dependency above.
+candidate = [
+    "timesfm[torch]>=3.0,<4",
+    "huggingface_hub>=0.28",
+    "safetensors>=0.5.3",
+]
 dev = [
     "pytest>=8.0",
     "pytest-mock>=3.12",

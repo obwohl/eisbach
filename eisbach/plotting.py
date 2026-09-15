@@ -52,6 +52,25 @@ QUANTILE_LABELS = ['q0.01-q0.99', 'q0.05-q0.95', 'q0.25-q0.75']
 PREDICTION_PNG = 'Prediction.png'
 BACKTEST_PNG = 'Prediction_Backtest.png'
 
+#: TimesFM 3.0 emits deciles and nothing else, so its bands are the two the deciles can
+#: make. Wider than they look next to DUET's: the outer band here holds 80 % of the
+#: distribution where DUET's outer band holds 98 %, and the two images must not be read
+#: as if a narrower ribbon meant a more confident model. The page says so in words.
+TIMESFM_QUANTILE_PAIRS = [(0.1, 0.9), (0.2, 0.8)]
+TIMESFM_BAND_ALPHAS = [0.12, 0.22]
+TIMESFM_QUANTILE_LABELS = ['q0.1-q0.9 (80 %)', 'q0.2-q0.8 (60 %)']
+
+#: The two upstream Wassertemperaturen the model may look at, but only in the past.
+#: Named for the reader rather than for the archive: on the picture they explain where
+#: the forecast's shape comes from, and `isar_toelz` explains nothing to anyone.
+PAST_ONLY_LABELS = {
+    'isar_toelz': 'Isar at Bad Tölz',
+    'loisach_beuerberg': 'Loisach at Beuerberg',
+}
+
+TIMESFM_PNG = 'Prediction_timesfm.png'
+TIMESFM_BACKTEST_PNG = 'Prediction_Backtest_timesfm.png'
+
 #: Dishonest backtests are dashed. Deliberately not a colour difference: the colour
 #: cycle is already carrying the offset, and colour alone is the one cue a reader can
 #: fail to perceive.
@@ -134,11 +153,13 @@ def _prepare_backtests(backtests: dict[int, Backtest]) -> list[tuple[Backtest, p
 # --------------------------------------------------------------------------------------
 
 def _plot_fan(ax, df_forecast: pd.DataFrame, label: str, color: str,
-              linestyle: str = HONEST_LINESTYLE) -> None:
+              linestyle: str = HONEST_LINESTYLE, *, pairs=None, alphas=None) -> None:
     """Draw one forecast: its median line plus the nested quantile bands."""
+    pairs = QUANTILE_PAIRS if pairs is None else pairs
+    alphas = BAND_ALPHAS if alphas is None else alphas
     ax.plot(df_forecast.index, df_forecast[MEDIAN_COL], label=label, color=color,
             linestyle=linestyle)
-    for alpha, (q_low, q_high) in zip(BAND_ALPHAS, QUANTILE_PAIRS, strict=True):
+    for alpha, (q_low, q_high) in zip(alphas, pairs, strict=True):
         col_low = f'{CHANNEL}_q{q_low}'
         col_high = f'{CHANNEL}_q{q_high}'
         if col_low in df_forecast.columns and col_high in df_forecast.columns:
@@ -146,9 +167,11 @@ def _plot_fan(ax, df_forecast: pd.DataFrame, label: str, color: str,
                             alpha=alpha, color=color, lw=0)
 
 
-def _add_band_legend_entries(ax) -> None:
+def _add_band_legend_entries(ax, *, alphas=None, labels=None) -> None:
     """Add one invisible patch per quantile band, so the legend explains the shading."""
-    for alpha, label in zip(BAND_ALPHAS, QUANTILE_LABELS, strict=True):
+    alphas = BAND_ALPHAS if alphas is None else alphas
+    labels = QUANTILE_LABELS if labels is None else labels
+    for alpha, label in zip(alphas, labels, strict=True):
         ax.fill_between([], [], [], color='gray', alpha=alpha, label=label)
 
 
@@ -320,3 +343,94 @@ def plot_forecasts(df_long, df_weather, df_inference, backtests=None, issued_at=
 
     _save(fig, BACKTEST_PNG)
     plt.close(fig)
+
+
+# --------------------------------------------------------------------------------------
+# The candidate
+# --------------------------------------------------------------------------------------
+
+def plot_timesfm(context: pd.DataFrame, future: pd.DataFrame, df_forecast: pd.DataFrame,
+                 *, issued_at=None, backtests=None, history_hours: int = 96) -> list[str]:
+    """Write the candidate's images and return the paths written.
+
+    ``context`` is the frame `eisbach.timesfm.context_frame` built the forecast from —
+    a year of it, of which only the last few days are drawn — and ``future`` the weather
+    forecast it was handed for the horizon. ``backtests`` maps an offset
+    in hours to an earlier archived TimesFM forecast; the backtest image is written only
+    when there is at least one, because the candidate's archive starts empty and an image
+    of a forecast with nothing to compare it against is worse than no image at all. The
+    page hides the picture it cannot load.
+
+    Every backtest here is a forecast this project really published, built on the DWD
+    forecast as it stood — there is no oracle track for the candidate and there never
+    will be, so nothing on these images is dashed.
+    """
+    from eisbach.timesfm import KNOWN_FUTURE, PAST_ONLY, TARGET
+
+    backtests = backtests or {}
+    plt.rcParams.update(PRIMER_STYLE)
+    colors = PRIMER_STYLE['axes.prop_cycle'].by_key()['color']
+
+    fig, ax = plt.subplots()
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(2.5))
+
+    forecast = _localized_copy(df_forecast)
+    recent = _localized_copy(context.tail(history_hours))
+    start = recent.index.min()
+    end = forecast.index.max()
+
+    ax.plot(recent.index, recent[TARGET], label='Measured water temperature',
+            color='black', linestyle='--')
+    for name, color in zip(PAST_ONLY, ('#0E7C66', '#C9772B'), strict=True):
+        ax.plot(recent.index, recent[name], label=f'{PAST_ONLY_LABELS[name]} (upstream, past only)',
+                color=color, linestyle='-', linewidth=0.9, alpha=0.8)
+    _add_band_legend_entries(ax, alphas=TIMESFM_BAND_ALPHAS, labels=TIMESFM_QUANTILE_LABELS)
+    _plot_fan(ax, forecast, 'TimesFM forecast', colors[0],
+              pairs=TIMESFM_QUANTILE_PAIRS, alphas=TIMESFM_BAND_ALPHAS)
+
+    # The air temperature the model was told, measured before the anchor and forecast
+    # after it — the same line the DUET image draws, from the same source.
+    air = pd.concat([recent[KNOWN_FUTURE[0]],
+                     _localized_copy(future)[KNOWN_FUTURE[0]]]).sort_index()
+    ax.plot(air.index, air, label='Air Temp (DWD)', color='purple', linestyle=':',
+            linewidth=1.5, alpha=0.6)
+
+    span = (float(forecast[f'{CHANNEL}_q0.1'].min()), float(forecast[f'{CHANNEL}_q0.9'].max()))
+    span = _widen(span, _span(_clip(recent[TARGET], start, end)))
+    span = _widen(span, _span(_clip(air, start, end)))
+
+    ax.set_xlim(left=start, right=end)
+    ax.set_ylim(span[0] - 0.5, span[1] + 0.5)
+    ax.set_title('Eisbach water temperature — TimesFM 3.0 (candidate)\n'
+                 f'Issued {_issued_label(issued_at)} · all times Europe/Berlin')
+    ax.set_xlabel('')
+    ax.set_ylabel('Temperature (°C)')
+    _refresh_legend(ax)
+
+    annotations = _annotate_peaks(ax, forecast)
+    _save(fig, TIMESFM_PNG)
+    written = [TIMESFM_PNG]
+
+    if backtests:
+        for annotation in annotations:
+            annotation.remove()
+        for i, offset in enumerate(sorted(backtests)):
+            df_bt = _localized_copy(backtests[offset])
+            color = colors[i + 1] if i + 1 < len(colors) else colors[-1]
+            _plot_fan(ax, df_bt, f'Forecast from -{offset} h', color,
+                      pairs=TIMESFM_QUANTILE_PAIRS, alphas=TIMESFM_BAND_ALPHAS)
+            span = _widen(span, (float(df_bt[f'{CHANNEL}_q0.1'].min()),
+                                 float(df_bt[f'{CHANNEL}_q0.9'].max())))
+            start = min(start, df_bt.index.min())
+        ax.set_xlim(left=start, right=end)
+        ax.set_ylim(span[0] - 0.5, span[1] + 0.5)
+        ax.set_title('Eisbach water temperature — TimesFM 3.0 with its own past forecasts\n'
+                     f'Issued {_issued_label(issued_at)} · all times Europe/Berlin\n'
+                     'Every backtest is a forecast really published, on the weather '
+                     'forecast as it stood.')
+        _refresh_legend(ax)
+        _save(fig, TIMESFM_BACKTEST_PNG)
+        written.append(TIMESFM_BACKTEST_PNG)
+
+    plt.close(fig)
+    return written

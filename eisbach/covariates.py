@@ -222,6 +222,145 @@ def hourly_weather(payload: dict, station: str, field: str) -> pd.DataFrame:
     return out
 
 
+# The hourly partitions are the bulk of this archive — 1.9 million rows across eleven
+# series — so they store only what varies from one hour to the next. Two rules, applied
+# on write by `_encode_partition` and undone on read by `_decode_partition`:
+#
+#   1. Columns that describe the *series* rather than the hour are not written.
+#      `station` and `unit` come from `SPECS`, and both `write_hourly` and `read_hourly`
+#      already overwrote whatever a file said with the `SPECS` value — the stored copy
+#      never carried information. Which physical station a reading came from is kept
+#      immutably by the payload store (`raw/<station>/`) and per backfilled year in
+#      `manifest.json`; repinning a series means a new directory there, not a silent
+#      edit here.
+#
+#   2. A blank cell means the column's documented default. `raw_min` and `raw_max`
+#      default to `raw_value` — the ordinary case of one Bright Sky row, or four
+#      identical GKD quarter-hours — and `duplicate_count` and `conflict` default to 0.
+#      Only departures from the ordinary case cost bytes, which is the point.
+#
+# Timestamps are written as `2013-07-01T00Z`. `write_hourly` refuses anything that is not
+# a unique UTC hour, so minutes, seconds and the offset were constant by construction.
+# Partitions written before this carry the full spelling; `_read_partition` parses per
+# row with `format="mixed"`, so the two mix freely and no migration is required to read.
+#
+# CSV, not Parquet, on purpose: this store is committed three times a day and git deltas
+# a text partition that grew by three rows down to almost nothing, where a re-encoded
+# Parquet file is a whole new blob every run.
+SERIES_COLUMNS = ("station", "unit")
+DEFAULTS_FROM = {"raw_min": "raw_value", "raw_max": "raw_value"}
+DEFAULTS_ZERO = ("duplicate_count", "conflict")
+HOUR_FORMAT = "%Y-%m-%dT%HZ"
+
+
+def _encode_partition(frame: pd.DataFrame) -> pd.DataFrame:
+    """Leave out what is constant per series and blank what equals its default."""
+    out = frame.drop(columns=[c for c in SERIES_COLUMNS if c in frame.columns])
+    for col, source in DEFAULTS_FROM.items():
+        if col in out.columns and source in out.columns:
+            values = pd.to_numeric(out[col], errors="coerce")
+            default = pd.to_numeric(out[source], errors="coerce")
+            # `eq` is False where either side is NaN, so a value present without its
+            # default — a conflicting hour blanks `raw_value` but keeps the spread —
+            # stays written out instead of being read back as missing.
+            out[col] = values.where(~values.eq(default))
+    for col in DEFAULTS_ZERO:
+        if col in out.columns:
+            values = pd.to_numeric(out[col], errors="coerce").fillna(0)
+            # Nullable, so the survivors write as `1` rather than `1.0`.
+            out[col] = values.where(values.ne(0)).astype("Int64")
+    if "timestamp" in out.columns:
+        stamps = pd.to_datetime(out["timestamp"], utc=True, errors="coerce", format="mixed")
+        out["timestamp"] = stamps.dt.strftime(HOUR_FORMAT)
+    return out
+
+
+def _decode_partition(frame: pd.DataFrame, name: str) -> pd.DataFrame:
+    """Put back what `_encode_partition` left out. A no-op on the older full schema."""
+    if frame.empty:
+        return frame
+    out = frame.copy()
+    for col, source in DEFAULTS_FROM.items():
+        if col in out.columns and source in out.columns:
+            out[col] = pd.to_numeric(out[col], errors="coerce").fillna(
+                pd.to_numeric(out[source], errors="coerce"))
+    for col in DEFAULTS_ZERO:
+        if col in out.columns:
+            out[col] = pd.to_numeric(out[col], errors="coerce").fillna(0)
+    out["station"] = SPECS[name].station
+    out["unit"] = SPECS[name].unit
+    return out
+
+
+def _read_hourly_partition(path: Path, name: str) -> pd.DataFrame:
+    return _decode_partition(_read_partition(path), name)
+
+
+def future_weather(payload: dict, station: str, field: str) -> pd.DataFrame:
+    """One station's hourly weather over a window that straddles now, with its provenance.
+
+    The mirror image of `hourly_weather`, which keeps only what was *measured* and throws
+    the forecast away — an archive of observations must never quietly absorb a prediction.
+    Here the forecast is the point: TimesFM's known-future covariates are weather the
+    model is told in advance.
+
+    Bright Sky already picks the best source per hour, serving an observation where one
+    exists and MOSMIX beyond it, which is also production's rule — never substitute a
+    forecast for an hour that has already been measured. So this takes what it is given
+    and records `observation_type` per hour instead, because the difference matters later:
+    an hour the model was handed a measurement for is not a test of forecasting, and a
+    verification run that cannot tell the two apart would flatter every horizon's first
+    few hours.
+
+    The station check is the same one as in `hourly_weather`, and matters for the same
+    reason: a coordinate lookup silently resolves to the nearest *reporting* station and
+    switches between runs. Every request goes by `dwd_station_id`; this verifies the answer.
+    """
+    sources = {s["id"]: s for s in payload.get("sources", [])}
+    rows = payload.get("weather", [])
+    if not rows:
+        return pd.DataFrame(columns=["value", "kind"])
+    raw = pd.DataFrame(rows)
+    for sid in raw.source_id.unique():
+        source = sources.get(sid)
+        if source is None or str(source.get("dwd_station_id")).zfill(5) != station:
+            raise ValueError(f"Station substitution or unknown source {sid}; expected {station}")
+    raw["timestamp"] = pd.to_datetime(raw.timestamp, utc=True)
+    raw["value"] = pd.to_numeric(raw.get(field, pd.Series(np.nan, index=raw.index)), errors="coerce")
+    raw["kind"] = raw.source_id.map(lambda sid: sources[sid].get("observation_type"))
+    raw = raw.set_index("timestamp").sort_index()
+    if (raw.index != raw.index.floor("h")).any():
+        raise ValueError("Unexpected subhourly Bright Sky response")
+    return raw[["value", "kind"]].groupby(level=0).first()
+
+
+def fetch_future(names: list[str], start, end) -> pd.DataFrame:
+    """One request per station for the known-future covariates over `start`..`end`.
+
+    Returned wide, one column per series on a complete hourly grid, plus `source_kind`:
+    Bright Sky's `observation_type` for that hour, or `mixed` in the impossible-looking
+    case where two stations disagree about whether an hour has been measured yet. A hole
+    is left as NaN for the caller to refuse on — a forecast with a gap in it is not a
+    forecast to feed a model, and filling it here would hide that.
+    """
+    grid = pd.date_range(_as_utc(start), _as_utc(end), freq="h")
+    columns, kinds = {}, {}
+    for station in sorted({SPECS[n].station for n in names}):
+        response = request(BRIGHTSKY_URL, {"dwd_station_id": station,
+                                           "date": grid[0].isoformat(),
+                                           "last_date": grid[-1].isoformat()})
+        payload = response.json()
+        for name in [n for n in names if SPECS[n].station == station]:
+            answered = future_weather(payload, station, SPECS[name].field).reindex(grid)
+            columns[name] = answered["value"]
+            kinds[station] = answered["kind"]
+    frame = pd.DataFrame(columns, index=grid)[names]
+    agreed = pd.DataFrame(kinds, index=grid)
+    frame["source_kind"] = agreed.apply(
+        lambda row: row.dropna().iloc[0] if row.dropna().nunique() == 1 else "mixed", axis=1)
+    return frame.rename_axis("target_time")
+
+
 def write_hourly(name: str, incoming: pd.DataFrame, *, root: Path = STORE) -> None:
     if incoming.empty:
         return
@@ -237,10 +376,10 @@ def write_hourly(name: str, incoming: pd.DataFrame, *, root: Path = STORE) -> No
         frame["source_id"] = frame.source_id.astype("string")
     for month, group in frame.groupby(frame.index.strftime("%Y-%m")):
         path = root / "hourly" / name / f"{month}.csv"
-        old = _read_partition(path)
+        # Decoded, so an old full-schema partition and a new slim one merge identically.
+        old = _read_hourly_partition(path, name)
         if not old.empty:
             old = old.set_index("timestamp")
-            old["station"] = SPECS[name].station
             old["conflict"] = old.conflict.astype(str).str.lower().isin(["true", "1", "1.0"]).astype(int)
             if "source_id" in old:
                 old["source_id"] = old.source_id.astype("string")
@@ -253,7 +392,7 @@ def write_hourly(name: str, incoming: pd.DataFrame, *, root: Path = STORE) -> No
             group.loc[retained, old.columns] = old.loc[retained]
         group["station"] = SPECS[name].station
         group["conflict"] = group.conflict.astype(str).str.lower().isin(["true", "1", "1.0"]).astype(int)
-        _write_partition(path, group.sort_index().reset_index())
+        _write_partition(path, _encode_partition(group.sort_index().reset_index()))
 
 
 def read_hourly(name: str, *, root: Path = STORE, start=None, end=None) -> pd.DataFrame:
@@ -264,12 +403,12 @@ def read_hourly(name: str, *, root: Path = STORE, start=None, end=None) -> pd.Da
         paths = [p for p in paths if p.stem >= pd.Timestamp(start).strftime("%Y-%m")]
     if end is not None:
         paths = [p for p in paths if p.stem <= pd.Timestamp(end).strftime("%Y-%m")]
-    frames = [_read_partition(p) for p in paths]
+    frames = [_read_hourly_partition(p, name) for p in paths]
+    frames = [f for f in frames if not f.empty]
     if not frames:
         return pd.DataFrame()
     frame = pd.concat(frames).set_index("timestamp").sort_index()
     frame["conflict"] = frame.conflict.astype(str).str.lower().isin(["true", "1", "1.0"])
-    frame["station"] = SPECS[name].station
     frame = frame.loc[start:end]
     if frame.empty:
         return frame
@@ -302,14 +441,25 @@ def record_quality(flags: pd.DataFrame, name: str, *, root: Path) -> None:
             _write_partition(path, combined.sort_values("timestamp"))
 
 
-def model_values(name: str, *, root: Path = STORE, start=None, end=None) -> pd.Series:
-    """Reviewed/automatic rejection is a separate, logged view; raw values never change."""
+def model_values(name: str, *, root: Path = STORE, start=None, end=None,
+                 record: bool = True) -> pd.Series:
+    """Reviewed/automatic rejection is a separate, logged view; raw values never change.
+
+    `record=False` applies exactly the same verdicts and writes none of them down. It is
+    for a reader that wants a long window rather than a decision: the flags are a pure
+    function of the hourly store, so re-recording a year of them on every run adds no
+    information and a great deal of file. `refresh` reads the live window with
+    `record=True`, and that pass is what the log is for — a year read three times a day
+    turned 68 KB of review findings into 2.2 MB of "it did not rain", rewritten from
+    scratch each run.
+    """
     frame = read_hourly(name, root=root, start=start, end=end)
     if frame.empty:
         raise RuntimeError(f"Archive has no {name}; run experiments/timesfm/build_archive.py")
     s = frame.raw_value.copy()
     flags = assess_frame(frame, name)
-    record_quality(flags, name, root=root)
+    if record:
+        record_quality(flags, name, root=root)
     # Conservative: for air and rain, hard bounds only. Hampel/jump and plateaux are
     # review findings there, not proof of a broken instrument or a dry river — a front,
     # a downpour and sunrise are all genuinely abrupt.
@@ -346,16 +496,18 @@ def model_values(name: str, *, root: Path = STORE, start=None, end=None) -> pd.S
                 f"the instrument is broken, not spiky"
             )
     for ts in s.index[reject]:
-        record = {"timestamp": ts, "raw_value": s.loc[ts], "value": np.nan,
-                  "status": "never_measured", "reason": reasons.loc[ts],
-                  "policy": POLICY_VERSION, "series": name}
-        path = root / "decisions" / name / f"{ts:%Y-%m}.csv"
-        previous = _read_partition(path)
-        combined = pd.concat([previous, pd.DataFrame([record])], ignore_index=True)
-        combined = combined.drop_duplicates(["timestamp", "policy", "reason"], keep="last")
-        _write_partition(path, combined)
         logger.warning("%s %s: raw=%s -> never_measured (%s, %s)",
                        name, ts, s.loc[ts], reasons.loc[ts], POLICY_VERSION)
+        if not record:
+            continue
+        decision = {"timestamp": ts, "raw_value": s.loc[ts], "value": np.nan,
+                    "status": "never_measured", "reason": reasons.loc[ts],
+                    "policy": POLICY_VERSION, "series": name}
+        path = root / "decisions" / name / f"{ts:%Y-%m}.csv"
+        previous = _read_partition(path)
+        combined = pd.concat([previous, pd.DataFrame([decision])], ignore_index=True)
+        combined = combined.drop_duplicates(["timestamp", "policy", "reason"], keep="last")
+        _write_partition(path, combined)
     return s.mask(reject).rename(name)
 
 

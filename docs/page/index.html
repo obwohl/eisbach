@@ -54,14 +54,22 @@
 <img id="forecast" src="Prediction.png"
      alt="Forecast with recent history and air temperature">
 
+<section id="backtests">
 <h2>With backtests</h2>
 <p>The same forecast alongside backtests at &minus;96&#8202;h, &minus;192&#8202;h and
    &minus;288&#8202;h. Solid backtests are honest — they are forecasts that were really
    made at the time, or replays against the weather forecast as it was then issued.
    Dashed ones are oracle backtests, computed with the weather that actually occurred,
    so they flatter the model and are not evidence of real-world skill.</p>
+<p class="note" id="about-backtests-timesfm" hidden>
+  The candidate has no oracle track and never will: every backtest here is a forecast
+  this page really published, on the weather forecast as it stood at the time. Its
+  archive starts the day it went live, so there is nothing to draw until it has been
+  running for a few days.
+</p>
 
 <img id="backtest" src="Prediction_Backtest.png" alt="Forecast with three backtests">
+</section>
 
 <footer>
   <a id="csv" href="Prediction.csv">Quantiles as CSV</a> &middot;
@@ -81,6 +89,7 @@
   const els = {
     forecast: document.getElementById('forecast'),
     backtest: document.getElementById('backtest'),
+    backtests: document.getElementById('backtests'),
     csv: document.getElementById('csv'),
   };
   const buttons = [...document.querySelectorAll('#models button')];
@@ -88,11 +97,17 @@
   function show(model) {
     const files = FILES[model];
     els.forecast.src = files.forecast;
-    els.backtest.src = files.backtest;
     els.csv.href = files.csv;
+    // The candidate's backtest image exists only once it has published enough forecasts
+    // to draw. Hide the whole section rather than leave a broken image behind: `onerror`
+    // has to be armed before `src` is set, or a cached 404 fires before we are listening.
+    els.backtests.hidden = false;
+    els.backtest.onerror = () => { els.backtests.hidden = true; };
+    els.backtest.src = files.backtest;
     for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.model === model));
     document.getElementById('about-duet').hidden = model !== 'duet';
     document.getElementById('about-timesfm').hidden = model !== 'timesfm';
+    document.getElementById('about-backtests-timesfm').hidden = model !== 'timesfm';
     try { localStorage.setItem('eisbach-model', model); } catch (e) { /* private window */ }
   }
 

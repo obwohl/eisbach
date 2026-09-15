@@ -80,13 +80,14 @@ on 23 starts before the September sensor fault. Its quantiles exactly reproduce
 the comparison baseline. TimesFM still improves MAE by **32.0 %** and CRPS by
 **32.7 %**. These overlapping seasonal windows do not prove a universal advantage.
 
-The huge current production bands are caused by one historical **154.4 °C** water
-reading. Repairing only that hour reproduces normal-width bands with unchanged
-weights and weather. The implausible-reading guard exists on this research branch
-but is absent from the audited production commit. The audit did not deploy a fix.
+The huge production bands of early September were caused by one historical **154.4 °C**
+water reading. The guard is deployed: the run after the merge went from a 24.07 °C band
+back to 3.84 °C with unchanged weights and weather.
 
-Still open: a live comparison of the complete final set with archived weather
-forecasts for all its inputs. The oracle result does not replace that measurement.
+The live comparison is no longer open, it is **running**. `eisbach/timesfm.py` publishes
+this exact set beside DUET three times a day on a real MOSMIX forecast, and archives both
+its forecasts and the weather it was handed. What is open is the *result*, which needs a
+few months of closed 96-hour windows before it means anything.
 
 What *is* measured end to end is older and narrower: TimesFM zero-shot with the replayed
 DWD forecast beat the live DUET on 76 identical windows, 0.290 against 0.422 MAE and
@@ -104,6 +105,9 @@ Read it as a seasonal point estimate and nothing more. The block interval is
 catchment rain and radiation have **no archived forecast at all** — their errors were
 simulated from Munich's, which assumes a spatial transfer nobody has verified.
 
-**If this set is adopted, production has to start archiving the forecasts for it.** Only
-Munich is archived today. Without that, these covariates can never be verified honestly,
-and the archive only ever grows forward.
+**Production now archives the forecasts for this set.** It used to archive only Munich's,
+which is why every number above had to be caveated. `write_covariate_forecast` keeps all
+seven as they were forecast, per run, with `source_kind` recording the handful of horizon
+hours Bright Sky served as measurement rather than prediction. The archive only ever grows
+forward, so the clock on an honest verification started the day this shipped and not
+before.

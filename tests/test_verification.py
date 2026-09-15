@@ -428,3 +428,163 @@ def test_pool_gives_each_column_its_own_denominator():
     pooled = verification.pool(rows, by=[])
     assert pooled["mae"].iloc[0] == pytest.approx(1.0)
     assert pooled["mae_persistence"].iloc[0] == pytest.approx(2.0)
+
+
+# --- two models, two grids --------------------------------------------------------
+
+def make_candidate_forecast(reference_time, hours=96, median=15.0, spread=1.0):
+    """A forecast shaped like the candidate's: 96 hours, nine deciles."""
+    reference_time = pd.Timestamp(reference_time)
+    index = pd.date_range(reference_time + pd.Timedelta(hours=1), periods=hours, freq="1h")
+    offsets = np.linspace(-1.5, 1.5, len(verification.CANDIDATE.quantiles))
+    return pd.DataFrame(
+        {f"wassertemp_q{q}": float(median) + offset * spread
+         for q, offset in zip(verification.CANDIDATE.quantiles, offsets, strict=True)},
+        index=index,
+    )
+
+
+def archive_both(root, reference_time=REF, *, duet_median=15.0, candidate_median=15.0):
+    """One live run from each model over the same window, plus the measurements."""
+    archive.write_forecast(make_forecast(reference_time, median=duet_median),
+                           reference_time=reference_time, kind=archive.KIND_LIVE,
+                           covariate_source="dwd_forecast", model_id="duet", root=root)
+    archive.write_forecast(make_candidate_forecast(reference_time, median=candidate_median),
+                           reference_time=reference_time, kind=archive.KIND_LIVE,
+                           covariate_source="brightsky_mosmix", model_id="timesfm",
+                           root=root, store=verification.CANDIDATE.forecasts)
+    actuals = make_actuals(reference_time, value=15.0)
+    archive.write_observations(actuals.rename("wassertemp").to_frame(), root=root)
+
+
+def test_the_candidate_is_scored_into_its_own_store(root):
+    """Its rows carry nine PIT knots, which the production table has no columns for."""
+    archive_both(root)
+    production = verification.score_archive(root=root)
+    candidate = verification.score_archive(root=root, scheme=verification.CANDIDATE)
+
+    assert len(production) == 4 and len(candidate) == 4
+    assert (root / "verification").is_dir()
+    assert (root / "verification_timesfm").is_dir()
+    assert "pit_le_q0.3" in candidate.columns and "pit_le_q0.3" not in production.columns
+    assert "pit_le_q0.01" in production.columns and "pit_le_q0.01" not in candidate.columns
+    # Neither store sees the other's rows.
+    assert len(archive.read_verification(root=root)) == 4
+    assert len(archive.read_verification(root=root, store="verification_timesfm")) == 4
+
+
+def test_scoring_the_production_model_is_untouched_by_the_candidate(root):
+    """The default path has to keep producing exactly what it produced before."""
+    archive_both(root)
+    before = verification.score_archive(root=root, scored_at=REF)
+    assert list(before.columns) == list(verification.SCORE_COLUMNS)
+    assert before["model_id"].eq("duet").all()
+
+
+def test_a_candidate_crps_is_not_comparable_with_a_production_one(root):
+    """Same forecast, same truth, smaller number — because the deciles omit more tail."""
+    point_duet = np.full((1, len(QUANTILES)), 15.0)
+    point_candidate = np.full((1, len(verification.CANDIDATE.quantiles)), 15.0)
+    truth = np.array([17.0])
+    wide = verification.crps(point_duet, truth, verification.PRODUCTION.quantiles)[0]
+    narrow = verification.crps(point_candidate, truth, verification.CANDIDATE.quantiles)[0]
+    # 0.98 of the range against 0.8 of it. Reading these two as a result would say the
+    # candidate is 18 % better at forecasting a constant.
+    assert wide == pytest.approx(0.98 * 2.0)
+    assert narrow == pytest.approx(0.80 * 2.0)
+    assert narrow < wide
+
+
+def test_the_shared_grid_puts_them_back_on_speaking_terms(root):
+    """Interpolated onto one grid, the same point forecast scores the same either way."""
+    truth = np.array([17.0])
+    duet = verification.to_grid(np.full((1, len(QUANTILES)), 15.0),
+                                verification.PRODUCTION.quantiles)
+    candidate = verification.to_grid(np.full((1, len(verification.CANDIDATE.quantiles)), 15.0),
+                                     verification.CANDIDATE.quantiles)
+    assert verification.crps(duet, truth, verification.SHARED_GRID)[0] == pytest.approx(
+        verification.crps(candidate, truth, verification.SHARED_GRID)[0])
+
+
+def test_compare_pairs_the_two_models_on_identical_hours(root):
+    archive_both(root, duet_median=15.5, candidate_median=15.0)
+    result = verification.compare(root=root)
+    assert set(result.model) == {"duet", "timesfm"}
+    assert len(result) == 8  # two models, four lead buckets
+    assert (result.n == 24).all()
+    # The candidate was handed the right answer and the production model was half a
+    # degree out, so the pairing must show exactly that.
+    by_model = result.groupby("model").mae.mean()
+    assert by_model["timesfm"] == pytest.approx(0.0)
+    assert by_model["duet"] == pytest.approx(0.5)
+
+
+def test_compare_drops_an_hour_only_one_model_forecast(root):
+    """A run where the two picked different anchors is not a comparison."""
+    archive_both(root)
+    lonely = REF + pd.Timedelta(hours=1)
+    archive.write_forecast(make_forecast(lonely), reference_time=lonely,
+                           kind=archive.KIND_LIVE, covariate_source="dwd_forecast",
+                           model_id="duet", root=root)
+    archive.write_observations(make_actuals(lonely).rename("wassertemp").to_frame(), root=root)
+    result = verification.compare(root=root)
+    assert result.runs.eq(1).all()
+    assert (result.n == 24).all()
+
+
+def test_compare_is_empty_until_the_candidate_has_run(root):
+    """Its archive starts the day it goes live, which is the whole point of it."""
+    archive.write_forecast(make_forecast(REF), reference_time=REF, kind=archive.KIND_LIVE,
+                           covariate_source="dwd_forecast", model_id="duet", root=root)
+    archive.write_observations(make_actuals(REF).rename("wassertemp").to_frame(), root=root)
+    assert verification.compare(root=root).empty
+
+
+def test_a_broken_candidate_does_not_stop_the_production_scoring(root, mocker):
+    """This runs before the forecast, so raising here would cost a whole cycle."""
+    archive_both(root)
+    real = verification.score_archive
+
+    def explode(*args, scheme=verification.PRODUCTION, **kwargs):
+        if scheme is verification.CANDIDATE:
+            raise RuntimeError("candidate store is corrupt")
+        return real(*args, scheme=scheme, **kwargs)
+
+    mocker.patch("eisbach.verification.score_archive", side_effect=explode)
+    assert verification.main(["--root", str(root)]) == 0
+    assert len(archive.read_verification(root=root)) == 4
+
+
+def test_compare_leaves_out_a_run_whose_window_is_still_open(root):
+    """Three runs a day means several are unfolding at once; each would land in bucket 0."""
+    archive_both(root, REF, duet_median=15.5)
+    # A second run issued a day later. Only its first 24 hours have been measured, so
+    # without the closed-window rule it would contribute to the first lead bucket alone.
+    open_run = REF + pd.Timedelta(hours=24)
+    archive.write_forecast(make_forecast(open_run, median=99.0), reference_time=open_run,
+                           kind=archive.KIND_LIVE, covariate_source="dwd_forecast",
+                           model_id="duet", root=root)
+    archive.write_forecast(make_candidate_forecast(open_run, median=99.0),
+                           reference_time=open_run, kind=archive.KIND_LIVE,
+                           covariate_source="brightsky_mosmix", model_id="timesfm",
+                           root=root, store=verification.CANDIDATE.forecasts)
+
+    result = verification.compare(root=root)
+    # Every bucket rests on the one closed run, and the absurd forecast never reaches it.
+    assert result.runs.eq(1).all()
+    assert result.n.eq(24).all()
+    assert result.mae.max() < 1.0
+
+
+def test_compare_is_empty_while_every_window_is_still_open(root):
+    """Better nothing than a table that moves as observations arrive."""
+    archive.write_forecast(make_forecast(REF), reference_time=REF, kind=archive.KIND_LIVE,
+                           covariate_source="dwd_forecast", model_id="duet", root=root)
+    archive.write_forecast(make_candidate_forecast(REF), reference_time=REF,
+                           kind=archive.KIND_LIVE, covariate_source="brightsky_mosmix",
+                           model_id="timesfm", root=root,
+                           store=verification.CANDIDATE.forecasts)
+    # Measurements for the anchor and one day, not the whole 96-hour horizon.
+    archive.write_observations(make_actuals(REF, hours=25).rename("wassertemp").to_frame(),
+                               root=root)
+    assert verification.compare(root=root).empty
