@@ -537,6 +537,10 @@ def compare(root: Path = archive.DEFAULT_ROOT, *, kind: str = archive.KIND_LIVE,
     of them, so it can be recomputed whenever the question is asked — and a change to the
     scoring cannot quietly rewrite a history it disagrees with.
 
+    Only closed windows count, the same rule `score_archive` writes rows under: a run
+    whose 96 hours have not all been measured is left out entirely rather than
+    contributing its first few hours to the first lead bucket and nothing to the rest.
+
     Returns one row per (model, lead bucket). It will be empty until both models have
     published over the same closed windows, which is the point: the candidate's archive
     starts the day it went live.
@@ -559,9 +563,27 @@ def compare(root: Path = archive.DEFAULT_ROOT, *, kind: str = archive.KIND_LIVE,
     for indexed in frames.values():
         keys = indexed.index.unique()
         shared = keys if shared is None else shared.intersection(keys)
+
+    # Only closed windows, the same rule `score_archive` writes rows under. An hour of a
+    # run still unfolding has been measured and would otherwise be kept, but a run that
+    # is three hours old contributes to the first lead bucket and to none of the others.
+    # At three runs a day several are open at once, so the early buckets would carry more
+    # — and more recent — runs than the late ones, and the reported comparison would
+    # drift as observations arrived rather than as the models changed. Nothing is stored
+    # here, so this is not a frozen partial answer; it is a misleading live one.
+    last_measured = actuals.index.max()
+    closes = None
+    for indexed in frames.values():
+        ends = indexed.index.to_frame(index=False).groupby("reference_time").target_time.max()
+        closes = ends if closes is None else pd.concat([closes, ends], axis=1).max(axis=1)
+    open_runs = closes.index[closes > last_measured]
+    if len(open_runs):
+        logger.info("Leaving out %d run(s) whose window has not closed yet", len(open_runs))
+        shared = shared[~shared.get_level_values(0).isin(open_runs)]
+
     shared = shared[shared.get_level_values(1).isin(actuals.index)]
     if len(shared) == 0:
-        logger.info("No hour has been forecast by every model and then measured")
+        logger.info("No closed window has been forecast by every model and then measured")
         return pd.DataFrame()
 
     truth = actuals.reindex(shared.get_level_values(1)).to_numpy(dtype=float)

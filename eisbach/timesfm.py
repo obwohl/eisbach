@@ -183,19 +183,65 @@ def future_frame(anchor, *, now=None) -> pd.DataFrame:
     return frame
 
 
+def _fill_for_mlx(target: np.ndarray, past_only: np.ndarray, past_future: np.ndarray):
+    """Do what the PyTorch backend does internally, for the backend that does not.
+
+    PyTorch trims leading missing target values and linearly interpolates the rest before
+    the network sees anything. MLX 3.0.2 passes NaN straight through and the forecast
+    comes back all NaN, which `predict` would then refuse — so on MLX this is not an edge
+    case but every run: `context_frame` deliberately tolerates up to 5 % missing, and
+    measured on a real year of the archive **all ten series carry gaps**, from one hour to
+    fifty-three. Without this the advertised MLX path cannot produce a forecast at all.
+
+    Only on MLX. Doing it on PyTorch as well would move the numbers — measured at
+    1.8e-5 °C hourly in `experiments/timesfm/bench.py`, whose `prepare_inputs` this
+    mirrors — for no gain, since the backend already does it.
+
+    Never touches the arrays it is given.
+    """
+    target = np.array(target, dtype=np.float32, copy=True)
+    past_only = np.array(past_only, dtype=np.float32, copy=True)
+    past_future = np.array(past_future, dtype=np.float32, copy=True)
+
+    valid = ~np.isnan(target)
+    if valid.any():
+        first = int(np.argmax(valid))
+        # All three start at the same hour, so the same leading columns come off each.
+        target, past_only, past_future = target[first:], past_only[:, first:], past_future[:, first:]
+    else:
+        target[...] = 0.0
+
+    for array in (target, past_only, past_future):
+        for row in np.atleast_2d(array):
+            missing = np.isnan(row)
+            if not missing.any():
+                continue
+            present = ~missing
+            row[missing] = (np.interp(np.flatnonzero(missing), np.flatnonzero(present),
+                                      row[present]) if present.any() else 0.0)
+    return target, past_only, past_future
+
+
 def predict(context: pd.DataFrame, future: pd.DataFrame, forecaster=None) -> pd.DataFrame:
     """Run the model and return the deciles, indexed by target time.
 
     The three arrays are exactly what exp19 handed it: the target as one series, the
     past-only covariates as `(variates, context)`, and the known-future ones as
     `(variates, context + horizon)` — the future block is what makes them known-future.
+
+    Gaps reach the model as NaN and the backend fills them, except on MLX, where
+    `_fill_for_mlx` does it first.
     """
+    import os
+
     forecaster = forecaster if forecaster is not None else load_forecaster()
     target = context[TARGET].to_numpy(dtype=np.float32)
     past_only = context[list(PAST_ONLY)].to_numpy(dtype=np.float32).T
     past_future = np.concatenate(
         [context[list(KNOWN_FUTURE)].to_numpy(dtype=np.float32),
          future[list(KNOWN_FUTURE)].to_numpy(dtype=np.float32)]).T
+    if os.environ.get("TIMESFM_BACKEND", "torch").lower() == "mlx":
+        target, past_only, past_future = _fill_for_mlx(target, past_only, past_future)
     result = forecaster.predict(target, horizon=HORIZON_HOURS,
                                 past_only_covariates=past_only,
                                 past_future_covariates=past_future,

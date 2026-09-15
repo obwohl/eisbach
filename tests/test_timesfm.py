@@ -295,3 +295,37 @@ def test_a_failing_candidate_does_not_take_the_run_down(mocker, caplog):
     # exactly like one that is doing fine.
     assert "TimesFM candidate failed" in caplog.text
     assert "no checkpoint" in caplog.text
+
+
+def test_the_mlx_backend_is_handed_finite_arrays(store, monkeypatch):
+    """Every series in a real year of context has gaps, so on MLX this is every run."""
+    root, anchor = store
+    monkeypatch.setenv("TIMESFM_BACKEND", "mlx")
+    context = timesfm.context_frame(anchor, root=root)
+    context.iloc[5:9, context.columns.get_loc("rain_kochel")] = np.nan
+    context.iloc[0, context.columns.get_loc(timesfm.TARGET)] = np.nan
+    predicted = future(anchor)
+    predicted.iloc[0, predicted.columns.get_loc("airtemp")] = np.nan
+
+    stub = Stub()
+    timesfm.predict(context, predicted, forecaster=stub)
+    for name, array in stub.seen.items():
+        if name != "horizon":
+            assert np.isfinite(array).all(), name
+    # The leading missing target hour is trimmed off all three, together.
+    assert stub.seen["target"].shape == (timesfm.CONTEXT_HOURS - 1,)
+    assert stub.seen["past_only"].shape[1] == timesfm.CONTEXT_HOURS - 1
+    assert stub.seen["past_future"].shape[1] == timesfm.CONTEXT_HOURS - 1 + timesfm.HORIZON_HOURS
+
+
+def test_pytorch_still_gets_the_gaps_to_fill_itself(store, monkeypatch):
+    """Filling them here too would move the numbers for a backend that already does it."""
+    root, anchor = store
+    monkeypatch.delenv("TIMESFM_BACKEND", raising=False)
+    context = timesfm.context_frame(anchor, root=root)
+    context.iloc[5:9, context.columns.get_loc("rain_kochel")] = np.nan
+
+    stub = Stub()
+    timesfm.predict(context, future(anchor), forecaster=stub)
+    assert np.isnan(stub.seen["past_future"]).sum() == 4
+    assert stub.seen["target"].shape == (timesfm.CONTEXT_HOURS,)

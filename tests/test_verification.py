@@ -553,3 +553,38 @@ def test_a_broken_candidate_does_not_stop_the_production_scoring(root, mocker):
     mocker.patch("eisbach.verification.score_archive", side_effect=explode)
     assert verification.main(["--root", str(root)]) == 0
     assert len(archive.read_verification(root=root)) == 4
+
+
+def test_compare_leaves_out_a_run_whose_window_is_still_open(root):
+    """Three runs a day means several are unfolding at once; each would land in bucket 0."""
+    archive_both(root, REF, duet_median=15.5)
+    # A second run issued a day later. Only its first 24 hours have been measured, so
+    # without the closed-window rule it would contribute to the first lead bucket alone.
+    open_run = REF + pd.Timedelta(hours=24)
+    archive.write_forecast(make_forecast(open_run, median=99.0), reference_time=open_run,
+                           kind=archive.KIND_LIVE, covariate_source="dwd_forecast",
+                           model_id="duet", root=root)
+    archive.write_forecast(make_candidate_forecast(open_run, median=99.0),
+                           reference_time=open_run, kind=archive.KIND_LIVE,
+                           covariate_source="brightsky_mosmix", model_id="timesfm",
+                           root=root, store=verification.CANDIDATE.forecasts)
+
+    result = verification.compare(root=root)
+    # Every bucket rests on the one closed run, and the absurd forecast never reaches it.
+    assert result.runs.eq(1).all()
+    assert result.n.eq(24).all()
+    assert result.mae.max() < 1.0
+
+
+def test_compare_is_empty_while_every_window_is_still_open(root):
+    """Better nothing than a table that moves as observations arrive."""
+    archive.write_forecast(make_forecast(REF), reference_time=REF, kind=archive.KIND_LIVE,
+                           covariate_source="dwd_forecast", model_id="duet", root=root)
+    archive.write_forecast(make_candidate_forecast(REF), reference_time=REF,
+                           kind=archive.KIND_LIVE, covariate_source="brightsky_mosmix",
+                           model_id="timesfm", root=root,
+                           store=verification.CANDIDATE.forecasts)
+    # Measurements for the anchor and one day, not the whole 96-hour horizon.
+    archive.write_observations(make_actuals(REF, hours=25).rename("wassertemp").to_frame(),
+                               root=root)
+    assert verification.compare(root=root).empty
