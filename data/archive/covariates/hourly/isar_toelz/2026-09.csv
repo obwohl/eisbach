@@ -349,3 +349,4 @@ timestamp,raw_value,raw_mean,raw_min,raw_max,samples,duplicate_count,conflict
 2026-09-15T11Z,13.6,13.8,,14.0,4,,
 2026-09-15T12Z,14.2,14.4,,14.6,4,,
 2026-09-15T13Z,14.8,14.975,,15.2,4,,
+2026-09-15T14Z,,,,,0,,
