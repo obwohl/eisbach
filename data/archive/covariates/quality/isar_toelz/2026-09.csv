@@ -1,3 +1,10 @@
 timestamp,range,hampel,jump,frozen,missing,duplicate,conflicting_duplicate,subhourly_range,policy
 2026-09-23 14:00:00+00:00,False,False,False,False,True,False,False,False,v1
 2026-09-23 15:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-09-23 16:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-09-23 17:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-09-23 18:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-09-23 19:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-09-23 20:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-09-23 21:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-09-23 22:00:00+00:00,False,False,False,False,True,False,False,False,v1
