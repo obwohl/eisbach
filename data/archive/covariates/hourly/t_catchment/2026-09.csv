@@ -584,3 +584,5 @@ timestamp,raw_value,raw_min,raw_max,samples,duplicate_count,conflict,source_id
 2026-09-25T06Z,7.3,,,1,,,6280
 2026-09-25T07Z,8.9,,,1,,,6280
 2026-09-25T08Z,11.2,,,1,,,6280
+2026-09-25T09Z,13.2,,,1,,,6280
+2026-09-25T10Z,15.0,,,1,,,6280
