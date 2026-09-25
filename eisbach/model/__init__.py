@@ -17,6 +17,8 @@ when the checkpoint has to be downloaded).
 """
 
 from .api import (
+    BAND_QUANTILES,
+    OUTPUT_QUANTILES,
     QUANTILES,
     SERIES_ORDER,
     forecast,
@@ -33,9 +35,11 @@ from .checkpoint import (
 from .config import TransformerConfig
 
 __all__ = [
+    "BAND_QUANTILES",
     "CHECKPOINT_SHA256",
     "CHECKPOINT_URL",
     "ChecksumError",
+    "OUTPUT_QUANTILES",
     "QUANTILES",
     "SERIES_ORDER",
     "TransformerConfig",

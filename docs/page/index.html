@@ -17,7 +17,7 @@
   footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #8883; font-size: .9rem }
   a { color: inherit }
 
-  .models { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1.5rem 0 0 }
+  .models { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1.25rem 0 -.5rem }
   .models button {
     font: inherit; padding: .4rem .9rem; border-radius: 999px; cursor: pointer;
     border: 1px solid #8886; background: transparent; color: inherit;
@@ -31,10 +31,12 @@
 <p>A 96-hour probabilistic forecast for the Eisbach in Munich, regenerated three times a day.
    Each plot carries its own issue time.</p>
 
-<!-- Without scripting the page still shows one model; the buttons simply never appear,
-     rather than leaving a dead control behind. Each plot names its own model and states
-     its own bands in the legend, so the switch needs no prose beside it. -->
-<div class="models" id="models" hidden>
+<!-- One switch directly above each graph, and the two move together: a reader looks at
+     the graph, not at the top of the page. Both models' images share their axes and
+     their band, so switching changes the curves and nothing else — a narrower ribbon is
+     a sharper model, not a zoom. Without scripting the page still shows one model; the
+     buttons simply never appear, rather than leaving a dead control behind. -->
+<div class="models" hidden>
   <button type="button" data-model="timesfm" aria-pressed="true">TimesFM</button>
   <button type="button" data-model="duet" aria-pressed="false">Proprietary</button>
 </div>
@@ -49,6 +51,10 @@
    made at the time, or replays against the weather forecast as it was then issued.
    Dashed ones are oracle backtests, computed with the weather that actually occurred,
    so they flatter the model and are not evidence of real-world skill.</p>
+<div class="models" hidden>
+  <button type="button" data-model="timesfm" aria-pressed="true">TimesFM</button>
+  <button type="button" data-model="duet" aria-pressed="false">Proprietary</button>
+</div>
 <img id="backtest" src="Prediction_Backtest_timesfm.png"
      alt="Forecast with three backtests">
 </section>
@@ -74,7 +80,8 @@
     backtests: document.getElementById('backtests'),
     csv: document.getElementById('csv'),
   };
-  const buttons = [...document.querySelectorAll('#models button')];
+  const switches = [...document.querySelectorAll('.models')];
+  const buttons = [...document.querySelectorAll('.models button')];
 
   function show(model) {
     const files = FILES[model];
@@ -97,7 +104,7 @@
   // button that yields a broken image.
   const probe = new Image();
   probe.onload = () => {
-    document.getElementById('models').hidden = false;
+    for (const s of switches) s.hidden = false;
     for (const b of buttons) b.addEventListener('click', () => show(b.dataset.model));
     let stored = null;
     try { stored = localStorage.getItem('eisbach-model'); } catch (e) { /* ignore */ }

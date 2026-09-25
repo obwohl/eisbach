@@ -16,7 +16,13 @@ import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd  # noqa: E402
 import pytest  # noqa: E402
 
-from eisbach.plotting import plot_forecasts  # noqa: E402
+from eisbach.plotting import (  # noqa: E402
+    ModelView,
+    _with_band,
+    duet_view,
+    plot_forecasts,
+    plot_models,
+)
 
 QUANTILES = [0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99]
 CHANNELS = ["wassertemp", "airtemp_96", "pressure_96"]
@@ -183,7 +189,7 @@ def test_no_oracle_note_when_all_backtests_are_honest(frames, in_tmp_cwd, keep_f
 
     title = keep_figure["fig"].axes[0].get_title()
     assert "actually occurred" not in title
-    assert "forecast and backtests" in title
+    assert "with backtests" in title
 
 
 def test_empty_backtest_frames_are_skipped(frames, in_tmp_cwd, keep_figure):
@@ -215,3 +221,67 @@ def test_plots_in_local_berlin_time(frames, in_tmp_cwd, keep_figure):
     right = pd.Timestamp(mdates.num2date(ax.get_xlim()[1])).tz_convert(None)
     expected = df_inference.index.max().tz_convert("Europe/Berlin").tz_localize(None)
     assert abs(right - expected) < pd.Timedelta(minutes=1)
+
+
+@pytest.fixture
+def every_figure(monkeypatch):
+    """Keep every figure the renderer makes, in order, instead of closing it."""
+    figures = []
+    real_close = plt.close
+    monkeypatch.setattr(plt, "close", lambda fig=None: figures.append(fig))
+    yield figures
+    real_close("all")
+
+
+def test_archived_forecasts_without_the_band_get_it_interpolated():
+    """Forecasts archived before q0.1/q0.9 existed: linear in the level, like `to_grid`."""
+    index = pd.date_range(REFERENCE, periods=3, freq="h", tz="UTC")
+    legacy = _quantile_frame(index)
+    assert "wassertemp_q0.1" not in legacy.columns
+    banded = _with_band(legacy)
+    # The fixture is linear in q, so interpolation is exact.
+    median = legacy["wassertemp_q0.5"]
+    assert ((banded["wassertemp_q0.1"] - (median - 0.4 * 4.0)).abs() < 1e-9).all()
+    assert ((banded["wassertemp_q0.9"] - (median + 0.4 * 4.0)).abs() < 1e-9).all()
+
+
+def test_exact_band_columns_are_left_alone():
+    index = pd.date_range(REFERENCE, periods=3, freq="h", tz="UTC")
+    frame = _quantile_frame(index).assign(**{"wassertemp_q0.1": 1.0, "wassertemp_q0.9": 2.0})
+    assert _with_band(frame)["wassertemp_q0.1"].eq(1.0).all()
+
+
+def test_both_models_share_limits_and_axes_position(frames, in_tmp_cwd, every_figure):
+    """Switching models on the page must change the curves and nothing else."""
+    df_long, df_weather, df_inference = frames
+    duet = duet_view(df_long, df_weather, df_inference, {96: _backtest("live", 96)},
+                     issued_at=REFERENCE)
+    # A candidate with a much wider band, one fewer backtest and a missing-window note,
+    # so its titles have a different number of lines.
+    candidate = ModelView(
+        name="TimesFM", forecast_png="a.png", backtest_png="b.png",
+        measured=duet.measured, air=duet.air + 5.0,
+        forecast=_with_band(duet.forecast.assign(**{
+            "wassertemp_q0.1": duet.forecast["wassertemp_q0.5"] - 6.0,
+            "wassertemp_q0.9": duet.forecast["wassertemp_q0.5"] + 6.0})),
+        issued_at=REFERENCE, missing=(288,))
+
+    written = plot_models([duet, candidate])
+    assert written == ["Prediction.png", "a.png", "Prediction_Backtest.png", "b.png"]
+    for first, second in (every_figure[0:2], every_figure[2:4]):
+        for ax_a, ax_b in zip(first.axes, second.axes, strict=True):
+            assert ax_a.get_xlim() == ax_b.get_xlim()
+            assert ax_a.get_ylim() == ax_b.get_ylim()
+            assert ax_a.get_position().bounds == ax_b.get_position().bounds
+    # The wider band decides, so it is not cut off on either image.
+    water_low, water_high = every_figure[0].axes[0].get_ylim()
+    assert water_low <= candidate.forecast["wassertemp_q0.1"].min()
+    assert water_high >= candidate.forecast["wassertemp_q0.9"].max()
+    assert "incomplete" in every_figure[3].axes[0].get_title()
+
+
+def test_duet_shows_the_same_single_band_as_timesfm(frames, in_tmp_cwd, keep_figure):
+    df_long, df_weather, df_inference = frames
+    plot_forecasts(df_long, df_weather, df_inference)
+    _handles, labels = keep_figure["fig"].axes[0].get_legend_handles_labels()
+    assert [label for label in labels if label.startswith("q")] == ["q0.1-q0.9 (80 %)"]

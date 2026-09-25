@@ -172,7 +172,9 @@ Only the plumbing differs:
 The output contract is unchanged and is asserted in the tests:
 
 * `SERIES_ORDER = ['wassertemp', 'airtemp_96', 'pressure_96']` (training order)
-* `QUANTILES = [0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99]`
+* `QUANTILES = [0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99]`, plus `BAND_QUANTILES =
+  [0.1, 0.9]` for the published band; the columns follow `OUTPUT_QUANTILES`, the
+  sorted union of the two
 * flat column names `f"{var}_q{q}"`, variable-major
 * index: `config.horizon` (= 96) timestamps starting one step after the last input
   timestamp, at the frequency inferred from the input index

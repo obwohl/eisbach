@@ -25,6 +25,7 @@ LEGACY_CHECKPOINT = SUBMODULE_ROOT / "checkpoints" / "best_model.pt"
 
 SERIES_ORDER = ["wassertemp", "airtemp_96", "pressure_96"]
 QUANTILES = [0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99]
+OUTPUT_QUANTILES = [0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]
 
 requires_submodule = pytest.mark.skipif(
     not (ORIGINAL_SCRIPT.is_file() and LEGACY_CHECKPOINT.is_file()),
@@ -121,7 +122,7 @@ def original_forecast(tmp_path_factory, df_long: pd.DataFrame) -> pd.DataFrame:
 
 def test_output_contract(in_process_forecast: pd.DataFrame, df_long: pd.DataFrame):
     df = in_process_forecast
-    expected_columns = [f"{var}_q{q}" for var in SERIES_ORDER for q in QUANTILES]
+    expected_columns = [f"{var}_q{q}" for var in SERIES_ORDER for q in OUTPUT_QUANTILES]
     assert list(df.columns) == expected_columns
     assert len(df) == 96
 
@@ -147,7 +148,7 @@ def test_the_real_output_satisfies_the_plausibility_gate(in_process_forecast: pd
 
 def test_quantiles_are_monotonic(in_process_forecast: pd.DataFrame):
     for var in SERIES_ORDER:
-        block = in_process_forecast[[f"{var}_q{q}" for q in QUANTILES]].to_numpy()
+        block = in_process_forecast[[f"{var}_q{q}" for q in OUTPUT_QUANTILES]].to_numpy()
         assert (np.diff(block, axis=1) >= -1e-6).all(), f"{var} quantiles are not monotonic"
 
 
@@ -181,7 +182,9 @@ def test_vendored_matches_original(
 ):
     old, new = original_forecast, in_process_forecast
 
-    assert list(old.columns) == list(new.columns)
+    # The original evaluates QUANTILES only; the band levels are ours, so compare on its.
+    assert set(old.columns) <= set(new.columns)
+    new = new[list(old.columns)]
     assert old.index.equals(new.index)
 
     a = old.to_numpy(dtype=np.float64)

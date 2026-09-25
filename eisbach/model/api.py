@@ -44,8 +44,18 @@ __all__ = [
 #: Channel order used during training. Must not be reordered.
 SERIES_ORDER: Sequence[str] = ["wassertemp", "airtemp_96", "pressure_96"]
 
-#: Quantiles the forecast is evaluated at, in output column order.
+#: The quantiles the forecast is scored, validated and compared on. Changing this set
+#: changes what every CRPS and PIT number in the verification store means.
 QUANTILES: Sequence[float] = [0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99]
+
+#: Evaluated as well, but only to draw: the q0.1-q0.9 band both models share on the
+#: published page. TimesFM emits deciles and nothing wider, so this is the one band the
+#: two can show alike. The distribution is parametric, so these are exact, not
+#: interpolated — and kept out of `QUANTILES` so the scored series stays continuous.
+BAND_QUANTILES: Sequence[float] = [0.1, 0.9]
+
+#: Every level `forecast` emits, in output column order.
+OUTPUT_QUANTILES: Sequence[float] = sorted({*QUANTILES, *BAND_QUANTILES})
 
 
 def pick_device() -> torch.device:
@@ -171,7 +181,7 @@ def forecast(
 
     with torch.no_grad():
         distr = model(input_tensor)[0]
-        q_tensor = torch.tensor(list(QUANTILES), device=device, dtype=torch.float32)
+        q_tensor = torch.tensor(list(OUTPUT_QUANTILES), device=device, dtype=torch.float32)
         # icdf returns [B, N_Vars, Horizon, N_Quantiles]
         quantile_predictions = distr.icdf(q_tensor)
 
@@ -184,6 +194,6 @@ def forecast(
         start=last_timestamp + step, periods=config.horizon, freq=freq
     )
 
-    columns = [f"{var}_q{q}" for var in SERIES_ORDER for q in QUANTILES]
+    columns = [f"{var}_q{q}" for var in SERIES_ORDER for q in OUTPUT_QUANTILES]
     reshaped = prediction_array.reshape(config.horizon, -1)
     return pd.DataFrame(reshaped, index=forecast_index, columns=columns)

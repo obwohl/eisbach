@@ -1,34 +1,42 @@
-"""Render the two forecast images.
+"""Render the forecast images of both models, on shared axes.
 
-Both PNGs are drawn on a single figure, in order:
+Each model gets the same pair:
 
-``Prediction.png``
-    The main forecast alone, with its quantile fan and annotated daily maxima.
+``Prediction.png`` / ``Prediction_timesfm.png``
+    The forecast alone, with its q0.1-q0.9 band and annotated daily maxima.
 
-``Prediction_Backtest.png``
+``Prediction_Backtest.png`` / ``Prediction_Backtest_timesfm.png``
     The same figure with the backtests drawn over it, so the forecast can be judged
     against what the model would have said days ago.
+
+The page shows one model at a time under a switch, so the two images of a pair must be
+interchangeable: the same band, the same x- and y-limits, and the axes at the same pixel
+position. The limits are the union over both models — whichever is wider decides, so
+neither runs out of frame — and the layout is fixed rather than fitted to the text, which
+is what `bbox_inches='tight'` used to do, moving the axes whenever one title had a line
+more than the other. A narrower ribbon then reads as a sharper model, not as a zoom.
 
 Backtests are not all equally trustworthy. An ``oracle`` backtest was computed from the
 weather that *actually occurred*, which hands the model a perfect forecast and flatters
 it; ``live`` and ``replay`` backtests saw only what was knowable at the time. That
-distinction is carried by :class:`eisbach.inference.Backtest` and must survive into the
-picture, so oracle backtests are drawn dashed and the plot carries a note whenever one
-is present.
+distinction must survive into the picture, so oracle backtests are drawn dashed and the
+plot carries a note whenever one is present.
 
-``Backtest`` is duck-typed here rather than imported. There is no import cycle to avoid —
-``inference`` reaches ``archive``, ``data`` and ``model``, and none of them come back
-here. The cost is ``torch``: importing ``inference`` at module scope would pull it in
-via ``eisbach.model``, for a type annotation, in a module that only draws pictures.
+``Backtest`` is duck-typed here rather than imported (``.forecast``, ``.label``,
+``.is_honest``, ``.offset_hours``). Importing ``inference`` at module scope would pull in
+``torch`` via ``eisbach.model``, for a type annotation, in a module that only draws.
 """
 
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+import numpy as np
 import pandas as pd
 from cycler import cycler
 from scipy.signal import find_peaks
@@ -70,25 +78,25 @@ AIR_PANEL_RATIO = 0.28
 CHANNEL = 'wassertemp'
 MEDIAN_COL = f'{CHANNEL}_q0.5'
 
-QUANTILE_PAIRS = [(0.01, 0.99), (0.05, 0.95), (0.25, 0.75)]
-BAND_ALPHAS = [0.1, 0.15, 0.2]
-QUANTILE_LABELS = ['q0.01-q0.99', 'q0.05-q0.95', 'q0.25-q0.75']
+#: One band for both models, and the widest one both can draw: TimesFM emits deciles and
+#: nothing beyond them. DUET used to show three nested bands up to q0.01-q0.99, which
+#: made the two pictures disagree about what the shading meant. Its q0.1 and q0.9 are
+#: computed exactly (`eisbach.model.BAND_QUANTILES`); forecasts archived before that
+#: carry neither and have them interpolated, see `_with_band`.
+BAND = (0.1, 0.9)
+BAND_ALPHA = 0.2
+BAND_LABEL = 'q0.1-q0.9 (80 %)'
+BAND_LOW, BAND_HIGH = (f'{CHANNEL}_q{q}' for q in BAND)
 
 PREDICTION_PNG = 'Prediction.png'
 BACKTEST_PNG = 'Prediction_Backtest.png'
-
-#: TimesFM 3.0 emits deciles and nothing else — there is no q0.25 or q0.05 to be had —
-#: so one band, the widest the deciles can make. It holds 80 % of the distribution where
-#: DUET's outer band holds 98 %, which is why a narrower ribbon here does not mean a more
-#: confident model. The same band on both of the candidate's images, deliberately: two
-#: pictures of one forecast that disagreed about what the shading meant would be worse
-#: than either alone.
-TIMESFM_QUANTILE_PAIRS = [(0.1, 0.9)]
-TIMESFM_BAND_ALPHAS = [0.2]
-TIMESFM_QUANTILE_LABELS = ['q0.1-q0.9 (80 %)']
-
 TIMESFM_PNG = 'Prediction_timesfm.png'
 TIMESFM_BACKTEST_PNG = 'Prediction_Backtest_timesfm.png'
+
+#: Where the axes sit in the figure, fixed, so both models' images put them on the same
+#: pixels. The top leaves room for a four-line title (heading, issue time, oracle note,
+#: missing note); the bottom for the dates and a two-row legend.
+LAYOUT = dict(left=0.07, right=0.98, top=0.87, bottom=0.15)
 
 #: Dishonest backtests are dashed. Deliberately not a colour difference: the colour
 #: cycle is already carrying the offset, and colour alone is the one cue a reader can
@@ -96,10 +104,11 @@ TIMESFM_BACKTEST_PNG = 'Prediction_Backtest_timesfm.png'
 HONEST_LINESTYLE = '-'
 ORACLE_LINESTYLE = '--'
 
-#: Said on the picture rather than left as a curve that silently is not there. A gauge
-#: that has not reported the tail of a window cannot be interpolated across — there is
-#: nothing on the right to interpolate towards — so the backtest waits for the data.
-MISSING_NOTE = 'No backtest at {offsets}: the weather for it is not fully measured yet.'
+#: Said on the picture rather than left as a curve that silently is not there. Either a
+#: gauge has not reported the tail of the window yet, or it never reported part of it —
+#: rain is never interpolated, so a single outage anywhere in the four days is enough.
+#: "Not measured yet" was the old wording and was wrong for the second case.
+MISSING_NOTE = 'No backtest at {offsets}: the measured data for that window is incomplete.'
 
 ORACLE_NOTE = (
     'Dashed = oracle backtest: computed with the weather that actually occurred, '
@@ -161,18 +170,98 @@ def _localized_copy(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def _prepare_backtests(backtests: dict[int, Backtest]) -> list[tuple[Backtest, pd.DataFrame]]:
-    """Pair each non-empty backtest with its forecast in local naive time.
 
-    ``Backtest`` is only duck-typed here (``.forecast``, ``.label``, ``.is_honest``);
-    see the module docstring for why it is not imported.
+# --------------------------------------------------------------------------------------
+# Band
+# --------------------------------------------------------------------------------------
+
+def _with_band(frame: pd.DataFrame) -> pd.DataFrame:
+    """The frame with q0.1 and q0.9, interpolating them where they were never stored.
+
+    DUET forecasts archived before it emitted the band levels carry only its seven scored
+    quantiles, and the backtests read them back for twelve days. Linear in the quantile
+    level, the rule `eisbach.verification.to_grid` puts DUET on the decile grid with, so
+    the picture and the comparison agree. It is slightly wider than the exact band, and
+    only ever for runs made before the exact one existed.
     """
+    if frame.empty or all(c in frame.columns and frame[c].notna().all()
+                          for c in (BAND_LOW, BAND_HIGH)):
+        return frame
+    levels = sorted(float(c.split('_q')[-1]) for c in frame.columns
+                    if c.startswith(f'{CHANNEL}_q') and frame[c].notna().all())
+    if not levels or min(levels) > BAND[0] or max(levels) < BAND[1]:
+        return frame
+    values = np.sort(frame[[f'{CHANNEL}_q{q}' for q in levels]].to_numpy(float), axis=1)
+    out = frame.copy()
+    for q, column in zip(BAND, (BAND_LOW, BAND_HIGH), strict=True):
+        out[column] = [np.interp(q, levels, row) for row in values]
+    return out
+
+
+# --------------------------------------------------------------------------------------
+# One model's picture, before it is drawn
+# --------------------------------------------------------------------------------------
+
+@dataclass
+class ModelView:
+    """Everything one model's pair of images shows, already in naive local time."""
+
+    name: str
+    forecast_png: str
+    backtest_png: str
+    measured: pd.Series
+    air: pd.Series
+    forecast: pd.DataFrame
+    issued_at: object = None
+    backtests: list = field(default_factory=list)
+    missing: tuple = ()
+
+    @property
+    def paths(self) -> list[str]:
+        return [self.forecast_png, self.backtest_png]
+
+
+def _prepare_backtests(backtests) -> list[tuple[Backtest, pd.DataFrame]]:
+    """Pair each non-empty backtest with its banded forecast in local time, oldest last."""
     prepared = []
-    for _offset, backtest in backtests.items():
+    for _offset, backtest in sorted((backtests or {}).items()):
         if backtest.forecast.empty:
             continue
-        prepared.append((backtest, _localized_copy(backtest.forecast)))
+        prepared.append((backtest, _with_band(_localized_copy(backtest.forecast))))
     return prepared
+
+
+def duet_view(df_long, df_weather, df_inference, backtests=None, issued_at=None) -> ModelView:
+    """The production model, from what `run_inference` returns."""
+    history = df_long[df_long['cols'] == CHANNEL]
+    measured = pd.Series(history['data'].to_numpy(),
+                         index=pd.DatetimeIndex(_to_local_naive(history['date'])))
+    return ModelView(
+        name='Proprietary model', forecast_png=PREDICTION_PNG, backtest_png=BACKTEST_PNG,
+        measured=measured.sort_index(),
+        air=_localized_copy(df_weather)['lufttemperatur_c'],
+        forecast=_with_band(_localized_copy(df_inference)),
+        issued_at=issued_at, backtests=_prepare_backtests(backtests))
+
+
+def timesfm_view(context, future, df_forecast, *, issued_at=None, backtests=None,
+                 missing=()) -> ModelView:
+    """The candidate, from the frame it forecast on and the weather forecast it was handed.
+
+    The air line is what the model was told: measured before the anchor, forecast after
+    it. Only the target and the air temperature are drawn — the past-only covariates are
+    what the model reads, not what anyone came to see.
+    """
+    from eisbach.timesfm import KNOWN_FUTURE, TARGET
+
+    recent = _localized_copy(context)
+    air = pd.concat([recent[KNOWN_FUTURE[0]],
+                     _localized_copy(future)[KNOWN_FUTURE[0]]]).sort_index()
+    return ModelView(
+        name='TimesFM', forecast_png=TIMESFM_PNG, backtest_png=TIMESFM_BACKTEST_PNG,
+        measured=recent[TARGET], air=air, forecast=_localized_copy(df_forecast),
+        issued_at=issued_at, backtests=_prepare_backtests(backtests),
+        missing=tuple(sorted(missing)))
 
 
 # --------------------------------------------------------------------------------------
@@ -191,6 +280,7 @@ def _split_figure():
     fig, (water, air) = plt.subplots(
         2, 1, sharex=True, height_ratios=[1, AIR_PANEL_RATIO],
         gridspec_kw={'hspace': 0.08})
+    fig.subplots_adjust(**LAYOUT)
     # Adaptive, not a fixed 2.5 °C step: with the air temperature out of the way the
     # water range is a few degrees, and a fixed step that used to give five ticks now
     # gives two. Restricted to steps a reader adds up in their head.
@@ -205,36 +295,19 @@ def _split_figure():
     return fig, water, air
 
 
-def _draw_air(ax, series, start, end) -> None:
-    """The DWD air temperature, quietly, in its own panel."""
+def _draw_air(ax, series) -> None:
+    """The air temperature, quietly, in its own panel. Limits are set by the caller."""
     ax.plot(series.index, series, color=INK_MUTED, linewidth=1.0)
-    span = _span(_clip(series, start, end))
-    if span is not None:
-        ax.set_ylim(span[0] - 1, span[1] + 1)
     ax.set_xlabel('')
 
 
-def _plot_fan(ax, df_forecast: pd.DataFrame, label: str, color: str,
-              linestyle: str = HONEST_LINESTYLE, *, pairs=None, alphas=None) -> None:
-    """Draw one forecast: its median line plus the nested quantile bands."""
-    pairs = QUANTILE_PAIRS if pairs is None else pairs
-    alphas = BAND_ALPHAS if alphas is None else alphas
-    ax.plot(df_forecast.index, df_forecast[MEDIAN_COL], label=label, color=color,
-            linestyle=linestyle)
-    for alpha, (q_low, q_high) in zip(alphas, pairs, strict=True):
-        col_low = f'{CHANNEL}_q{q_low}'
-        col_high = f'{CHANNEL}_q{q_high}'
-        if col_low in df_forecast.columns and col_high in df_forecast.columns:
-            ax.fill_between(df_forecast.index, df_forecast[col_low], df_forecast[col_high],
-                            alpha=alpha, color=color, lw=0)
-
-
-def _add_band_legend_entries(ax, *, alphas=None, labels=None) -> None:
-    """Add one invisible patch per quantile band, so the legend explains the shading."""
-    alphas = BAND_ALPHAS if alphas is None else alphas
-    labels = QUANTILE_LABELS if labels is None else labels
-    for alpha, label in zip(alphas, labels, strict=True):
-        ax.fill_between([], [], [], color='gray', alpha=alpha, label=label)
+def _plot_fan(ax, frame: pd.DataFrame, label: str, color: str,
+              linestyle: str = HONEST_LINESTYLE) -> None:
+    """Draw one forecast: its median line plus the q0.1-q0.9 band."""
+    ax.plot(frame.index, frame[MEDIAN_COL], label=label, color=color, linestyle=linestyle)
+    if BAND_LOW in frame.columns and BAND_HIGH in frame.columns:
+        ax.fill_between(frame.index, frame[BAND_LOW], frame[BAND_HIGH],
+                        alpha=BAND_ALPHA, color=color, lw=0)
 
 
 def _annotate_peaks(ax, df_forecast: pd.DataFrame) -> list:
@@ -272,7 +345,7 @@ def _refresh_legend(ax) -> None:
     Inside the axes it had nowhere to go: a backtest starts at the left edge and the
     forecast ends at the right, so every corner is occupied at some point in the day and
     `upper left` was sitting on a curve. Outside, it cannot collide with anything, and
-    `bbox_inches='tight'` at save time keeps it in frame.
+    `LAYOUT` leaves room for two rows of it.
     """
     lines, labels = ax.get_legend_handles_labels()
     if getattr(ax, '_legend_artist', None) is not None:
@@ -284,24 +357,28 @@ def _refresh_legend(ax) -> None:
 
 
 def _save(fig, path: str) -> None:
-    plt.savefig(path, dpi=300, bbox_inches='tight', facecolor=fig.get_facecolor(),
-                edgecolor='none')
+    # No `bbox_inches='tight'`: it crops to the content, so a longer title would move
+    # the axes and the two models' images would no longer line up. See `LAYOUT`.
+    fig.savefig(path, dpi=300, facecolor=fig.get_facecolor(), edgecolor='none')
     logger.info("Plot saved to: %s", path)
 
 
 # --------------------------------------------------------------------------------------
-# Y-limits
+# Limits, shared by every model on the page
 # --------------------------------------------------------------------------------------
 
 def _span(series) -> tuple[float, float] | None:
     """``(min, max)`` of a series, or ``None`` when there is nothing in it."""
-    return None if series.empty else (series.min(), series.max())
+    series = series.dropna()
+    return None if series.empty else (float(series.min()), float(series.max()))
 
 
-def _widen(span: tuple[float, float], other: tuple[float, float] | None) -> tuple[float, float]:
-    """Grow ``span`` to also contain ``other``; a missing ``other`` changes nothing."""
+def _widen(span, other):
+    """Grow ``span`` to also contain ``other``; a missing side changes nothing."""
     if other is None:
         return span
+    if span is None:
+        return other
     return min(span[0], other[0]), max(span[1], other[1])
 
 
@@ -310,8 +387,52 @@ def _clip(series, start, end):
     return series.loc[(series.index >= start) & (series.index <= end)]
 
 
+@dataclass(frozen=True)
+class Limits:
+    start: pd.Timestamp
+    end: pd.Timestamp
+    water: tuple[float, float]
+    air: tuple[float, float] | None
+
+    def apply(self, ax, ax_air) -> None:
+        ax.set_xlim(left=self.start, right=self.end)
+        ax.set_ylim(self.water[0] - 0.5, self.water[1] + 0.5)
+        if self.air is not None:
+            ax_air.set_ylim(self.air[0] - 1, self.air[1] + 1)
+
+
+def _limits(views: list[ModelView], *, with_backtests: bool) -> Limits:
+    """One set of limits every model's image of this kind is drawn with.
+
+    The union: a model whose band runs wider must not run out of frame, and the other is
+    then drawn with the same room around it, so switching changes the curves and nothing
+    else. Each forecast counts with its full band; a backtest only with its median. A
+    backtest is context — you read its median against the measured line — and one
+    damaged run must not decide the axis for the rest: the -96h live backtest of
+    11 September, made while a 154.4 °C reading was poisoning production, has a band from
+    0 to 31 °C. Its band runs off the frame instead, which is the honest signal that it
+    is that wide.
+    """
+    start = min(v.forecast.index.min() for v in views) - pd.Timedelta(hours=HISTORY_HOURS)
+    if with_backtests:
+        for view in views:
+            for _backtest, frame in view.backtests:
+                start = min(start, frame.index.min())
+    end = max(v.forecast.index.max() for v in views)
+    water = air = None
+    for view in views:
+        columns = [c for c in (BAND_LOW, BAND_HIGH, MEDIAN_COL) if c in view.forecast.columns]
+        water = _widen(water, _span(view.forecast[columns].stack()))
+        water = _widen(water, _span(_clip(view.measured, start, end)))
+        if with_backtests:
+            for _backtest, frame in view.backtests:
+                water = _widen(water, _span(frame[MEDIAN_COL]))
+        air = _widen(air, _span(_clip(view.air, start, end)))
+    return Limits(start, end, water, air)
+
+
 # --------------------------------------------------------------------------------------
-# Entry point
+# Entry points
 # --------------------------------------------------------------------------------------
 
 def _issued_label(issued_at) -> str:
@@ -322,201 +443,67 @@ def _issued_label(issued_at) -> str:
     return stamp.tz_convert("Europe/Berlin").strftime("%Y-%m-%d %H:%M")
 
 
+def _draw(view: ModelView, limits: Limits, *, with_backtests: bool, path: str) -> None:
+    fig, ax, ax_air = _split_figure()
+    ax.plot(view.measured.index, view.measured, label='Measured water temperature',
+            color=INK, linewidth=1.2)
+    ax.fill_between([], [], [], color='gray', alpha=BAND_ALPHA, label=BAND_LABEL)
+    _plot_fan(ax, view.forecast, f'{view.name} forecast', PLOT_COLORS[0])
+    _draw_air(ax_air, view.air)
+
+    title = f'Eisbach water temperature — {view.name}'
+    if with_backtests:
+        title += ' with backtests'
+        for i, (backtest, frame) in enumerate(view.backtests):
+            color = PLOT_COLORS[min(i + 1, len(PLOT_COLORS) - 1)]
+            _plot_fan(ax, frame, backtest.label, color,
+                      HONEST_LINESTYLE if backtest.is_honest else ORACLE_LINESTYLE)
+    title += f'\nIssued {_issued_label(view.issued_at)} · all times Europe/Berlin'
+    if with_backtests:
+        # Only warn about the oracle when there is actually an oracle on the picture.
+        if any(not backtest.is_honest for backtest, _frame in view.backtests):
+            title += f'\n{ORACLE_NOTE}'
+        if view.missing:
+            title += '\n' + MISSING_NOTE.format(
+                offsets=', '.join(f'-{h}h' for h in view.missing))
+    else:
+        # Only on the forecast-only image, where there is room for them.
+        _annotate_peaks(ax, view.forecast)
+
+    limits.apply(ax, ax_air)
+    ax.set_title(title)
+    _refresh_legend(ax)
+    _save(fig, path)
+    plt.close(fig)
+
+
+def plot_models(views: list[ModelView]) -> list[str]:
+    """Write every model's pair of images on shared limits; return the paths written."""
+    plt.rcParams.update(PRIMER_STYLE)
+    written = []
+    for with_backtests in (False, True):
+        limits = _limits(views, with_backtests=with_backtests)
+        for view in views:
+            path = view.backtest_png if with_backtests else view.forecast_png
+            _draw(view, limits, with_backtests=with_backtests, path=path)
+            written.append(path)
+    return written
+
+
 def plot_forecasts(df_long, df_weather, df_inference, backtests=None, issued_at=None) -> None:
-    """Write ``Prediction.png`` and ``Prediction_Backtest.png``.
-
-    ``backtests`` maps an offset in hours to a :class:`eisbach.inference.Backtest`.
-    """
-    if backtests is None:
-        backtests = {}
-
-    plt.rcParams.update(PRIMER_STYLE)
-
-    fig, ax, ax_air = _split_figure()
-
-    # Everything is plotted in naive local time; see _to_local_naive.
-    df_long_plot = df_long.copy()
-    df_long_plot['date'] = _to_local_naive(df_long_plot['date'])
-    df_weather_plot = _localized_copy(df_weather)
-    df_inference_plot = _localized_copy(df_inference)
-    prepared_backtests = _prepare_backtests(backtests)
-
-    historical = df_long_plot[df_long_plot['cols'] == CHANNEL]
-    air = df_weather_plot['lufttemperatur_c']
-    forecast_end = df_inference_plot.index.max()
-
-    def draw_history():
-        ax.plot(historical['date'], historical['data'], label='Measured water temperature',
-                color=INK, linewidth=1.2)
-        _add_band_legend_entries(ax)
-
-    def fit(forecast_frame, backtest_frames, start):
-        """The forecast sets the range with its full band; backtests only with their medians.
-
-        A backtest is context — you read its median against the measured line — and one
-        damaged run must not decide the axis for the other three. The -96h live backtest
-        on this picture is a forecast really published on 11 September, while the
-        154.4 °C reading was still poisoning production, and its q0.01-q0.99 runs from
-        0 to 31 °C. Fitted to that, every other curve collapses into a stripe. Its band
-        now runs off the frame instead, which is the honest signal that it is that wide.
-        """
-        span = (forecast_frame[f'{CHANNEL}_q0.01'].min(),
-                forecast_frame[f'{CHANNEL}_q0.99'].max())
-        for frame in backtest_frames:
-            span = _widen(span, (frame[MEDIAN_COL].min(), frame[MEDIAN_COL].max()))
-        visible = historical.loc[(historical['date'] >= start)
-                                 & (historical['date'] <= forecast_end), 'data']
-        span = _widen(span, _span(visible))
-        ax.set_xlim(left=start, right=forecast_end)
-        ax.set_ylim(span[0] - 0.5, span[1] + 0.5)
-        _draw_air(ax_air, air, start, forecast_end)
-
-    # ------------------------------------------------------------------
-    # Image 1: the forecast on its own.
-    # ------------------------------------------------------------------
-    draw_history()
-    _plot_fan(ax, df_inference_plot, 'Forecast', PLOT_COLORS[0])
-    fit(df_inference, [], df_inference_plot.index.min() - pd.Timedelta(hours=HISTORY_HOURS))
-
-    ax.set_title(f'Eisbach water temperature forecast\n'
-                 f'Issued {_issued_label(issued_at)} · all times Europe/Berlin')
-    _refresh_legend(ax)
-
-    annotations = _annotate_peaks(ax, df_inference_plot)
-    _save(fig, PREDICTION_PNG)
-
-    # ------------------------------------------------------------------
-    # Image 2: the same figure with the backtests laid over it.
-    # ------------------------------------------------------------------
-    for annotation in annotations:
-        annotation.remove()
-
-    drawn = []
-    start = df_inference_plot.index.min() - pd.Timedelta(hours=HISTORY_HOURS)
-    for i, (backtest, df_bt) in enumerate(prepared_backtests):
-        color = PLOT_COLORS[i + 1] if i + 1 < len(PLOT_COLORS) else PLOT_COLORS[-1]
-        linestyle = HONEST_LINESTYLE if backtest.is_honest else ORACLE_LINESTYLE
-        _plot_fan(ax, df_bt, backtest.label, color, linestyle)
-        if MEDIAN_COL in df_bt.columns:
-            drawn.append(df_bt)
-        start = min(start, df_bt.index.min())
-    fit(df_inference, drawn, start)
-
-    title = (f'Eisbach water temperature: forecast and backtests\n'
-             f'Issued {_issued_label(issued_at)} · all times Europe/Berlin')
-    # Only warn about the oracle when there is actually an oracle on the picture.
-    if any(not backtest.is_honest for backtest, _df in prepared_backtests):
-        title += f'\n{ORACLE_NOTE}'
-    ax.set_title(title)
-    _refresh_legend(ax)
-
-    _save(fig, BACKTEST_PNG)
-    plt.close(fig)
+    """The production model's pair alone, on limits fitted to it."""
+    plot_models([duet_view(df_long, df_weather, df_inference, backtests, issued_at)])
 
 
-# --------------------------------------------------------------------------------------
-# The candidate
-# --------------------------------------------------------------------------------------
+def plot_timesfm(context, future, df_forecast, *, issued_at=None, backtests=None,
+                 missing=()) -> list[str]:
+    """The candidate's pair alone, on limits fitted to it."""
+    view = timesfm_view(context, future, df_forecast, issued_at=issued_at,
+                        backtests=backtests, missing=missing)
+    return plot_models([view])
 
-def plot_timesfm(context: pd.DataFrame, future: pd.DataFrame, df_forecast: pd.DataFrame,
-                 *, issued_at=None, backtests=None, missing=()) -> list[str]:
-    """Write the candidate's two images and return the paths written.
 
-    The same pair, the same layout and the same history window as the production model:
-    the two pictures sit under one switch, and a reader flipping between them is
-    comparing forecasts, not axes.
-
-    ``context`` is the frame `eisbach.timesfm.context_frame` built the forecast from, of
-    which only the last days are drawn, and ``future`` the weather forecast it was handed.
-    ``backtests`` maps an offset in hours to an `eisbach.timesfm.Backtest`; ``missing``
-    names the offsets that could not be built, which the second image says out loud
-    rather than quietly showing one curve fewer.
-
-    Only the target, the air temperature and the forecast are drawn. The past-only
-    covariates are what the model reads, not what anyone came to see.
-    """
-    from eisbach.timesfm import KNOWN_FUTURE, TARGET
-
-    backtests = backtests or {}
-    plt.rcParams.update(PRIMER_STYLE)
-
-    fig, ax, ax_air = _split_figure()
-
-    forecast = _localized_copy(df_forecast)
-    # Reach back far enough to cover the earliest backtest as well. A backtest drawn over
-    # a stretch with no measured line beside it cannot be judged against anything, which
-    # is the one thing the second image exists for. Image 1 crops back to HISTORY_HOURS
-    # through its x-limits, so this costs it nothing.
-    needed = max([HISTORY_HOURS,
-                  *(b.offset_hours + HISTORY_HOURS for b in backtests.values())])
-    recent = _localized_copy(context.tail(needed))
-    # The air temperature the model was told: measured before the anchor, forecast after
-    # it — the same line the production image draws, from the same source.
-    air = pd.concat([recent[KNOWN_FUTURE[0]],
-                     _localized_copy(future)[KNOWN_FUTURE[0]]]).sort_index()
-    forecast_end = forecast.index.max()
-
-    def draw_history():
-        ax.plot(recent.index, recent[TARGET], label='Measured water temperature',
-                color=INK, linewidth=1.2)
-        _add_band_legend_entries(ax, alphas=TIMESFM_BAND_ALPHAS,
-                                 labels=TIMESFM_QUANTILE_LABELS)
-
-    def fan(frame, label, color, linestyle=HONEST_LINESTYLE):
-        _plot_fan(ax, frame, label, color, linestyle,
-                  pairs=TIMESFM_QUANTILE_PAIRS, alphas=TIMESFM_BAND_ALPHAS)
-
-    def fit(backtest_frames, start):
-        """As on the production image: the forecast's band, the backtests' medians."""
-        span = (float(forecast[f'{CHANNEL}_q0.1'].min()),
-                float(forecast[f'{CHANNEL}_q0.9'].max()))
-        for frame in backtest_frames:
-            span = _widen(span, (float(frame[MEDIAN_COL].min()), float(frame[MEDIAN_COL].max())))
-        span = _widen(span, _span(_clip(recent[TARGET], start, forecast_end)))
-        ax.set_xlim(left=start, right=forecast_end)
-        ax.set_ylim(span[0] - 0.5, span[1] + 0.5)
-        _draw_air(ax_air, air, start, forecast_end)
-
-    # ------------------------------------------------------------------
-    # Image 1: the forecast on its own.
-    # ------------------------------------------------------------------
-    draw_history()
-    fan(forecast, 'TimesFM forecast', PLOT_COLORS[0])
-    fit([], forecast.index.min() - pd.Timedelta(hours=HISTORY_HOURS))
-    ax.set_title('Eisbach water temperature — TimesFM\n'
-                 f'Issued {_issued_label(issued_at)} · all times Europe/Berlin')
-    _refresh_legend(ax)
-    annotations = _annotate_peaks(ax, forecast)
-    _save(fig, TIMESFM_PNG)
-
-    # ------------------------------------------------------------------
-    # Image 2: the same figure with the backtests laid over it.
-    # ------------------------------------------------------------------
-    for annotation in annotations:
-        annotation.remove()
-
-    drawn = []
-    start = forecast.index.min() - pd.Timedelta(hours=HISTORY_HOURS)
-    for i, offset in enumerate(sorted(backtests)):
-        backtest = backtests[offset]
-        frame = _localized_copy(backtest.forecast)
-        color = PLOT_COLORS[i + 1] if i + 1 < len(PLOT_COLORS) else PLOT_COLORS[-1]
-        fan(frame, backtest.label, color,
-            HONEST_LINESTYLE if backtest.is_honest else ORACLE_LINESTYLE)
-        drawn.append(frame)
-        start = min(start, frame.index.min())
-    fit(drawn, start)
-
-    title = ('Eisbach water temperature — TimesFM with backtests\n'
-             f'Issued {_issued_label(issued_at)} · all times Europe/Berlin')
-    if any(not b.is_honest for b in backtests.values()):
-        title += f'\n{ORACLE_NOTE}'
-    if missing:
-        title += ('\n' + MISSING_NOTE.format(
-            offsets=', '.join(f'-{h}h' for h in sorted(missing))))
-    ax.set_title(title)
-    _refresh_legend(ax)
-    _save(fig, TIMESFM_BACKTEST_PNG)
-
-    plt.close(fig)
-    return [TIMESFM_PNG, TIMESFM_BACKTEST_PNG]
+def remove(paths) -> None:
+    """Delete images a failed render may have left half-written."""
+    for path in paths:
+        Path(path).unlink(missing_ok=True)
