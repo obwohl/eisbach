@@ -31,12 +31,13 @@
 <p>A 96-hour probabilistic forecast for the Eisbach in Munich, regenerated three times a day.
    Each plot carries its own issue time.</p>
 
-<!-- One switch directly above each graph, and the two move together: a reader looks at
-     the graph, not at the top of the page. Both models' images share their axes and
-     their band, so switching changes the curves and nothing else — a narrower ribbon is
-     a sharper model, not a zoom. Without scripting the page still shows one model; the
-     buttons simply never appear, rather than leaving a dead control behind. -->
-<div class="models" hidden>
+<!-- A switch directly above each graph, and each works on its own graph only: the
+     forecast and the backtests can be compared model against model separately. Both
+     models' images of a graph share their axes and their band, so switching changes the
+     curves and nothing else — a narrower ribbon is a sharper model, not a zoom. Without
+     scripting the page still shows one model; the buttons simply never appear, rather
+     than leaving a dead control behind. -->
+<div class="models" data-graph="forecast" hidden>
   <button type="button" data-model="timesfm" aria-pressed="true">TimesFM</button>
   <button type="button" data-model="duet" aria-pressed="false">Proprietary</button>
 </div>
@@ -51,7 +52,7 @@
    made at the time, or replays against the weather forecast as it was then issued.
    Dashed ones are oracle backtests, computed with the weather that actually occurred,
    so they flatter the model and are not evidence of real-world skill.</p>
-<div class="models" hidden>
+<div class="models" data-graph="backtest" hidden>
   <button type="button" data-model="timesfm" aria-pressed="true">TimesFM</button>
   <button type="button" data-model="duet" aria-pressed="false">Proprietary</button>
 </div>
@@ -65,6 +66,13 @@
 </footer>
 
 <script>
+  // Replaced with the run id when the page is published. The images keep their names
+  // from run to run and Pages lets browsers cache them for ten minutes, so without this
+  // a fresh page can show the previous run's pictures. The page itself is cached just as
+  // long, so a stale page asks for its own run's images — never a mix of two runs.
+  const VERSION = '__VERSION__';
+  const versioned = (file) => VERSION.startsWith('__') ? file : `${file}?v=${VERSION}`;
+
   const FILES = {
     timesfm: { forecast: 'Prediction_timesfm.png',
                backtest: 'Prediction_Backtest_timesfm.png',
@@ -74,42 +82,48 @@
                csv: 'Prediction.csv' },
   };
 
-  const els = {
-    forecast: document.getElementById('forecast'),
-    backtest: document.getElementById('backtest'),
-    backtests: document.getElementById('backtests'),
-    csv: document.getElementById('csv'),
-  };
+  const csv = document.getElementById('csv');
+  const backtests = document.getElementById('backtests');
   const switches = [...document.querySelectorAll('.models')];
-  const buttons = [...document.querySelectorAll('.models button')];
 
-  function show(model) {
-    const files = FILES[model];
-    els.forecast.src = files.forecast;
-    els.csv.href = files.csv;
-    // Arm `onerror` before `src`, or a cached 404 fires before we are listening. The
-    // candidate's backtest image is produced every run now, so this is a safety net for
-    // a run that failed, not the ordinary path.
-    els.backtests.hidden = false;
-    els.backtest.onerror = () => { els.backtests.hidden = true; };
-    els.backtest.src = files.backtest;
+  function show(graph, model) {
+    const img = document.getElementById(graph);
+    if (graph === 'backtest') {
+      // Arm `onerror` before `src`, or a cached 404 fires before we are listening. A
+      // safety net for a run that failed, not the ordinary path.
+      backtests.hidden = false;
+      img.onerror = () => { backtests.hidden = true; };
+    } else {
+      // The CSV holds the forecast, so it follows the forecast's switch.
+      csv.href = versioned(FILES[model].csv);
+    }
+    img.src = versioned(FILES[model][graph]);
+    const buttons = document.querySelectorAll(`.models[data-graph="${graph}"] button`);
     for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.model === model));
-    try { localStorage.setItem('eisbach-model', model); } catch (e) { /* private window */ }
+    try { localStorage.setItem(`eisbach-model-${graph}`, model); } catch (e) { /* private window */ }
+  }
+
+  function stored(graph) {
+    try { return localStorage.getItem(`eisbach-model-${graph}`); } catch (e) { return null; }
   }
 
   // TimesFM is what the page shows by default, so the markup already points at it and
   // the probe is there to catch the opposite case: a run where the candidate failed and
   // its plots were never published. Then, and only then, the page falls back to the
-  // model that is always there, and the switch stays hidden rather than offering a
+  // model that is always there, and the switches stay hidden rather than offering a
   // button that yields a broken image.
   const probe = new Image();
   probe.onload = () => {
-    for (const s of switches) s.hidden = false;
-    for (const b of buttons) b.addEventListener('click', () => show(b.dataset.model));
-    let stored = null;
-    try { stored = localStorage.getItem('eisbach-model'); } catch (e) { /* ignore */ }
-    if (stored && FILES[stored]) show(stored);
+    for (const s of switches) {
+      const graph = s.dataset.graph;
+      s.hidden = false;
+      for (const b of s.querySelectorAll('button')) {
+        b.addEventListener('click', () => show(graph, b.dataset.model));
+      }
+      const model = stored(graph);
+      show(graph, FILES[model] ? model : 'timesfm');
+    }
   };
-  probe.onerror = () => show('duet');
-  probe.src = FILES.timesfm.forecast;
+  probe.onerror = () => { show('forecast', 'duet'); show('backtest', 'duet'); };
+  probe.src = versioned(FILES.timesfm.forecast);
 </script>

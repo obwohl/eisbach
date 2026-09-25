@@ -120,6 +120,9 @@ jobs:
         run: |
           mkdir -p public
           cp docs/page/index.html public/
+          # Version the image URLs with this run, so a browser holding last run's
+          # pictures in its cache cannot show them under this run's page.
+          sed -i "s/__VERSION__/${GITHUB_RUN_ID}/" public/index.html
           cp Prediction.png Prediction_Backtest.png Prediction.csv public/
           # The candidate's plots, if this run produced them. The page probes for the
           # first of these and only shows its model switch once it loads, so a run where
