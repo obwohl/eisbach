@@ -307,3 +307,15 @@ timestamp,range,hampel,jump,frozen,missing,duplicate,conflicting_duplicate,subho
 2026-09-27 20:00:00+00:00,False,False,False,True,False,False,False,False,v1
 2026-09-27 21:00:00+00:00,False,False,False,True,False,False,False,False,v1
 2026-09-27 22:00:00+00:00,False,False,False,True,False,False,False,False,v1
+2026-09-27 23:00:00+00:00,False,False,False,True,False,False,False,False,v1
+2026-09-28 00:00:00+00:00,False,False,False,True,False,False,False,False,v1
+2026-09-28 01:00:00+00:00,False,False,False,True,False,False,False,False,v1
+2026-09-28 02:00:00+00:00,False,False,False,True,False,False,False,False,v1
+2026-09-28 03:00:00+00:00,False,False,False,True,False,False,False,False,v1
+2026-09-28 04:00:00+00:00,False,False,False,True,False,False,False,False,v1
+2026-09-28 05:00:00+00:00,False,False,False,True,False,False,False,False,v1
+2026-09-28 06:00:00+00:00,False,False,False,True,False,False,False,False,v1
+2026-09-28 07:00:00+00:00,False,False,False,True,False,False,False,False,v1
+2026-09-28 08:00:00+00:00,False,False,False,True,False,False,False,False,v1
+2026-09-28 09:00:00+00:00,False,False,False,True,False,False,False,False,v1
+2026-09-28 10:00:00+00:00,False,False,False,True,False,False,False,False,v1
