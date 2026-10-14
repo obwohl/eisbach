@@ -153,3 +153,11 @@ timestamp,range,hampel,jump,frozen,missing,duplicate,conflicting_duplicate,subho
 2026-10-13 18:00:00+00:00,False,False,False,False,True,False,False,False,v1
 2026-10-13 19:00:00+00:00,False,False,False,False,True,False,False,False,v1
 2026-10-13 20:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-10-13 21:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-10-13 22:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-10-13 23:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-10-14 00:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-10-14 01:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-10-14 02:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-10-14 03:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-10-14 04:00:00+00:00,False,False,False,False,True,False,False,False,v1
