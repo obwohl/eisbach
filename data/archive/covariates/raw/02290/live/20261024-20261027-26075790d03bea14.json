@@ -1,0 +1,10 @@
+{
+  "url": "https://api.brightsky.dev/weather",
+  "params": {
+    "dwd_station_id": "02290",
+    "date": "2026-10-24T11:00:00+00:00",
+    "last_date": "2026-10-27T20:00:00+00:00"
+  },
+  "fetched_at": "2026-10-27 20:00:00+00:00",
+  "sha256": "26075790d03bea1452d8ff9d6e496c86a79e9d9a2de5578561fca46420b31e82"
+}
