@@ -317,3 +317,11 @@ timestamp,range,hampel,jump,frozen,missing,duplicate,conflicting_duplicate,subho
 2026-10-29 18:00:00+00:00,False,False,False,False,True,False,False,False,v1
 2026-10-29 19:00:00+00:00,False,False,False,False,True,False,False,False,v1
 2026-10-29 20:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-10-29 21:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-10-29 22:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-10-29 23:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-10-30 00:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-10-30 01:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-10-30 02:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-10-30 03:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-10-30 04:00:00+00:00,False,False,False,False,True,False,False,False,v1
