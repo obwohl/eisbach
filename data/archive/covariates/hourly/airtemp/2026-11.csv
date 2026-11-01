@@ -1,0 +1,5 @@
+timestamp,raw_value,raw_min,raw_max,samples,duplicate_count,conflict,source_id
+2026-11-01T00Z,5.5,,,1,,,202799
+2026-11-01T01Z,5.4,,,1,,,202799
+2026-11-01T02Z,5.3,,,1,,,202799
+2026-11-01T03Z,5.4,,,1,,,202799
