@@ -304,3 +304,11 @@ timestamp,range,hampel,jump,frozen,missing,duplicate,conflicting_duplicate,subho
 2026-11-26 18:00:00+00:00,False,False,False,False,True,False,False,False,v1
 2026-11-26 19:00:00+00:00,False,False,False,False,True,False,False,False,v1
 2026-11-26 20:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-11-26 21:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-11-26 22:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-11-26 23:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-11-27 00:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-11-27 01:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-11-27 02:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-11-27 03:00:00+00:00,False,False,False,False,True,False,False,False,v1
+2026-11-27 04:00:00+00:00,False,False,False,False,True,False,False,False,v1
